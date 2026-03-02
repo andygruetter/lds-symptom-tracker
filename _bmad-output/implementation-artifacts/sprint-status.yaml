@@ -41,7 +41,7 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Projekt-Setup & Authentifizierung
-  epic-1: in-progress
+  epic-1: done
   1-1-nextjs-projekt-initialisieren: done
   1-2-theme-setup-font-layout: done
   1-3-supabase-integration: done
@@ -49,15 +49,15 @@ development_status:
   1-5-pwa-setup: done
   1-6-disclaimer-anzeige: done
   1-7-account-daten-loeschung: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Text-Erfassung & KI-Extraktion
-  epic-2: backlog
-  2-1-chat-ui-text-eingabe: backlog
-  2-2-ki-extraktion-klassifikation: backlog
-  2-3-review-ansicht-konfidenz: backlog
-  2-4-conversational-correction: backlog
-  2-5-symptom-beenden: backlog
+  epic-2: in-progress
+  2-1-chat-ui-text-eingabe: review
+  2-2-ki-extraktion-klassifikation: ready-for-dev
+  2-3-review-ansicht-konfidenz: ready-for-dev
+  2-4-conversational-correction: ready-for-dev
+  2-5-symptom-beenden: ready-for-dev
   epic-2-retrospective: optional
 
   # Epic 3: Sprach-Erfassung & Foto-Dokumentation
