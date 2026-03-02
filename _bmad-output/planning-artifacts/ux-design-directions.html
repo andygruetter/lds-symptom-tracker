@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LDS Symptom Tracker — Design Directions</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #111; color: #e0e0e0; }
+  .header { padding: 32px 24px 16px; max-width: 1600px; margin: 0 auto; }
+  .header h1 { font-size: 24px; font-weight: 700; color: #fff; }
+  .header p { color: #888; font-size: 14px; margin-top: 4px; }
+  .directions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; max-width: 1600px; margin: 0 auto; padding: 24px; }
+  @media (max-width: 1200px) { .directions { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .directions { grid-template-columns: 1fr; } }
+
+  .direction { background: #1a1a1a; border-radius: 16px; overflow: hidden; border: 1px solid #2a2a2a; transition: border-color 0.2s; }
+  .direction:hover { border-color: #444; }
+  .direction.recommended { border-color: #C06A3C; }
+  .direction.recommended .dir-header { background: linear-gradient(135deg, #2a1a10, #1a1a1a); }
+  .dir-header { padding: 16px 20px; }
+  .dir-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: #333; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .dir-badge.rec { background: #C06A3C; color: #fff; }
+  .dir-header h2 { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .dir-header p { font-size: 12px; color: #888; line-height: 1.5; }
+  .dir-screens { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .screen-label { font-size: 10px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+
+  /* Phone frame */
+  .phone { background: #000; border-radius: 28px; padding: 8px; max-width: 260px; margin: 0 auto; }
+  .screen { border-radius: 22px; overflow: hidden; position: relative; }
+  .status-bar { height: 20px; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; font-size: 10px; font-weight: 600; }
+  .notch { width: 80px; height: 18px; background: #000; border-radius: 0 0 12px 12px; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 10; }
+
+  /* Bottom nav shared */
+  .bnav { display: flex; justify-content: space-around; padding: 8px 0 4px; font-size: 9px; }
+  .bnav-item { text-align: center; opacity: 0.4; }
+  .bnav-item.active { opacity: 1; }
+  .bnav-icon { font-size: 18px; margin-bottom: 1px; }
+
+  /* ===== DIRECTION A: Soft Bubble ===== */
+  .a-capture { background: #F5EDE6; min-height: 380px; display: flex; flex-direction: column; }
+  .a-capture .status-bar { color: #5E4E40; }
+  .a-capture-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  .a-mic { width: 88px; height: 88px; border-radius: 50%; background: #C06A3C; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(192,106,60,0.3); }
+  .a-mic svg { width: 36px; height: 36px; }
+  .a-hint { font-size: 13px; color: #5E4E40; margin-top: 24px; text-align: center; }
+  .a-input { margin: 24px 16px 0; background: #fff; border-radius: 28px; padding: 12px 16px; display: flex; align-items: center; font-size: 13px; color: #9E8E7E; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .a-bnav { background: #F5EDE6; border-top: 1px solid #EAE0D7; }
+
+  /* A: Review */
+  .a-review { background: #F5EDE6; min-height: 380px; display: flex; flex-direction: column; }
+  .a-review-body { flex: 1; padding: 16px; }
+  .a-bubble-sent { background: #C06A3C; color: #fff; padding: 10px 14px; border-radius: 18px 18px 4px 18px; margin-left: 40px; margin-bottom: 8px; font-size: 12px; line-height: 1.4; }
+  .a-bubble-recv { background: #fff; color: #2A1B10; padding: 10px 14px; border-radius: 18px 18px 18px 4px; margin-right: 40px; margin-bottom: 8px; font-size: 12px; line-height: 1.4; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .a-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+  .a-tag { background: #EAE0D7; padding: 4px 10px; border-radius: 16px; font-size: 11px; color: #2A1B10; font-weight: 500; }
+  .a-confirm { background: #3A856F; color: #fff; text-align: center; padding: 12px; border-radius: 24px; margin: 12px 0 0; font-size: 13px; font-weight: 600; }
+
+  /* ===== DIRECTION B: Bold Voice ===== */
+  .b-capture { background: #C06A3C; min-height: 380px; display: flex; flex-direction: column; }
+  .b-capture .status-bar { color: rgba(255,255,255,0.7); }
+  .b-capture-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  .b-mic { width: 96px; height: 96px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 3px solid #fff; display: flex; align-items: center; justify-content: center; }
+  .b-mic svg { width: 40px; height: 40px; }
+  .b-hint { font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 20px; font-weight: 500; }
+  .b-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 8px; }
+  .b-input { margin: 20px 16px 0; background: rgba(255,255,255,0.15); border-radius: 24px; padding: 10px 16px; font-size: 12px; color: rgba(255,255,255,0.6); backdrop-filter: blur(8px); }
+  .b-bnav { background: #F5EDE6; border-top: 1px solid #EAE0D7; }
+
+  /* B: Review */
+  .b-review { background: #F5EDE6; min-height: 380px; display: flex; flex-direction: column; }
+  .b-review-body { flex: 1; padding: 16px; }
+  .b-header-bar { background: #C06A3C; color: #fff; padding: 10px 16px; font-size: 13px; font-weight: 600; margin: -16px -16px 12px; text-align: center; }
+  .b-card { background: #fff; border-radius: 16px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .b-field { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #EAE0D7; font-size: 12px; }
+  .b-field:last-child { border-bottom: none; }
+  .b-field-label { color: #5E4E40; font-weight: 500; }
+  .b-field-value { color: #2A1B10; font-weight: 600; }
+  .b-conf { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #3A856F; margin-top: 8px; }
+  .b-confirm { background: #3A856F; color: #fff; text-align: center; padding: 14px; border-radius: 12px; margin-top: 12px; font-size: 14px; font-weight: 700; }
+
+  /* ===== DIRECTION C: Clean Lines ===== */
+  .c-capture { background: #FAFAF8; min-height: 380px; display: flex; flex-direction: column; }
+  .c-capture .status-bar { color: #5E4E40; }
+  .c-top-bar { padding: 12px 16px; font-size: 14px; font-weight: 600; color: #2A1B10; border-bottom: 1px solid #EAE0D7; }
+  .c-capture-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  .c-mic { width: 72px; height: 72px; border-radius: 16px; background: #C06A3C; display: flex; align-items: center; justify-content: center; }
+  .c-mic svg { width: 28px; height: 28px; }
+  .c-hint { font-size: 12px; color: #5E4E40; margin-top: 16px; }
+  .c-input { margin: 16px; background: #fff; border: 1px solid #D9CFC4; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #9E8E7E; }
+  .c-bnav { background: #FAFAF8; border-top: 1px solid #D9CFC4; }
+
+  /* C: Review */
+  .c-review { background: #FAFAF8; min-height: 380px; display: flex; flex-direction: column; }
+  .c-review-body { flex: 1; padding: 16px; }
+  .c-review-header { font-size: 14px; font-weight: 600; color: #2A1B10; margin-bottom: 4px; }
+  .c-review-sub { font-size: 11px; color: #5E4E40; margin-bottom: 12px; }
+  .c-card { background: #fff; border: 1px solid #D9CFC4; border-radius: 8px; padding: 12px; }
+  .c-row { display: flex; align-items: center; padding: 6px 0; font-size: 12px; }
+  .c-row-label { width: 80px; color: #5E4E40; font-size: 11px; }
+  .c-row-value { color: #2A1B10; font-weight: 500; flex: 1; }
+  .c-row-edit { color: #C06A3C; font-size: 10px; font-weight: 600; cursor: pointer; }
+  .c-divider { border-top: 1px solid #EAE0D7; margin: 4px 0; }
+  .c-conf-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 11px; }
+  .c-confirm { background: #2A1B10; color: #fff; text-align: center; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 13px; font-weight: 600; }
+
+  /* ===== DIRECTION D: Conversational (Recommended) ===== */
+  .d-capture { background: #F5EDE6; min-height: 380px; display: flex; flex-direction: column; }
+  .d-capture .status-bar { color: #5E4E40; }
+  .d-capture-body { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 16px; }
+  .d-empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .d-empty-icon { width: 48px; height: 48px; border-radius: 50%; background: #EAE0D7; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .d-empty-icon svg { width: 20px; height: 20px; }
+  .d-empty-text { font-size: 13px; color: #5E4E40; text-align: center; line-height: 1.5; }
+  .d-input-bar { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 24px; padding: 6px 6px 6px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .d-input-text { flex: 1; font-size: 13px; color: #9E8E7E; }
+  .d-input-cam { opacity: 0.4; }
+  .d-mic-small { width: 40px; height: 40px; border-radius: 50%; background: #C06A3C; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .d-mic-small svg { width: 18px; height: 18px; }
+  .d-bnav { background: #F5EDE6; border-top: 1px solid #EAE0D7; }
+
+  /* D: Review (conversational) */
+  .d-review { background: #F5EDE6; min-height: 380px; display: flex; flex-direction: column; }
+  .d-review-body { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .d-msg-sent { background: #C06A3C; color: #fff; padding: 8px 12px; border-radius: 16px 16px 4px 16px; margin-left: 50px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
+  .d-msg-meta { text-align: right; font-size: 10px; color: #5E4E40; margin-bottom: 10px; margin-left: 50px; }
+  .d-msg-recv { background: #fff; color: #2A1B10; padding: 10px 12px; border-radius: 16px 16px 16px 4px; margin-right: 30px; margin-bottom: 6px; font-size: 12px; line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .d-msg-recv .d-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 4px; }
+  .d-msg-recv .d-tag { background: #EAE0D7; padding: 4px 10px; border-radius: 14px; font-size: 10px; font-weight: 500; color: #2A1B10; }
+  .d-msg-recv .d-tag.editable { border: 1px dashed #D9CFC4; cursor: pointer; }
+  .d-conf-inline { font-size: 10px; color: #3A856F; display: flex; align-items: center; gap: 3px; }
+  .d-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .d-btn-confirm { background: #3A856F; color: #fff; padding: 10px 0; border-radius: 20px; font-size: 12px; font-weight: 600; text-align: center; flex: 2; }
+  .d-btn-edit { background: #EAE0D7; color: #2A1B10; padding: 10px 0; border-radius: 20px; font-size: 12px; font-weight: 500; text-align: center; flex: 1; }
+  .d-learn { background: #EAE0D7; color: #5E4E40; padding: 8px 12px; border-radius: 12px; font-size: 10px; margin-top: 8px; line-height: 1.4; }
+
+  /* Comparison section */
+  .compare { max-width: 1600px; margin: 0 auto; padding: 24px; }
+  .compare h2 { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 16px; }
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .compare-table th { text-align: left; padding: 10px 12px; border-bottom: 1px solid #333; color: #888; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .compare-table td { padding: 10px 12px; border-bottom: 1px solid #222; color: #ccc; }
+  .compare-table tr:hover td { background: #1a1a1a; }
+  .check { color: #3A856F; }
+  .partial { color: #B8913A; }
+
+  /* SVG helpers */
+  .mic-svg { fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Design Directions — LDS Symptom Tracker</h1>
+  <p>4 visuelle Richtungen für Erfassung und Review. Direction D empfohlen.</p>
+</div>
+
+<div class="directions">
+
+  <!-- ===== A: Soft Bubble ===== -->
+  <div class="direction">
+    <div class="dir-header">
+      <div class="dir-badge">Direction A</div>
+      <h2>Soft Bubble</h2>
+      <p>Zentrierter Mikrofon-Button, grosse runde Formen, viel Weissraum. Ruhig und einladend. Erfassung fühlt sich an wie ein sanfter Dialog.</p>
+    </div>
+    <div class="dir-screens">
+      <div>
+        <div class="screen-label">Erfassung</div>
+        <div class="phone">
+          <div class="screen a-capture">
+            <div class="notch"></div>
+            <div class="status-bar"><span>20:42</span><span></span></div>
+            <div class="a-capture-body">
+              <div class="a-mic">
+                <svg class="mic-svg" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+              </div>
+              <div class="a-hint">Sprich oder tippe dein Symptom.</div>
+            </div>
+            <div class="a-input">Symptom beschreiben...</div>
+            <div class="bnav a-bnav">
+              <div class="bnav-item active" style="color:#C06A3C;"><div class="bnav-icon">&#9678;</div>Erfassen</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9636;</div>Auswertung</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9881;</div>Mehr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="screen-label">Review</div>
+        <div class="phone">
+          <div class="screen a-review">
+            <div class="notch"></div>
+            <div class="status-bar" style="color:#5E4E40;"><span>20:42</span><span></span></div>
+            <div class="a-review-body">
+              <div class="a-bubble-sent">
+                <div style="font-size:10px; opacity:0.7; margin-bottom:3px;">&#127908; 8s</div>
+                "Habe gerade es Zieh im Rügge, links näbem Schulterblatt"
+              </div>
+              <div class="a-bubble-recv">
+                <div style="font-size:10px; color:#3A856F; margin-bottom:6px;">&#10003; Erkannt (92%)</div>
+                <div class="a-tags">
+                  <span class="a-tag">Rückenschmerzen</span>
+                  <span class="a-tag">links</span>
+                  <span class="a-tag">Schulterblatt</span>
+                  <span class="a-tag">ziehend</span>
+                </div>
+                <div style="font-size:10px; color:#5E4E40;">Tippe auf einen Tag zum Korrigieren</div>
+                <div class="a-confirm">Bestätigen</div>
+              </div>
+              <div style="padding:8px; background:#EAE0D7; border-radius:12px; margin-top:8px; font-size:10px; color:#5E4E40; line-height:1.4;">
+                Letztes Mal "Rügge" korrigiert — dieses Mal direkt erkannt.
+              </div>
+            </div>
+            <div class="bnav a-bnav">
+              <div class="bnav-item active" style="color:#C06A3C;"><div class="bnav-icon">&#9678;</div>Erfassen</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9636;</div>Auswertung</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9881;</div>Mehr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== B: Bold Voice ===== -->
+  <div class="direction">
+    <div class="dir-header">
+      <div class="dir-badge">Direction B</div>
+      <h2>Bold Voice</h2>
+      <p>Terracotta-Vollfarbe im Erfassungsmodus. Mutig, energetisch, die Spracheingabe dominiert. Starker visueller Kontrast zum neutralen Review.</p>
+    </div>
+    <div class="dir-screens">
+      <div>
+        <div class="screen-label">Erfassung</div>
+        <div class="phone">
+          <div class="screen b-capture">
+            <div class="notch"></div>
+            <div class="status-bar"><span>20:42</span><span></span></div>
+            <div class="b-capture-body">
+              <div class="b-mic">
+                <svg class="mic-svg" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+              </div>
+              <div class="b-hint">Sprich dein Symptom.</div>
+              <div class="b-sub">Halte gedrückt zum Aufnehmen</div>
+            </div>
+            <div class="b-input">Oder tippe hier...</div>
+            <div class="bnav b-bnav">
+              <div class="bnav-item active" style="color:#C06A3C;"><div class="bnav-icon">&#9678;</div>Erfassen</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9636;</div>Auswertung</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9881;</div>Mehr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="screen-label">Review</div>
+        <div class="phone">
+          <div class="screen b-review">
+            <div class="notch"></div>
+            <div class="status-bar" style="color:#5E4E40;"><span>20:42</span><span></span></div>
+            <div class="b-review-body">
+              <div class="b-header-bar">Bitte überprüfen</div>
+              <div class="b-card">
+                <div class="b-field"><span class="b-field-label">Symptom</span><span class="b-field-value">Rückenschmerzen</span></div>
+                <div class="b-field"><span class="b-field-label">Region</span><span class="b-field-value">Schulterblatt</span></div>
+                <div class="b-field"><span class="b-field-label">Seite</span><span class="b-field-value">Links</span></div>
+                <div class="b-field"><span class="b-field-label">Art</span><span class="b-field-value">Ziehend</span></div>
+                <div class="b-field"><span class="b-field-label">Intensität</span><span class="b-field-value">&#9679;&#9679;&#9679;&#9675;&#9675;</span></div>
+                <div class="b-conf">&#9679; Konfidenz: 92%</div>
+              </div>
+              <div class="b-confirm">Bestätigen</div>
+              <div style="text-align:center; margin-top:8px; font-size:11px; color:#5E4E40;">Tippe auf ein Feld zum Korrigieren</div>
+            </div>
+            <div class="bnav b-bnav">
+              <div class="bnav-item active" style="color:#C06A3C;"><div class="bnav-icon">&#9678;</div>Erfassen</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9636;</div>Auswertung</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9881;</div>Mehr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== C: Clean Lines ===== -->
+  <div class="direction">
+    <div class="dir-header">
+      <div class="dir-badge">Direction C</div>
+      <h2>Clean Lines</h2>
+      <p>Strukturiert und klar. Eckige Formen, dezente Borders, professionell auch im Patienten-Modus. Weniger verspielt, mehr sachlich.</p>
+    </div>
+    <div class="dir-screens">
+      <div>
+        <div class="screen-label">Erfassung</div>
+        <div class="phone">
+          <div class="screen c-capture">
+            <div class="notch"></div>
+            <div class="status-bar"><span>20:42</span><span></span></div>
+            <div class="c-top-bar">Erfassen</div>
+            <div class="c-capture-body">
+              <div class="c-mic">
+                <svg class="mic-svg" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+              </div>
+              <div class="c-hint">Sprich oder tippe dein Symptom</div>
+            </div>
+            <div class="c-input">Symptom beschreiben...</div>
+            <div class="bnav c-bnav">
+              <div class="bnav-item active" style="color:#C06A3C;"><div class="bnav-icon">&#9678;</div>Erfassen</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9636;</div>Auswertung</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9881;</div>Mehr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="screen-label">Review</div>
+        <div class="phone">
+          <div class="screen c-review">
+            <div class="notch"></div>
+            <div class="status-bar" style="color:#5E4E40;"><span>20:42</span><span></span></div>
+            <div style="padding:12px 16px; border-bottom:1px solid #D9CFC4;">
+              <div class="c-review-header">Überprüfen</div>
+              <div class="c-review-sub">Sprachaufnahme · 8 Sekunden</div>
+            </div>
+            <div class="c-review-body">
+              <div class="c-card">
+                <div class="c-row"><span class="c-row-label">Symptom</span><span class="c-row-value">Rückenschmerzen</span><span class="c-row-edit">Ändern</span></div>
+                <div class="c-divider"></div>
+                <div class="c-row"><span class="c-row-label">Region</span><span class="c-row-value">Schulterblatt</span><span class="c-row-edit">Ändern</span></div>
+                <div class="c-divider"></div>
+                <div class="c-row"><span class="c-row-label">Seite</span><span class="c-row-value">Links</span><span class="c-row-edit">Ändern</span></div>
+                <div class="c-divider"></div>
+                <div class="c-row"><span class="c-row-label">Art</span><span class="c-row-value">Ziehend</span><span class="c-row-edit">Ändern</span></div>
+                <div class="c-conf-bar"><span style="color:#3A856F;">92% Konfidenz</span><span style="color:#5E4E40;">Bestätigt</span></div>
+              </div>
+              <div class="c-confirm">Alles korrekt — Speichern</div>
+            </div>
+            <div class="bnav c-bnav">
+              <div class="bnav-item active" style="color:#C06A3C;"><div class="bnav-icon">&#9678;</div>Erfassen</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9636;</div>Auswertung</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9881;</div>Mehr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== D: Conversational (Recommended) ===== -->
+  <div class="direction recommended">
+    <div class="dir-header">
+      <div class="dir-badge rec">Empfohlen</div>
+      <h2>Conversational</h2>
+      <p>ChatGPT/WhatsApp-Hybrid. Eingabeleiste unten, Mikrofon integriert. Review als Chat-Antwort. Vertrautes Mental Model, natürlicher Flow.</p>
+    </div>
+    <div class="dir-screens">
+      <div>
+        <div class="screen-label">Erfassung</div>
+        <div class="phone">
+          <div class="screen d-capture">
+            <div class="notch"></div>
+            <div class="status-bar"><span>20:42</span><span></span></div>
+            <div class="d-capture-body">
+              <div class="d-empty-state">
+                <div class="d-empty-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5E4E40" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+                </div>
+                <div class="d-empty-text">Wenn etwas ist,<br>sprich oder tippe es hier.</div>
+              </div>
+              <div class="d-input-bar">
+                <span class="d-input-text">Symptom...</span>
+                <svg class="d-input-cam" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5E4E40" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                <div class="d-mic-small">
+                  <svg class="mic-svg" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+                </div>
+              </div>
+            </div>
+            <div class="bnav d-bnav">
+              <div class="bnav-item active" style="color:#C06A3C;"><div class="bnav-icon">&#9678;</div>Erfassen</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9636;</div>Auswertung</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9881;</div>Mehr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="screen-label">Review</div>
+        <div class="phone">
+          <div class="screen d-review">
+            <div class="notch"></div>
+            <div class="status-bar" style="color:#5E4E40;"><span>20:42</span><span></span></div>
+            <div class="d-review-body">
+              <div class="d-msg-sent">
+                <span style="font-size:10px; opacity:0.7;">&#127908; 8s</span><br>
+                "Habe gerade es Zieh im Rügge, links näbem Schulterblatt"
+              </div>
+              <div class="d-msg-meta">20:42</div>
+              <div class="d-msg-recv">
+                <div class="d-conf-inline">&#9679; 92% sicher</div>
+                <div class="d-tags">
+                  <span class="d-tag editable">Rückenschmerzen</span>
+                  <span class="d-tag editable">links</span>
+                  <span class="d-tag editable">Schulterblatt</span>
+                  <span class="d-tag editable">ziehend</span>
+                </div>
+                <div style="font-size:10px; color:#5E4E40; margin-top:4px;">Tags antippen zum Ändern</div>
+              </div>
+              <div class="d-actions">
+                <div class="d-btn-confirm">Bestätigen</div>
+                <div class="d-btn-edit">Ändern</div>
+              </div>
+              <div class="d-learn">Letztes Mal "Rügge" korrigiert — jetzt direkt erkannt.</div>
+            </div>
+            <div class="bnav d-bnav">
+              <div class="bnav-item active" style="color:#C06A3C;"><div class="bnav-icon">&#9678;</div>Erfassen</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9636;</div>Auswertung</div>
+              <div class="bnav-item" style="color:#5E4E40;"><div class="bnav-icon">&#9881;</div>Mehr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Comparison Table ===== -->
+<div class="compare">
+  <h2>Vergleich</h2>
+  <div style="overflow-x: auto;">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Kriterium</th>
+          <th>A: Soft Bubble</th>
+          <th>B: Bold Voice</th>
+          <th>C: Clean Lines</th>
+          <th style="color:#C06A3C;">D: Conversational</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Vertrautes Mental Model</td>
+          <td class="partial">WhatsApp-nah</td>
+          <td class="partial">Shazam-artig</td>
+          <td>Settings-App</td>
+          <td class="check">WhatsApp + ChatGPT</td>
+        </tr>
+        <tr>
+          <td>Erfassungs-Speed</td>
+          <td class="check">Schnell (1 Tap)</td>
+          <td class="check">Schnell (Hold)</td>
+          <td class="check">Schnell (1 Tap)</td>
+          <td class="check">Schnell (immer sichtbar)</td>
+        </tr>
+        <tr>
+          <td>Korrektur-Flow</td>
+          <td class="check">Chat-Bubbles</td>
+          <td class="partial">Formular-artig</td>
+          <td>Tabellen-artig</td>
+          <td class="check">Natürlicher Dialog</td>
+        </tr>
+        <tr>
+          <td>Teenager-freundlich</td>
+          <td class="check">Ja (verspielt)</td>
+          <td class="check">Ja (bold)</td>
+          <td class="partial">Eher sachlich</td>
+          <td class="check">Ja (Messenger)</td>
+        </tr>
+        <tr>
+          <td>Anti-Tagebuch-Gefühl</td>
+          <td class="check">Gut</td>
+          <td class="check">Stark</td>
+          <td class="partial">Etwas formell</td>
+          <td class="check">Sehr natürlich</td>
+        </tr>
+        <tr>
+          <td>Skalierbar zum Feed</td>
+          <td class="check">Bubbles stapeln</td>
+          <td class="partial">Braucht Redesign</td>
+          <td class="partial">Listen-Ansicht</td>
+          <td class="check">Chat-Verlauf = Feed</td>
+        </tr>
+        <tr>
+          <td>Lerneffekt sichtbar</td>
+          <td class="check">Als Bubble</td>
+          <td class="partial">Separater Hinweis</td>
+          <td class="partial">Footer-Text</td>
+          <td class="check">Im Chat-Flow</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top: 24px; padding: 16px; background: #1a1a1a; border: 1px solid #C06A3C; border-radius: 12px;">
+    <div style="font-weight: 600; color: #C06A3C; margin-bottom: 8px;">Empfehlung: Direction D — Conversational</div>
+    <p style="font-size: 13px; color: #aaa; line-height: 1.6;">
+      Direction D kombiniert das Beste aus ChatGPT (Eingabeleiste unten, natürlicher Dialog) und WhatsApp (Chat-Bubbles, Mikrofon integriert).
+      Der Review erscheint als "Antwort" im Chat-Flow — vertrautes Pattern, keine neue Geste nötig.
+      Der Erfassungsmodus skaliert natürlich zum Feed: Ältere Einträge bleiben als Chat-Verlauf sichtbar.
+      Die Eingabeleiste ist immer präsent — kein zentraler Mikrofon-Button, der nach dem Onboarding seinen Zweck verliert.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>

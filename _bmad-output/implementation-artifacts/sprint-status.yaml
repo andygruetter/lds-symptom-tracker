@@ -1,0 +1,104 @@
+# generated: 2026-03-02
+# project: lds-symptome-tracker
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-02
+project: lds-symptome-tracker
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Projekt-Setup & Authentifizierung
+  epic-1: in-progress
+  1-1-nextjs-projekt-initialisieren: done
+  1-2-theme-setup-font-layout: backlog
+  1-3-supabase-integration: backlog
+  1-4-apple-id-authentifizierung: backlog
+  1-5-pwa-setup: backlog
+  1-6-disclaimer-anzeige: backlog
+  1-7-account-daten-loeschung: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Text-Erfassung & KI-Extraktion
+  epic-2: backlog
+  2-1-chat-ui-text-eingabe: backlog
+  2-2-ki-extraktion-klassifikation: backlog
+  2-3-review-ansicht-konfidenz: backlog
+  2-4-conversational-correction: backlog
+  2-5-symptom-beenden: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Sprach-Erfassung & Foto-Dokumentation
+  epic-3: backlog
+  3-1-hold-to-record: backlog
+  3-2-schweizerdeutsch-transkription: backlog
+  3-3-foto-upload: backlog
+  3-4-push-benachrichtigung: backlog
+  3-5-ki-lernen-korrekturen: backlog
+  3-6-persoenliches-vokabular: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Patienten-Auswertung
+  epic-4: backlog
+  4-1-chronologischer-feed: backlog
+  4-2-timeline-ansicht: backlog
+  4-3-symptom-ranking-trendlinien: backlog
+  4-4-event-detail-ansicht: backlog
+  4-5-events-daten-loeschen: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Sharing-System & Daten-Souveränität
+  epic-5: backlog
+  5-1-sharing-link-generieren: backlog
+  5-2-sharing-link-email: backlog
+  5-3-arzt-zugriff-sharing: backlog
+  5-4-sharing-link-ablauf: backlog
+  5-5-audit-log: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Arzt-Dashboard & PDF-Export
+  epic-6: backlog
+  6-1-arzt-dashboard-ki-zusammenfassung: backlog
+  6-2-arzt-timeline: backlog
+  6-3-arzt-symptom-ranking: backlog
+  6-4-arzt-drill-down: backlog
+  6-5-pdf-report: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Marketing-Seite
+  epic-7: backlog
+  7-1-marketing-landingpage: backlog
+  7-2-registrierungs-link: backlog
+  epic-7-retrospective: optional

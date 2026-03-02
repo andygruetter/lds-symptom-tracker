@@ -514,7 +514,7 @@ Beweisen, dass event-basierte Spracherfassung mit KI-Extraktion für eine LDS-Pa
 - **NFR19:** LLM-API für Symptom-Extraktion muss bei API-Ausfall graceful degraden (Erfassung trotzdem möglich, Extraktion wird nachgeholt)
 - **NFR20:** Apple ID Login über Standard OAuth2/OIDC
 - **NFR21:** Push-Benachrichtigungen über Web Push API (kein nativer Push)
-- **NFR22:** E-Mail-Versand für Sharing-Links über etablierten E-Mail-Service
+- **NFR22:** E-Mail-Versand für Sharing-Links über native Mail-App des Patienten (mailto:-Link mit vorausgefülltem Entwurf)
 
 ### Scalability & Kosten
 

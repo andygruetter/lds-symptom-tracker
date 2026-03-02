@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LDS Symptom Tracker — Farbthemen-Vorschau</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #1a1a1a; color: #e0e0e0; line-height: 1.6; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+  h2 { font-size: 22px; font-weight: 600; margin: 48px 0 24px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 12px; }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 12px; color: #ccc; }
+  .subtitle { color: #888; margin-bottom: 32px; }
+  .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 900px) { .themes { grid-template-columns: 1fr; } }
+  .theme-card { border-radius: 16px; overflow: hidden; }
+  .theme-header { padding: 20px 24px; font-weight: 600; font-size: 18px; }
+
+  /* Color Swatches */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; padding: 16px; }
+  .swatch { border-radius: 8px; overflow: hidden; }
+  .swatch-color { height: 48px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; }
+  .swatch-label { padding: 6px 8px; font-size: 11px; background: #2a2a2a; }
+  .swatch-label span { display: block; color: #888; font-size: 10px; }
+
+  /* Phone Mockup */
+  .phone { width: 280px; margin: 24px auto; background: #111; border-radius: 32px; padding: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .phone-screen { border-radius: 24px; overflow: hidden; min-height: 480px; position: relative; }
+  .phone-notch { width: 100px; height: 24px; background: #111; border-radius: 0 0 16px 16px; margin: 0 auto; position: relative; z-index: 10; }
+
+  /* Patient Capture Screen */
+  .capture-screen { padding: 24px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 456px; }
+  .capture-hint { font-size: 15px; font-weight: 500; margin-bottom: 48px; text-align: center; }
+  .mic-button { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); margin-bottom: 24px; transition: transform 0.2s; }
+  .mic-button:hover { transform: scale(1.05); }
+  .mic-button svg { width: 32px; height: 32px; }
+  .text-input-mock { width: 100%; border-radius: 24px; padding: 12px 20px; font-size: 15px; display: flex; align-items: center; justify-content: space-between; margin-top: 32px; }
+  .text-input-placeholder { opacity: 0.5; font-size: 14px; }
+  .input-icons { display: flex; gap: 12px; opacity: 0.5; }
+
+  /* Review Card */
+  .review-card { margin: 16px 20px; border-radius: 16px; padding: 16px; }
+  .review-title { font-size: 13px; font-weight: 500; margin-bottom: 12px; opacity: 0.6; }
+  .review-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .review-tag { padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+  .review-tag.high { position: relative; }
+  .review-tag.medium { position: relative; }
+  .confirm-btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; text-align: center; cursor: pointer; margin-top: 8px; }
+  .confidence-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; }
+  .confidence-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Chat Bubble */
+  .bubble-row { padding: 4px 20px; display: flex; }
+  .bubble-row.sent { justify-content: flex-end; }
+  .bubble-row.received { justify-content: flex-start; }
+  .bubble { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; }
+  .bubble.sent { border-bottom-right-radius: 4px; }
+  .bubble.received { border-bottom-left-radius: 4px; }
+  .bubble-time { font-size: 11px; opacity: 0.5; margin-top: 4px; text-align: right; }
+
+  /* Doctor Dashboard */
+  .dashboard { padding: 20px; min-height: 456px; }
+  .dash-header { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .dash-subtitle { font-size: 12px; opacity: 0.6; margin-bottom: 16px; }
+  .summary-card { border-radius: 12px; padding: 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-item { border-radius: 8px; padding: 10px; text-align: center; }
+  .stat-number { font-size: 24px; font-weight: 700; }
+  .stat-label { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+  .stat-trend { font-size: 10px; margin-top: 4px; font-weight: 500; }
+  .timeline-bar { height: 6px; border-radius: 3px; margin: 4px 0; }
+
+  /* Typography Section */
+  .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .type-grid { grid-template-columns: 1fr; } }
+  .type-sample { background: #222; border-radius: 12px; padding: 24px; }
+  .type-row { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 12px; }
+  .type-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .type-label { font-size: 11px; color: #888; min-width: 60px; }
+  .type-preview { flex: 1; }
+
+  /* Contrast Section */
+  .contrast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .contrast-item { border-radius: 8px; padding: 16px; font-size: 14px; font-weight: 500; }
+  .contrast-ratio { font-size: 11px; font-weight: 600; margin-top: 8px; display: inline-block; padding: 2px 8px; border-radius: 4px; }
+
+  /* Bottom Nav Mock */
+  .bottom-nav { display: flex; justify-content: space-around; padding: 10px 0 6px; border-top-width: 1px; border-top-style: solid; }
+  .nav-item { text-align: center; font-size: 10px; opacity: 0.5; }
+  .nav-item.active { opacity: 1; }
+  .nav-icon { font-size: 20px; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>LDS Symptom Tracker — Visual Foundation</h1>
+  <p class="subtitle">Farbthemen, Typografie und UI-Mockups zur Vorschau</p>
+
+  <!-- ==================== THEMES ==================== -->
+  <h2>Farbthemen</h2>
+  <div class="themes">
+
+    <!-- PATIENT THEME -->
+    <div>
+      <div class="theme-card" style="background: #2a2218;">
+        <div class="theme-header" style="color: #C06A3C;">Patient-Thema: Warm Terracotta</div>
+        <div class="swatches">
+          <div class="swatch">
+            <div class="swatch-color" style="background:#C06A3C; color:#fff;">Aa</div>
+            <div class="swatch-label">Primary<span>#C06A3C</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#F5EDE6; color:#2A1B10;">Aa</div>
+            <div class="swatch-label">Background<span>#F5EDE6</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#2A1B10; color:#F5EDE6;">Aa</div>
+            <div class="swatch-label">Foreground<span>#2A1B10</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#FFFFFF; color:#2A1B10; border: 1px solid #D9CFC4;">Aa</div>
+            <div class="swatch-label">Card<span>#FFFFFF</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#EAE0D7; color:#5E4E40;">Aa</div>
+            <div class="swatch-label">Muted<span>#EAE0D7</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#5E4E40; color:#F5EDE6;">Aa</div>
+            <div class="swatch-label">Muted FG<span>#5E4E40</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#D9CFC4; color:#2A1B10;">Aa</div>
+            <div class="swatch-label">Border<span>#D9CFC4</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#3A856F; color:#fff;">Aa</div>
+            <div class="swatch-label">Success<span>#3A856F</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#B8913A; color:#fff;">Aa</div>
+            <div class="swatch-label">Warning<span>#B8913A</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#BE4444; color:#fff;">Aa</div>
+            <div class="swatch-label">Destructive<span>#BE4444</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCTOR THEME -->
+    <div>
+      <div class="theme-card" style="background: #1c2228;">
+        <div class="theme-header" style="color: #7BA3B8;">Arzt-Thema: Professional Slate</div>
+        <div class="swatches">
+          <div class="swatch">
+            <div class="swatch-color" style="background:#374955; color:#fff;">Aa</div>
+            <div class="swatch-label">Primary<span>#374955</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#F6F7F9; color:#181C21;">Aa</div>
+            <div class="swatch-label">Background<span>#F6F7F9</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#181C21; color:#F6F7F9;">Aa</div>
+            <div class="swatch-label">Foreground<span>#181C21</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#FFFFFF; color:#181C21; border: 1px solid #D4D8DE;">Aa</div>
+            <div class="swatch-label">Card<span>#FFFFFF</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#E8EAEE; color:#5A6270;">Aa</div>
+            <div class="swatch-label">Muted<span>#E8EAEE</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#5A6270; color:#F6F7F9;">Aa</div>
+            <div class="swatch-label">Muted FG<span>#5A6270</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#D4D8DE; color:#181C21;">Aa</div>
+            <div class="swatch-label">Border<span>#D4D8DE</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#2A7A65; color:#fff;">Aa</div>
+            <div class="swatch-label">Accent<span>#2A7A65</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#4A7FA5; color:#fff;">Aa</div>
+            <div class="swatch-label">Data Blue<span>#4A7FA5</span></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#7A5FA0; color:#fff;">Aa</div>
+            <div class="swatch-label">Data Purple<span>#7A5FA0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== UI MOCKUPS ==================== -->
+  <h2>UI-Mockups</h2>
+  <div class="themes">
+
+    <!-- PATIENT: Capture Screen -->
+    <div>
+      <h3>Erfassungsmodus (Patient)</h3>
+      <div class="phone">
+        <div class="phone-screen" style="background: #F5EDE6;">
+          <div class="phone-notch"></div>
+
+          <!-- Capture Mode -->
+          <div class="capture-screen">
+            <p class="capture-hint" style="color: #5E4E40;">Sprich oder tippe dein Symptom.</p>
+            <div class="mic-button" style="background: #C06A3C;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </div>
+            <div class="text-input-mock" style="background: #FFFFFF; border: 1px solid #D9CFC4; color: #2A1B10;">
+              <span class="text-input-placeholder" style="color: #5E4E40;">Symptom beschreiben...</span>
+              <div class="input-icons">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E4E40" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Nav -->
+          <div class="bottom-nav" style="border-color: #D9CFC4; background: #F5EDE6;">
+            <div class="nav-item active" style="color: #C06A3C;">
+              <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+              </div>
+              Erfassen
+            </div>
+            <div class="nav-item" style="color: #5E4E40;">
+              <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+              </div>
+              Auswertung
+            </div>
+            <div class="nav-item" style="color: #5E4E40;">
+              <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </div>
+              Einstellungen
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PATIENT: Review Screen -->
+    <div>
+      <h3>Review-Screen (Patient)</h3>
+      <div class="phone">
+        <div class="phone-screen" style="background: #F5EDE6;">
+          <div class="phone-notch"></div>
+
+          <div style="padding: 16px 20px;">
+            <p style="font-size: 13px; color: #5E4E40; margin-bottom: 4px;">Gerade erfasst</p>
+            <p style="font-size: 17px; font-weight: 600; color: #2A1B10; margin-bottom: 16px;">Bitte überprüfen</p>
+          </div>
+
+          <!-- Chat-like bubble -->
+          <div class="bubble-row sent">
+            <div class="bubble sent" style="background: #C06A3C; color: #fff;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/></svg>
+                <span style="font-size:12px; opacity:0.8;">Sprachaufnahme · 8s</span>
+              </div>
+              "Habe gerade es Zieh im Rügge, links näbem Schulterblatt"
+              <div class="bubble-time" style="color: rgba(255,255,255,0.7);">20:42</div>
+            </div>
+          </div>
+
+          <!-- Review Card -->
+          <div class="review-card" style="background: #FFFFFF; border: 1px solid #D9CFC4;">
+            <div class="confidence-row" style="color: #3A856F;">
+              <div class="confidence-dot" style="background: #3A856F;"></div>
+              Konfidenz: 92% — sicher erkannt
+            </div>
+            <div class="review-tags">
+              <div class="review-tag" style="background: #EAE0D7; color: #2A1B10;">Rückenschmerzen</div>
+              <div class="review-tag" style="background: #EAE0D7; color: #2A1B10;">links</div>
+              <div class="review-tag" style="background: #EAE0D7; color: #2A1B10;">Schulterblatt</div>
+              <div class="review-tag" style="background: #EAE0D7; color: #2A1B10;">ziehend</div>
+            </div>
+            <p style="font-size: 12px; color: #5E4E40; margin-bottom: 12px;">Tippe auf einen Tag zum Korrigieren</p>
+            <div class="confirm-btn" style="background: #3A856F; color: #fff;">Bestätigen</div>
+          </div>
+
+          <!-- Learning hint -->
+          <div style="padding: 8px 20px;">
+            <p style="font-size: 12px; color: #5E4E40; background: #EAE0D7; padding: 10px 14px; border-radius: 10px;">
+              Beim letzten Mal hast du "Rügge" korrigiert zu "Rücken links" — dieses Mal habe ich es direkt erkannt.
+            </p>
+          </div>
+
+          <!-- Bottom Nav -->
+          <div class="bottom-nav" style="border-color: #D9CFC4; background: #F5EDE6; margin-top: auto;">
+            <div class="nav-item active" style="color: #C06A3C;">
+              <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+              </div>
+              Erfassen
+            </div>
+            <div class="nav-item" style="color: #5E4E40;">
+              <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+              </div>
+              Auswertung
+            </div>
+            <div class="nav-item" style="color: #5E4E40;">
+              <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              Einstellungen
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doctor Dashboard Mockup -->
+  <div class="themes" style="margin-top: 32px;">
+    <div style="grid-column: 1 / -1;">
+      <h3>Arzt-Dashboard (Desktop/iPad)</h3>
+      <div style="background: #F6F7F9; border-radius: 16px; padding: 24px; max-width: 800px;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <div class="dash-header" style="color: #181C21; font-size: 18px;">Symptom-Übersicht</div>
+            <div class="dash-subtitle" style="color: #5A6270;">4 Monate · 37 Events · Zugriff bis 03.03.2026</div>
+          </div>
+          <div style="background: #374955; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;">PDF Export</div>
+        </div>
+
+        <!-- AI Summary -->
+        <div class="summary-card" style="background: #FFFFFF; border: 1px solid #D4D8DE; color: #181C21;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2A7A65" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <span style="font-weight: 600; font-size: 14px;">KI-Zusammenfassung</span>
+          </div>
+          <p style="color: #5A6270;">4 Monate, 37 Symptom-Events. Häufigste: <strong style="color:#181C21;">Rückenschmerzen links</strong> (12x, Trend steigend), <strong style="color:#181C21;">Kopfschmerzen</strong> (8x, stabil), <strong style="color:#181C21;">Atemnot bei Belastung</strong> (5x). 2 spontane Hämatome mit Fotos dokumentiert.</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stat-grid">
+          <div class="stat-item" style="background: #FFFFFF; border: 1px solid #D4D8DE;">
+            <div class="stat-number" style="color: #C06A3C;">12x</div>
+            <div class="stat-label" style="color: #5A6270;">Rückenschmerzen</div>
+            <div class="stat-trend" style="color: #C06A3C;">Trend steigend</div>
+          </div>
+          <div class="stat-item" style="background: #FFFFFF; border: 1px solid #D4D8DE;">
+            <div class="stat-number" style="color: #4A7FA5;">8x</div>
+            <div class="stat-label" style="color: #5A6270;">Kopfschmerzen</div>
+            <div class="stat-trend" style="color: #5A6270;">Trend stabil</div>
+          </div>
+          <div class="stat-item" style="background: #FFFFFF; border: 1px solid #D4D8DE;">
+            <div class="stat-number" style="color: #7A5FA0;">5x</div>
+            <div class="stat-label" style="color: #5A6270;">Atemnot</div>
+            <div class="stat-trend" style="color: #2A7A65;">Trend sinkend</div>
+          </div>
+        </div>
+
+        <!-- Mini Timeline -->
+        <div class="summary-card" style="background: #FFFFFF; border: 1px solid #D4D8DE;">
+          <div style="font-weight: 600; font-size: 13px; color: #181C21; margin-bottom: 12px;">Timeline (letzte 4 Monate)</div>
+          <div style="display: flex; gap: 4px; align-items: end; height: 60px; padding-bottom: 8px; border-bottom: 1px solid #E8EAEE;">
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:2px;">
+              <div style="height:20px; background:#C06A3C; border-radius:2px; opacity:0.7;"></div>
+              <div style="height:8px; background:#4A7FA5; border-radius:2px; opacity:0.7;"></div>
+              <div style="font-size:10px; color:#5A6270; text-align:center; margin-top:4px;">Nov</div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:2px;">
+              <div style="height:28px; background:#C06A3C; border-radius:2px; opacity:0.8;"></div>
+              <div style="height:12px; background:#4A7FA5; border-radius:2px; opacity:0.7;"></div>
+              <div style="height:6px; background:#7A5FA0; border-radius:2px; opacity:0.7;"></div>
+              <div style="font-size:10px; color:#5A6270; text-align:center; margin-top:4px;">Dez</div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:2px;">
+              <div style="height:24px; background:#C06A3C; border-radius:2px; opacity:0.85;"></div>
+              <div style="height:10px; background:#4A7FA5; border-radius:2px; opacity:0.7;"></div>
+              <div style="height:10px; background:#7A5FA0; border-radius:2px; opacity:0.7;"></div>
+              <div style="font-size:10px; color:#5A6270; text-align:center; margin-top:4px;">Jan</div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:2px;">
+              <div style="height:36px; background:#C06A3C; border-radius:2px; opacity:1;"></div>
+              <div style="height:8px; background:#4A7FA5; border-radius:2px; opacity:0.7;"></div>
+              <div style="height:4px; background:#7A5FA0; border-radius:2px; opacity:0.7;"></div>
+              <div style="font-size:10px; color:#5A6270; text-align:center; margin-top:4px;">Feb</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:16px; margin-top:8px;">
+            <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:#5A6270;"><div style="width:8px;height:8px;border-radius:2px;background:#C06A3C;"></div>Rücken</div>
+            <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:#5A6270;"><div style="width:8px;height:8px;border-radius:2px;background:#4A7FA5;"></div>Kopf</div>
+            <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:#5A6270;"><div style="width:8px;height:8px;border-radius:2px;background:#7A5FA0;"></div>Atemnot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TYPOGRAPHY ==================== -->
+  <h2>Typografie: Inter</h2>
+  <div class="type-grid">
+    <div class="type-sample" style="background: #F5EDE6;">
+      <h3 style="color: #5E4E40; font-size: 12px; margin-bottom: 16px;">Patient-Thema</h3>
+      <div class="type-row">
+        <span class="type-label" style="color:#5E4E40;">3xl / 700</span>
+        <span class="type-preview" style="font-size:30px; font-weight:700; color:#2A1B10;">12x</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5E4E40;">2xl / 600</span>
+        <span class="type-preview" style="font-size:24px; font-weight:600; color:#2A1B10;">Auswertung</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5E4E40;">xl / 600</span>
+        <span class="type-preview" style="font-size:20px; font-weight:600; color:#2A1B10;">Bitte überprüfen</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5E4E40;">lg / 400</span>
+        <span class="type-preview" style="font-size:18px; font-weight:400; color:#2A1B10;">Rückenschmerzen links</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5E4E40;">base / 400</span>
+        <span class="type-preview" style="font-size:16px; font-weight:400; color:#2A1B10;">Sprich oder tippe dein Symptom.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5E4E40;">sm / 500</span>
+        <span class="type-preview" style="font-size:14px; font-weight:500; color:#5E4E40;">Schulterblatt · ziehend</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5E4E40;">xs / 400</span>
+        <span class="type-preview" style="font-size:12px; font-weight:400; color:#5E4E40;">Heute, 20:42 · Konfidenz 92%</span>
+      </div>
+    </div>
+    <div class="type-sample" style="background: #F6F7F9;">
+      <h3 style="color: #5A6270; font-size: 12px; margin-bottom: 16px;">Arzt-Thema</h3>
+      <div class="type-row">
+        <span class="type-label" style="color:#5A6270;">3xl / 700</span>
+        <span class="type-preview" style="font-size:30px; font-weight:700; color:#181C21;">37</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5A6270;">2xl / 600</span>
+        <span class="type-preview" style="font-size:24px; font-weight:600; color:#181C21;">Symptom-Übersicht</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5A6270;">xl / 600</span>
+        <span class="type-preview" style="font-size:20px; font-weight:600; color:#181C21;">KI-Zusammenfassung</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5A6270;">lg / 400</span>
+        <span class="type-preview" style="font-size:18px; font-weight:400; color:#181C21;">Rückenschmerzen links (12x)</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5A6270;">base / 400</span>
+        <span class="type-preview" style="font-size:16px; font-weight:400; color:#181C21;">4 Monate, 37 Symptom-Events.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5A6270;">sm / 500</span>
+        <span class="type-preview" style="font-size:14px; font-weight:500; color:#5A6270;">Trend steigend · 8x abends</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label" style="color:#5A6270;">xs / 400</span>
+        <span class="type-preview" style="font-size:12px; font-weight:400; color:#5A6270;">Zugriff bis 03.03.2026 · 4 Monate</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CONTRAST ==================== -->
+  <h2>Kontrast-Prüfung</h2>
+  <p style="color: #888; margin-bottom: 16px; font-size: 14px;">Alle Kombinationen für Lesbarkeit bei schlechten Lichtverhältnissen optimiert.</p>
+  <div class="contrast-grid">
+    <div class="contrast-item" style="background: #F5EDE6; color: #2A1B10;">
+      Haupttext auf Hintergrund
+      <div class="contrast-ratio" style="background: #3A856F; color: #fff;">~14:1 AAA</div>
+    </div>
+    <div class="contrast-item" style="background: #F5EDE6; color: #5E4E40;">
+      Sekundärtext auf Hintergrund
+      <div class="contrast-ratio" style="background: #3A856F; color: #fff;">~5.5:1 AA</div>
+    </div>
+    <div class="contrast-item" style="background: #FFFFFF; color: #2A1B10;">
+      Haupttext auf Karte
+      <div class="contrast-ratio" style="background: #3A856F; color: #fff;">~16:1 AAA</div>
+    </div>
+    <div class="contrast-item" style="background: #C06A3C; color: #FFFFFF;">
+      Weiss auf Primary (Buttons)
+      <div class="contrast-ratio" style="background: #B8913A; color: #fff;">~3.6:1 AA Large</div>
+    </div>
+    <div class="contrast-item" style="background: #F6F7F9; color: #181C21;">
+      Arzt: Haupttext auf Hintergrund
+      <div class="contrast-ratio" style="background: #3A856F; color: #fff;">~15:1 AAA</div>
+    </div>
+    <div class="contrast-item" style="background: #F6F7F9; color: #5A6270;">
+      Arzt: Sekundärtext
+      <div class="contrast-ratio" style="background: #3A856F; color: #fff;">~5:1 AA</div>
+    </div>
+    <div class="contrast-item" style="background: #3A856F; color: #FFFFFF;">
+      Weiss auf Success (Bestätigen)
+      <div class="contrast-ratio" style="background: #3A856F; color: #fff;">~4.8:1 AA</div>
+    </div>
+    <div class="contrast-item" style="background: #374955; color: #FFFFFF;">
+      Arzt: Weiss auf Primary
+      <div class="contrast-ratio" style="background: #3A856F; color: #fff;">~7.5:1 AAA</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
