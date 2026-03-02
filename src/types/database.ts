@@ -18,16 +18,19 @@ export interface Database {
           id: string
           created_at: string
           deleted_at: string | null
+          disclaimer_accepted_at: string | null
         }
         Insert: {
           id: string
           created_at?: string
           deleted_at?: string | null
+          disclaimer_accepted_at?: string | null
         }
         Update: {
           id?: string
           created_at?: string
           deleted_at?: string | null
+          disclaimer_accepted_at?: string | null
         }
         Relationships: []
       }

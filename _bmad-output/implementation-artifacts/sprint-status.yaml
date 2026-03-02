@@ -47,7 +47,7 @@ development_status:
   1-3-supabase-integration: done
   1-4-apple-id-authentifizierung: done
   1-5-pwa-setup: done
-  1-6-disclaimer-anzeige: backlog
+  1-6-disclaimer-anzeige: done
   1-7-account-daten-loeschung: backlog
   epic-1-retrospective: optional
 

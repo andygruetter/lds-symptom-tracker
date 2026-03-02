@@ -72,10 +72,13 @@ describe('middleware', () => {
     expect(result?.headers.get('Location')).toContain('/auth/login')
   })
 
-  it('lässt authentifizierte Nutzer durch', async () => {
+  it('lässt authentifizierte Nutzer mit akzeptiertem Disclaimer durch', async () => {
     const mockResponse = new Response()
     mockUpdateSession.mockResolvedValue({
-      user: { id: 'test-user-id' },
+      user: {
+        id: 'test-user-id',
+        user_metadata: { disclaimer_accepted: true },
+      },
       supabaseResponse: mockResponse,
     })
 
@@ -87,10 +90,44 @@ describe('middleware', () => {
     expect(result).toBe(mockResponse)
   })
 
+  it('leitet authentifizierte Nutzer ohne Disclaimer zu /disclaimer um', async () => {
+    const mockResponse = new Response()
+    mockUpdateSession.mockResolvedValue({
+      user: { id: 'test-user-id', user_metadata: {} },
+      supabaseResponse: mockResponse,
+    })
+
+    const { middleware } = await import('@/middleware')
+    const request = createMockRequest('/')
+
+    const result = await middleware(request as Parameters<typeof middleware>[0])
+
+    expect(result?.status).toBe(307)
+    expect(result?.headers.get('Location')).toContain('/disclaimer')
+  })
+
+  it('lässt /disclaimer Route für authentifizierte User ohne Disclaimer durch', async () => {
+    const mockResponse = new Response()
+    mockUpdateSession.mockResolvedValue({
+      user: { id: 'test-user-id', user_metadata: {} },
+      supabaseResponse: mockResponse,
+    })
+
+    const { middleware } = await import('@/middleware')
+    const request = createMockRequest('/disclaimer')
+
+    const result = await middleware(request as Parameters<typeof middleware>[0])
+
+    expect(result).toBe(mockResponse)
+  })
+
   it('leitet authentifizierte Nutzer von /auth/login zu / um', async () => {
     const mockResponse = new Response()
     mockUpdateSession.mockResolvedValue({
-      user: { id: 'test-user-id' },
+      user: {
+        id: 'test-user-id',
+        user_metadata: { disclaimer_accepted: true },
+      },
       supabaseResponse: mockResponse,
     })
 

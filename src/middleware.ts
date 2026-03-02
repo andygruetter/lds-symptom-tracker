@@ -30,6 +30,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Disclaimer-Check: Redirect wenn noch nicht akzeptiert
+  if (
+    !path.startsWith('/disclaimer') &&
+    user.user_metadata?.disclaimer_accepted !== true
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/disclaimer'
+    return NextResponse.redirect(url)
+  }
+
   return supabaseResponse
 }
 
