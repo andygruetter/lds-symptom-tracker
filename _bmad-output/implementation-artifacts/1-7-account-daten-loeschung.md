@@ -1,6 +1,6 @@
 # Story 1.7: Account- und Daten-Löschung
 
-Status: review
+Status: done
 
 ## Story
 

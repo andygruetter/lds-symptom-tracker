@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockGetUser = vi.fn()
 const mockSignOut = vi.fn()
+const mockUpdate = vi.fn(() => ({ eq: mockEq }))
 const mockEq = vi.fn()
 
 vi.mock('@/lib/db/client', () => ({
@@ -12,9 +13,7 @@ vi.mock('@/lib/db/client', () => ({
         signOut: mockSignOut,
       },
       from: vi.fn(() => ({
-        update: vi.fn(() => ({
-          eq: mockEq,
-        })),
+        update: mockUpdate,
       })),
     }),
   ),
@@ -64,6 +63,9 @@ describe('deleteAccount', () => {
     const { deleteAccount } = await import('@/lib/actions/account-actions')
 
     await expect(deleteAccount()).rejects.toThrow('REDIRECT:/auth/login')
+    expect(mockUpdate).toHaveBeenCalledWith({
+      deleted_at: expect.any(String),
+    })
     expect(mockEq).toHaveBeenCalledWith('id', 'test-user-id')
   })
 
@@ -104,6 +106,27 @@ describe('deleteAccount', () => {
 
     expect(result.error?.code).toBe('DELETE_FAILED')
     expect(result.data).toBeNull()
+  })
+
+  it('loggt Warnung wenn signOut fehlschlägt', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'test-user-id' } },
+    })
+    mockEq.mockResolvedValue({ error: null })
+    mockSignOut.mockResolvedValue({
+      error: { message: 'signOut failed' },
+    })
+
+    const { deleteAccount } = await import('@/lib/actions/account-actions')
+
+    await expect(deleteAccount()).rejects.toThrow('REDIRECT:/auth/login')
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'signOut after account deletion failed:',
+      'signOut failed',
+    )
+
+    consoleSpy.mockRestore()
   })
 
   it('ruft signOut NICHT auf bei DB-Error', async () => {

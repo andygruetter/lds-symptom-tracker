@@ -89,6 +89,21 @@ describe('DeleteAccountDialog', () => {
     })
   })
 
+  it('ruft onOpenChange(false) bei Abbrechen auf', async () => {
+    const mockOnOpenChange = vi.fn()
+    const DeleteAccountDialog = (
+      await import('@/components/account/delete-account-dialog')
+    ).DeleteAccountDialog
+    render(<DeleteAccountDialog open={true} onOpenChange={mockOnOpenChange} />)
+
+    const cancelButton = screen.getByText('Abbrechen')
+    fireEvent.click(cancelButton)
+
+    await waitFor(() => {
+      expect(mockOnOpenChange).toHaveBeenCalledWith(false)
+    })
+  })
+
   it('rendert nichts wenn open=false', async () => {
     const DeleteAccountDialog = (
       await import('@/components/account/delete-account-dialog')

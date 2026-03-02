@@ -40,8 +40,16 @@ export function DeleteAccountDialog({
     }
   }
 
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) {
+      setError(null)
+      setIsDeletingAccount(false)
+    }
+    onOpenChange(isOpen)
+  }
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Account löschen?</AlertDialogTitle>

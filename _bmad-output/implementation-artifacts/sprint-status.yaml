@@ -48,7 +48,7 @@ development_status:
   1-4-apple-id-authentifizierung: done
   1-5-pwa-setup: done
   1-6-disclaimer-anzeige: done
-  1-7-account-daten-loeschung: review
+  1-7-account-daten-loeschung: done
   epic-1-retrospective: optional
 
   # Epic 2: Text-Erfassung & KI-Extraktion
