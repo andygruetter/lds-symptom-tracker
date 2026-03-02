@@ -52,3 +52,9 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# serwist generated service worker
+public/sw.js
+public/sw.js.map
+public/serwist-*.js
+public/serwist-*.js.map

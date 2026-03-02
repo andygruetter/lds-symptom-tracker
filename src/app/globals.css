@@ -136,3 +136,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* PWA Safe Area — für Bottom-Tab-Bar und InputBar auf iPhone (Home Indicator) */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

@@ -1,6 +1,6 @@
 import { Inter } from 'next/font/google'
 
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 
 import './globals.css'
 
@@ -12,6 +12,21 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'LDS Symptom Tracker',
   description: 'Symptom-Tracking für Patienten mit seltenen Erkrankungen',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'LDS Tracker',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
+}
+
+export const viewport: Viewport = {
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

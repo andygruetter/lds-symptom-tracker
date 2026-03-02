@@ -13,11 +13,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Öffentliche Routen durchlassen: /auth/*, /api/*, /share/*
+  // Öffentliche Routen durchlassen: /auth/*, /api/*, /share/*, /~offline
   if (
     path.startsWith('/auth') ||
     path.startsWith('/api') ||
-    path.startsWith('/share')
+    path.startsWith('/share') ||
+    path.startsWith('/~offline')
   ) {
     return supabaseResponse
   }

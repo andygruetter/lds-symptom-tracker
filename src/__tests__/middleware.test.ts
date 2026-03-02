@@ -148,4 +148,19 @@ describe('middleware', () => {
 
     expect(result).toBe(mockResponse)
   })
+
+  it('lässt /~offline Route ohne Auth-Check durch', async () => {
+    const mockResponse = new Response()
+    mockUpdateSession.mockResolvedValue({
+      user: null,
+      supabaseResponse: mockResponse,
+    })
+
+    const { middleware } = await import('@/middleware')
+    const request = createMockRequest('/~offline')
+
+    const result = await middleware(request as Parameters<typeof middleware>[0])
+
+    expect(result).toBe(mockResponse)
+  })
 })

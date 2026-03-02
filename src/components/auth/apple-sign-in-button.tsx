@@ -12,17 +12,49 @@ export function AppleSignInButton() {
     setIsLoading(true)
     setErrorMessage(null)
     const supabase = createBrowserClient()
+    const isStandalone = window.matchMedia(
+      '(display-mode: standalone)',
+    ).matches
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'apple',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
+    if (isStandalone) {
+      // PWA Standalone Mode: window.location.href statt Supabase-Default,
+      // damit iOS nicht Safari öffnet sondern in der PWA bleibt
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: true,
+        },
+      })
 
-    if (error) {
-      setErrorMessage('Verbindung fehlgeschlagen. Bitte versuche es erneut.')
-      setIsLoading(false)
+      if (error) {
+        setErrorMessage(
+          'Verbindung fehlgeschlagen. Bitte versuche es erneut.',
+        )
+        setIsLoading(false)
+        return
+      }
+
+      if (data?.url) {
+        window.location.href = data.url
+      } else {
+        setIsLoading(false)
+      }
+    } else {
+      // Normaler Browser-Flow
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        setErrorMessage(
+          'Verbindung fehlgeschlagen. Bitte versuche es erneut.',
+        )
+        setIsLoading(false)
+      }
     }
   }
 
