@@ -43,7 +43,7 @@ development_status:
   # Epic 1: Projekt-Setup & Authentifizierung
   epic-1: in-progress
   1-1-nextjs-projekt-initialisieren: done
-  1-2-theme-setup-font-layout: backlog
+  1-2-theme-setup-font-layout: done
   1-3-supabase-integration: backlog
   1-4-apple-id-authentifizierung: backlog
   1-5-pwa-setup: backlog

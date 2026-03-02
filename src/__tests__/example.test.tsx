@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import Home from '@/app/page'
+import CapturePage from '@/app/(app)/page'
 
-describe('Home Page', () => {
+describe('Capture Page', () => {
   it('renders the app title', () => {
-    render(<Home />)
+    render(<CapturePage />)
     expect(
       screen.getByRole('heading', { name: /LDS Symptom Tracker/i }),
     ).toBeInTheDocument()
