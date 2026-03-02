@@ -1,0 +1,2 @@
+-- Testdaten für lokale Entwicklung
+-- Wird bei `supabase db reset` ausgeführt
