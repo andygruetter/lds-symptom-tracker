@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { ChevronRight, FileText, Trash2 } from 'lucide-react'
 
+import { DeleteAccountDialog } from '@/components/account/delete-account-dialog'
 import { DisclaimerContent } from '@/components/disclaimer/disclaimer-content'
 import {
   Dialog,
@@ -16,6 +17,7 @@ import { DISCLAIMER_TITLE } from '@/lib/constants/disclaimer'
 
 export default function MorePage() {
   const [disclaimerOpen, setDisclaimerOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   return (
     <div className="px-4 py-6">
@@ -47,14 +49,14 @@ export default function MorePage() {
         </h2>
         <div className="divide-y divide-border rounded-xl bg-card">
           <button
-            disabled
-            className="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left opacity-50"
+            onClick={() => setDeleteOpen(true)}
+            className="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left"
           >
             <span className="flex items-center gap-3">
               <Trash2 className="size-5 text-destructive" />
               <span className="text-sm text-destructive">Account löschen</span>
             </span>
-            <span className="text-xs text-muted-foreground">Kommt bald</span>
+            <ChevronRight className="size-4 text-muted-foreground" />
           </button>
         </div>
       </section>
@@ -71,6 +73,9 @@ export default function MorePage() {
           <DisclaimerContent />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Account Dialog */}
+      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   )
 }
