@@ -19,6 +19,13 @@ export interface ExtractionResult {
 }
 
 // Zod Schema für Claude Tool-Output Validation
+// value kann null sein wenn Claude unsicher ist — diese Felder werden rausgefiltert
+const rawExtractionFieldSchema = z.object({
+  fieldName: z.string(),
+  value: z.string().nullable(),
+  confidence: z.number().min(0).max(100),
+})
+
 export const extractionFieldSchema = z.object({
   fieldName: z.string(),
   value: z.string(),
@@ -27,7 +34,9 @@ export const extractionFieldSchema = z.object({
 
 export const extractionResultSchema = z.object({
   eventType: z.enum(['symptom', 'medication']),
-  fields: z.array(extractionFieldSchema).min(1),
+  fields: z.array(rawExtractionFieldSchema).min(1).transform(
+    (fields) => fields.filter((f): f is { fieldName: string; value: string; confidence: number } => f.value !== null)
+  ),
 })
 
 // Correction Type (für KI-Lernen aus Korrekturen)
