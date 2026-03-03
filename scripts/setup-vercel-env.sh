@@ -17,7 +17,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # --- Konfiguration ---
 VERCEL_PROJECT="lds-symptom-tracker-preview"
 ENV_FILE="${PROJECT_ROOT}/.env.preview"
-TARGET="preview"  # preview | production | development
+TARGETS=("preview" "production")  # Beide Targets setzen
 
 # --- Token aus .env.preview oder Environment oder Argument lesen ---
 if [[ -z "${VERCEL_TOKEN:-}" ]]; then
@@ -45,7 +45,7 @@ fi
 
 echo "=== Vercel Environment Setup ==="
 echo "Projekt:     $VERCEL_PROJECT"
-echo "Umgebung:    $TARGET"
+echo "Umgebungen:  ${TARGETS[*]}"
 echo "Env-Datei:   $ENV_FILE"
 echo ""
 
@@ -77,66 +77,74 @@ fi
 echo "Projekt-ID:  $PROJECT_ID"
 echo ""
 
-# --- Bestehende Env Vars fuer Target laden ---
+# --- Bestehende Env Vars laden ---
 echo "Lade bestehende Environment Variables..."
 EXISTING_ENVS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
   "https://api.vercel.com/v9/projects/$PROJECT_ID/env$TEAM_PARAM")
 
-# --- Env Vars aus Datei lesen und setzen ---
+# --- Env Vars aus Datei lesen und fuer alle Targets setzen ---
 SUCCESS=0
 FAILED=0
 
-while IFS= read -r line; do
-  # Kommentare und leere Zeilen ueberspringen
-  [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+for TARGET in "${TARGETS[@]}"; do
+  echo "--- Target: $TARGET ---"
 
-  KEY="${line%%=*}"
-  VALUE="${line#*=}"
+  while IFS= read -r line; do
+    # Kommentare und leere Zeilen ueberspringen
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
 
-  # Fuehrende/folgende Leerzeichen entfernen
-  KEY=$(echo "$KEY" | xargs)
-  [[ -z "$KEY" ]] && continue
+    KEY="${line%%=*}"
+    VALUE="${line#*=}"
 
-  # VERCEL_TOKEN ist nur fuer das Script, nicht als Env Var setzen
-  [[ "$KEY" == "VERCEL_TOKEN" ]] && continue
+    # Fuehrende/folgende Leerzeichen entfernen
+    KEY=$(echo "$KEY" | xargs)
+    [[ -z "$KEY" ]] && continue
 
-  # Pruefen ob Variable bereits existiert
-  EXISTING_ID=$(echo "$EXISTING_ENVS" | jq -r \
-    --arg key "$KEY" --arg target "$TARGET" \
-    '.envs[] | select(.key == $key and (.target[] == $target)) | .id' \
-    2>/dev/null | head -1 || true)
+    # VERCEL_TOKEN ist nur fuer das Script, nicht als Env Var setzen
+    [[ "$KEY" == "VERCEL_TOKEN" ]] && continue
 
-  # Falls vorhanden: loeschen
-  if [[ -n "$EXISTING_ID" ]]; then
-    echo "  Aktualisiere $KEY (loesche alte Version)..."
-    curl -s -X DELETE -H "Authorization: Bearer $VERCEL_TOKEN" \
-      "https://api.vercel.com/v9/projects/$PROJECT_ID/env/$EXISTING_ID$TEAM_PARAM" > /dev/null
-  fi
+    # Pruefen ob Variable bereits existiert
+    EXISTING_ID=$(echo "$EXISTING_ENVS" | jq -r \
+      --arg key "$KEY" --arg target "$TARGET" \
+      '.envs[] | select(.key == $key and (.target[] == $target)) | .id' \
+      2>/dev/null | head -1 || true)
 
-  # JSON-Payload mit jq erstellen (sicheres Escaping)
-  PAYLOAD=$(jq -n \
-    --arg key "$KEY" \
-    --arg value "$VALUE" \
-    --arg target "$TARGET" \
-    '{key: $key, value: $value, target: [$target], type: "encrypted"}')
+    # Falls vorhanden: loeschen
+    if [[ -n "$EXISTING_ID" ]]; then
+      echo "  Aktualisiere $KEY (loesche alte Version)..."
+      curl -s -X DELETE -H "Authorization: Bearer $VERCEL_TOKEN" \
+        "https://api.vercel.com/v9/projects/$PROJECT_ID/env/$EXISTING_ID$TEAM_PARAM" > /dev/null
+    fi
 
-  # Neue Variable setzen
-  echo "  Setze $KEY..."
-  RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $VERCEL_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "$PAYLOAD" \
-    "https://api.vercel.com/v10/projects/$PROJECT_ID/env$TEAM_PARAM")
+    # JSON-Payload mit jq erstellen (sicheres Escaping)
+    PAYLOAD=$(jq -n \
+      --arg key "$KEY" \
+      --arg value "$VALUE" \
+      --arg target "$TARGET" \
+      '{key: $key, value: $value, target: [$target], type: "encrypted"}')
 
-  CREATED_ID=$(echo "$RESPONSE" | jq -r '.created.id // .id // empty' 2>/dev/null || true)
+    # Neue Variable setzen
+    echo "  Setze $KEY..."
+    RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $VERCEL_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "$PAYLOAD" \
+      "https://api.vercel.com/v10/projects/$PROJECT_ID/env$TEAM_PARAM")
 
-  if [[ -n "$CREATED_ID" ]]; then
-    SUCCESS=$((SUCCESS + 1))
-  else
-    echo "    FEHLER: $(echo "$RESPONSE" | jq -r '.error.message // .message // "Unbekannt"' 2>/dev/null)"
-    FAILED=$((FAILED + 1))
-  fi
+    CREATED_ID=$(echo "$RESPONSE" | jq -r '.created.id // .id // empty' 2>/dev/null || true)
 
-done < "$ENV_FILE"
+    if [[ -n "$CREATED_ID" ]]; then
+      SUCCESS=$((SUCCESS + 1))
+    else
+      echo "    FEHLER: $(echo "$RESPONSE" | jq -r '.error.message // .message // "Unbekannt"' 2>/dev/null)"
+      FAILED=$((FAILED + 1))
+    fi
+
+  done < "$ENV_FILE"
+
+  # Env Vars neu laden fuer naechsten Target-Durchlauf
+  EXISTING_ENVS=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+    "https://api.vercel.com/v9/projects/$PROJECT_ID/env$TEAM_PARAM")
+done
 
 echo ""
 echo "=== Ergebnis ==="
@@ -146,7 +154,7 @@ echo ""
 
 if [[ $FAILED -eq 0 ]]; then
   echo "Alle Environment Variables wurden gesetzt!"
-  echo "Erstelle jetzt einen PR, um ein Preview-Deployment auszuloesen."
+  echo "Erstelle jetzt einen PR oder pushe auf main, um ein Deployment auszuloesen."
 else
   echo "Es gab Fehler. Pruefe die Ausgabe oben."
   exit 1
