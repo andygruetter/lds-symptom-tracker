@@ -1,5 +1,6 @@
 'use server'
 
+import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 
 import { runExtractionPipeline } from '@/lib/ai/pipeline'
@@ -7,11 +8,13 @@ import { createServerClient, createServiceClient } from '@/lib/db/client'
 import type { ExtractedData } from '@/types/ai'
 import type { ActionResult } from '@/types/common'
 import type { SymptomEvent } from '@/types/symptom'
+import { uploadAudio } from '@/lib/db/media'
 import {
   answerClarificationSchema,
   confirmSymptomEventSchema,
   correctExtractedFieldSchema,
   createSymptomEventSchema,
+  createVoiceSymptomEventSchema,
   endSymptomEventSchema,
 } from '@/types/symptom'
 
@@ -58,15 +61,125 @@ export async function createSymptomEvent(
   }
   revalidatePath('/')
 
-  // 4. Fire-and-forget: KI-Extraktion direkt triggern (ohne HTTP-Roundtrip)
+  // 4. KI-Extraktion nach Response-Senden ausführen (Vercel-kompatibel)
   const serviceClient = createServiceClient()
-  runExtractionPipeline(serviceClient, (data as SymptomEvent).id).catch(
-    (err) => {
+  after(async () => {
+    try {
+      await runExtractionPipeline(serviceClient, (data as SymptomEvent).id)
+    } catch (err) {
       console.error('[Extraction Pipeline] Failed:', err)
-    },
-  )
+    }
+  })
 
   return { data: data as SymptomEvent, error: null }
+}
+
+export async function createVoiceSymptomEvent(
+  formData: FormData,
+): Promise<ActionResult<SymptomEvent>> {
+  // 1. Extract and validate FormData
+  const audio = formData.get('audio') as File | null
+  const mimeTypeRaw = formData.get('mimeType')
+
+  if (!audio || audio.size === 0) {
+    return {
+      data: null,
+      error: { error: 'Keine Audio-Datei', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  const parsed = createVoiceSymptomEventSchema.safeParse({
+    mimeType: mimeTypeRaw,
+  })
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { error: 'Ungültiger MIME-Type', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  // 2. Auth-Check
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      data: null,
+      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
+    }
+  }
+
+  // 3. Create symptom_event with event_type: 'voice'
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .insert({
+      account_id: user.id,
+      event_type: 'voice',
+      status: 'pending',
+    })
+    .select()
+    .single()
+
+  if (error || !data) {
+    return {
+      data: null,
+      error: { error: 'Event erstellen fehlgeschlagen', code: 'DB_ERROR' },
+    }
+  }
+
+  const event = data as SymptomEvent
+
+  // 4. Upload audio to Supabase Storage
+  try {
+    const audioBlob = new Blob([await audio.arrayBuffer()], {
+      type: parsed.data.mimeType,
+    })
+    const storagePath = await uploadAudio(
+      supabase,
+      user.id,
+      event.id,
+      audioBlob,
+      parsed.data.mimeType,
+    )
+
+    // 5. Update event with audio_url (storage path, not signed URL)
+    await supabase
+      .from('symptom_events')
+      .update({ audio_url: storagePath })
+      .eq('id', event.id)
+  } catch (uploadError) {
+    console.error('[Voice] Audio upload failed:', uploadError)
+    // Event exists but without audio — mark as failed
+    await supabase
+      .from('symptom_events')
+      .update({ status: 'extraction_failed' })
+      .eq('id', event.id)
+
+    return {
+      data: null,
+      error: { error: 'Audio-Upload fehlgeschlagen', code: 'UPLOAD_ERROR' },
+    }
+  }
+
+  revalidatePath('/')
+
+  // 6. Fire-and-forget: Trigger extraction pipeline
+  // Voice-Events werden in pipeline.ts als early-return behandelt (Transkription kommt in Story 3.2)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  fetch(`${appUrl}/api/ai/extract`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-internal-secret': process.env.INTERNAL_API_SECRET ?? '',
+    },
+    body: JSON.stringify({ symptomEventId: event.id }),
+  }).catch((err) => {
+    console.error('[Voice] Extraction trigger failed:', err)
+  })
+
+  return { data: event, error: null }
 }
 
 export async function confirmSymptomEvent(
