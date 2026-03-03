@@ -35,7 +35,7 @@ test.describe('Feld-Korrektur', () => {
     ])
 
     await capturePage.goto()
-    await page.getByRole('button', { name: 'Ändern' }).click()
+    await page.getByRole('button', { name: 'Ändern', exact: true }).click()
 
     // Im Bearbeitungsmodus sollte ein Input-Feld erscheinen
     await expect(page.locator('input[type="text"]').last()).toBeVisible()
@@ -52,7 +52,7 @@ test.describe('Feld-Korrektur', () => {
     ])
 
     await capturePage.goto()
-    await page.getByLabel('symptom_name ändern').click()
+    await page.getByRole('button', { name: 'symptom_name ändern' }).click()
 
     const editInput = page.locator('input[type="text"]').last()
     await editInput.fill('Schulterschmerzen')
@@ -75,7 +75,7 @@ test.describe('Feld-Korrektur', () => {
     ])
 
     await capturePage.goto()
-    await page.getByLabel('symptom_name ändern').click()
+    await page.getByRole('button', { name: 'symptom_name ändern' }).click()
 
     const editInput = page.locator('input[type="text"]').last()
     await editInput.fill('Neuer Wert')

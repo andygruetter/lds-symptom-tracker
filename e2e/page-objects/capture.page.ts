@@ -20,12 +20,15 @@ export class CapturePage {
   }
 
   async submitSymptom(text: string) {
+    await this.textInput.click()
     await this.textInput.fill(text)
+    // WebKit may need a moment for React to re-render the send button
+    await this.sendButton.waitFor({ state: 'visible', timeout: 5_000 })
     await this.sendButton.click()
   }
 
   async waitForSentBubble(text: string) {
-    await this.page.getByText(text).waitFor()
+    await this.page.getByText(text).waitFor({ timeout: 30_000 })
   }
 
   async waitForProcessing() {

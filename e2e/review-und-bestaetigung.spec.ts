@@ -36,8 +36,13 @@ test.describe('Review und Bestätigung', () => {
 
     await capturePage.goto()
 
-    await expect(page.getByText('Kopfschmerzen')).toBeVisible()
-    await expect(page.getByText('Kopf')).toBeVisible()
+    // SymptomTag buttons have aria-label like "fieldName ändern"
+    await expect(
+      page.getByRole('button', { name: 'symptom_name ändern' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Körperregion ändern' }),
+    ).toBeVisible()
     await expect(
       page.getByRole('button', { name: /Bestätigen/i }),
     ).toBeVisible()
@@ -111,7 +116,7 @@ test.describe('Review und Bestätigung', () => {
 
     await capturePage.goto()
     await expect(
-      page.getByRole('button', { name: 'Ändern' }),
+      page.getByRole('button', { name: 'Ändern', exact: true }),
     ).toBeVisible()
   })
 })

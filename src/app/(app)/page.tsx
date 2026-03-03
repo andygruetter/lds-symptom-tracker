@@ -18,6 +18,7 @@ export default function CapturePage() {
     isLoading,
     addOptimisticEvent,
     removeOptimisticEvent,
+    refreshExtractedData,
   } = useSymptomEvents()
 
   const handleSendText = async (text: string) => {
@@ -38,6 +39,7 @@ export default function CapturePage() {
     newValue: string,
   ) => {
     await correctExtractedField({ eventId, fieldName, newValue })
+    await refreshExtractedData([eventId])
   }
 
   const handleEndSymptom = async (eventId: string) => {

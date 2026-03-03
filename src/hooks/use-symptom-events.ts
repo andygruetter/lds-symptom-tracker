@@ -129,5 +129,6 @@ export function useSymptomEvents() {
     isLoading,
     addOptimisticEvent,
     removeOptimisticEvent,
+    refreshExtractedData: loadExtractedData,
   }
 }

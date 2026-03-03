@@ -116,6 +116,6 @@ test.describe('Symptom beenden', () => {
 
     await capturePage.goto()
 
-    await expect(page.getByText(/Dauer:/)).toBeVisible()
+    await expect(page.getByText(/Dauer:/).first()).toBeVisible()
   })
 })

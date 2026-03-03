@@ -1,4 +1,7 @@
+import dotenv from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
+
+dotenv.config({ path: '.env.local' })
 
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'e2e-test@test.com'
 

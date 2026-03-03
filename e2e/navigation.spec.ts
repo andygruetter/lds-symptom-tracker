@@ -25,7 +25,9 @@ test.describe('Tab-Navigation', () => {
     const nav = new NavigationBar(page)
     await nav.navigateToAuswertung()
     await expect(page).toHaveURL('/insights')
-    await expect(page.getByText('Auswertung')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Auswertung' }),
+    ).toBeVisible()
   })
 
   test('Navigation zu Mehr zeigt Mehr-Seite', async ({ page }) => {

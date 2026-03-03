@@ -21,7 +21,9 @@ test.describe('Mehr-Seite', () => {
   })
 
   test('zeigt Bereich "Account" mit Löschen-Option', async ({ page }) => {
-    await expect(page.getByText('Account')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Account' }),
+    ).toBeVisible()
     await expect(morePage.deleteAccountButton).toBeVisible()
   })
 

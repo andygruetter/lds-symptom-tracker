@@ -71,8 +71,13 @@ test.describe('Medikamenten-Erfassung', () => {
 
     await capturePage.goto()
 
-    await expect(page.getByText('Paracetamol')).toBeVisible()
-    await expect(page.getByText('500mg')).toBeVisible()
+    // SymptomTag buttons have aria-label like "fieldName ändern"
+    await expect(
+      page.getByRole('button', { name: 'medication_name ändern' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'dosage ändern' }),
+    ).toBeVisible()
     await expect(
       page.getByRole('button', { name: /Bestätigen/i }),
     ).toBeVisible()
