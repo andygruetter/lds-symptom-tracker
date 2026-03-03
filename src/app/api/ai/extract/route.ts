@@ -51,8 +51,9 @@ export async function POST(request: Request) {
       error instanceof Error ? error.message : error,
     )
     console.error('[DEBUG extract] Full error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: 'Extraktion fehlgeschlagen' },
+      { error: 'Extraktion fehlgeschlagen', details: errorMessage },
       { status: 500 },
     )
   }
