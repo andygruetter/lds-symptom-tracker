@@ -53,16 +53,16 @@ development_status:
 
   # Epic 2: Text-Erfassung & KI-Extraktion
   epic-2: in-progress
-  2-1-chat-ui-text-eingabe: review
-  2-2-ki-extraktion-klassifikation: ready-for-dev
-  2-3-review-ansicht-konfidenz: ready-for-dev
-  2-4-conversational-correction: ready-for-dev
-  2-5-symptom-beenden: ready-for-dev
+  2-1-chat-ui-text-eingabe: done
+  2-2-ki-extraktion-klassifikation: done
+  2-3-review-ansicht-konfidenz: done
+  2-4-conversational-correction: done
+  2-5-symptom-beenden: done
   epic-2-retrospective: optional
 
   # Epic 3: Sprach-Erfassung & Foto-Dokumentation
-  epic-3: backlog
-  3-1-hold-to-record: backlog
+  epic-3: in-progress
+  3-1-hold-to-record: ready-for-dev
   3-2-schweizerdeutsch-transkription: backlog
   3-3-foto-upload: backlog
   3-4-push-benachrichtigung: backlog

@@ -4,6 +4,14 @@ import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
   const { user, supabaseResponse } = await updateSession(request)
+
+  // TODO: DEV-ONLY BYPASS — vor Deployment entfernen!
+  // Session-Cookies werden trotzdem verwaltet (updateSession oben),
+  // aber Auth-Redirects werden übersprungen.
+  if (process.env.BYPASS_AUTH === 'true') {
+    return supabaseResponse
+  }
+
   const path = request.nextUrl.pathname
 
   // Authentifizierte User von Login-Seite wegleiten
