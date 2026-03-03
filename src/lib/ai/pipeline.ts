@@ -1,9 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { getRecentCorrections } from '@/lib/db/corrections'
 import type { Database } from '@/types/database'
 import type { SymptomEvent } from '@/types/symptom'
 
 import { extractSymptomData } from './extract'
+import { buildCorrectionContext } from './prompt-enrichment'
 
 const PIPELINE_TIMEOUT_MS = 30_000 // 30 Sekunden für Claude API + Retries
 
@@ -61,11 +63,23 @@ export async function runExtractionPipeline(
     return // Bereits verarbeitet
   }
 
+  // Voice-Events ohne raw_input: Transkription ausstehend (Story 3.2)
+  if (event.event_type === 'voice' && !event.raw_input) {
+    console.log(
+      `[KI-Pipeline] Voice-Event ${symptomEventId} — Transkription ausstehend, Extraktion übersprungen`,
+    )
+    return
+  }
+
   try {
     await withTimeout(async () => {
-      // 2. Claude Extract mit Retry
+      // 2. Corrections laden für Prompt-Enrichment
+      const corrections = await getRecentCorrections(supabase, event.account_id, 50)
+      const correctionContext = buildCorrectionContext(corrections)
+
+      // 3. Claude Extract mit Retry und Correction-Context
       const result = await withRetry(() =>
-        extractSymptomData(event.raw_input),
+        extractSymptomData(event.raw_input!, correctionContext ? { corrections: correctionContext } : undefined),
       )
 
       // 3. Insert extracted_data rows

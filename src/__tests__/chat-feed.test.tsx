@@ -10,6 +10,7 @@ const mockEvent: SymptomEvent = {
   account_id: 'user-1',
   event_type: 'symptom',
   raw_input: 'Kopfschmerzen rechts',
+  audio_url: null,
   status: 'pending',
   created_at: '2026-03-02T10:30:00Z',
   ended_at: null,

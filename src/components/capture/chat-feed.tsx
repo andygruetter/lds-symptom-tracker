@@ -94,19 +94,30 @@ export function ChatFeed({
           const isMedication = event.event_type === 'medication'
           const extractedFields = extractedDataMap[event.id]
 
+          const isVoice = event.event_type === 'voice'
+
           return (
             <div key={event.id} className="flex flex-col gap-1.5">
               {/* Patient Message (Sent) */}
               <ChatBubble
                 variant="sent"
-                content={event.raw_input}
+                content={event.raw_input ?? undefined}
                 timestamp={formatTimestamp(event.created_at)}
                 isMedication={isMedication}
+                isVoice={isVoice}
               />
 
               {/* Processing indicator for pending events */}
               {event.status === 'pending' && (
-                <ChatBubble variant="received" isProcessing />
+                <ChatBubble
+                  variant="system"
+                  content={
+                    isVoice
+                      ? 'Sprachaufnahme wird verarbeitet...'
+                      : undefined
+                  }
+                  isProcessing={!isVoice}
+                />
               )}
 
               {/* Review-Ansicht für extrahierte Events */}

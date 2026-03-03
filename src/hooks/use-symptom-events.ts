@@ -58,21 +58,25 @@ export function useSymptomEvents() {
     }
   }, [])
 
-  const addOptimisticEvent = useCallback((rawInput: string): string => {
-    const id = `optimistic-${Date.now()}`
-    const optimistic: SymptomEvent = {
-      id,
-      account_id: '',
-      event_type: 'symptom',
-      raw_input: rawInput,
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      ended_at: null,
-      deleted_at: null,
-    }
-    setEvents((prev) => [optimistic, ...prev])
-    return id
-  }, [])
+  const addOptimisticEvent = useCallback(
+    (rawInput: string | null, eventType: string = 'symptom'): string => {
+      const id = `optimistic-${Date.now()}`
+      const optimistic: SymptomEvent = {
+        id,
+        account_id: '',
+        event_type: eventType,
+        raw_input: rawInput,
+        audio_url: null,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        ended_at: null,
+        deleted_at: null,
+      }
+      setEvents((prev) => [optimistic, ...prev])
+      return id
+    },
+    [],
+  )
 
   const removeOptimisticEvent = useCallback((id: string) => {
     setEvents((prev) => prev.filter((e) => e.id !== id))

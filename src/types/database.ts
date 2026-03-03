@@ -99,7 +99,8 @@ export interface Database {
           id: string
           account_id: string
           event_type: string
-          raw_input: string
+          raw_input: string | null
+          audio_url: string | null
           status: string
           created_at: string
           ended_at: string | null
@@ -109,7 +110,8 @@ export interface Database {
           id?: string
           account_id: string
           event_type?: string
-          raw_input: string
+          raw_input?: string | null
+          audio_url?: string | null
           status?: string
           created_at?: string
           ended_at?: string | null
@@ -119,7 +121,8 @@ export interface Database {
           id?: string
           account_id?: string
           event_type?: string
-          raw_input?: string
+          raw_input?: string | null
+          audio_url?: string | null
           status?: string
           created_at?: string
           ended_at?: string | null

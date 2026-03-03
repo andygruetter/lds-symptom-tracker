@@ -189,4 +189,26 @@ describe('ChatBubble', () => {
     expect(screen.queryByText(/Aktiv seit/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Dauer:/)).not.toBeInTheDocument()
   })
+
+  it('zeigt Voice-Indikator mit Mikrofon-Icon bei isVoice ohne Content', () => {
+    render(
+      <ChatBubble variant="sent" isVoice timestamp="10:30" />,
+    )
+
+    expect(screen.getByText('Sprachaufnahme')).toBeInTheDocument()
+  })
+
+  it('zeigt Content statt Voice-Indikator wenn beides gesetzt', () => {
+    render(
+      <ChatBubble
+        variant="sent"
+        isVoice
+        content="Transkribierter Text"
+        timestamp="10:30"
+      />,
+    )
+
+    expect(screen.getByText('Transkribierter Text')).toBeInTheDocument()
+    expect(screen.queryByText('Sprachaufnahme')).not.toBeInTheDocument()
+  })
 })

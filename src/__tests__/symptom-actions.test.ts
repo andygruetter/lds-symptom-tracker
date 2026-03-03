@@ -22,6 +22,25 @@ vi.mock('@/lib/db/client', () => ({
       })),
     }),
   ),
+  createServiceClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      insert: mockInsert,
+      select: vi.fn(() => ({
+        eq: mockEq,
+      })),
+      update: mockUpdate,
+    })),
+  })),
+}))
+
+vi.mock('@/lib/db/media', () => ({
+  uploadAudio: vi.fn().mockResolvedValue('user-1/event-1.webm'),
+}))
+
+const mockRunExtractionPipeline = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/lib/ai/pipeline', () => ({
+  runExtractionPipeline: (...args: unknown[]) =>
+    mockRunExtractionPipeline(...args),
 }))
 
 const mockRevalidatePath = vi.fn()
@@ -171,13 +190,9 @@ describe('createSymptomEvent', () => {
     )
     await createSymptomEvent({ raw_input: 'Kopfschmerzen rechts' })
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/ai/extract',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symptomEventId: 'event-1' }),
-      }),
+    expect(mockRunExtractionPipeline).toHaveBeenCalledWith(
+      expect.anything(),
+      'event-1',
     )
   })
 
@@ -195,7 +210,7 @@ describe('createSymptomEvent', () => {
     )
     await createSymptomEvent({ raw_input: 'Kopfschmerzen rechts' })
 
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(mockRunExtractionPipeline).not.toHaveBeenCalled()
   })
 })
 

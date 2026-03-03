@@ -43,3 +43,10 @@ export const answerClarificationSchema = z.object({
   fieldName: z.string().min(1, 'Feldname darf nicht leer sein'),
   answer: z.string().min(1, 'Antwort darf nicht leer sein'),
 })
+
+// Zod Schema für createVoiceSymptomEvent Action (FormData-basiert)
+export const createVoiceSymptomEventSchema = z.object({
+  mimeType: z
+    .string()
+    .min(1, 'MIME-Type darf nicht leer sein'),
+})

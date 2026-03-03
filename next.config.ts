@@ -8,7 +8,11 @@ const withSerwist = withSerwistInit({
 })
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '1mb',
+    },
+  },
 }
 
 export default withSentryConfig(withSerwist(nextConfig), {

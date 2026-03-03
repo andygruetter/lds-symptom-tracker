@@ -155,11 +155,16 @@ Wenn der Patient diese Begriffe verwendet, übersetze sie direkt und setze Konfi
 
 ### Mehr-Seite Navigation
 
+Die bestehende Mehr-Seite (`src/app/(app)/mehr/page.tsx`) verwendet eine einheitliche Navigation mit Card-Links (siehe Story 1.6/1.7 Pattern mit `ChevronRight`-Icons). Den neuen Link im gleichen Pattern hinzufügen:
+
 ```typescript
-// Bestehende Mehr-Seite erweitern mit neuem Link:
-<Link href="/mehr/vokabular">
-  <BookOpen className="h-5 w-5" />
-  Mein Vokabular
+// Bestehende Mehr-Seite erweitern mit neuem Link (gleiches Pattern wie Account/Disclaimer):
+<Link href="/mehr/vokabular" className="flex items-center justify-between p-4 ...">
+  <div className="flex items-center gap-3">
+    <BookOpen className="h-5 w-5" />
+    <span>Mein Vokabular</span>
+  </div>
+  <ChevronRight className="h-5 w-5 text-muted-foreground" />
 </Link>
 ```
 
@@ -191,7 +196,27 @@ const { error } = await supabase
 1. **RPC-Funktion** in Migration: `increment_vocabulary_count(p_account_id, p_term, p_field_name)` — atomarer Increment
 2. **Select + Insert/Update** Pattern im Service — einfacher, aber Race-Condition-anfällig bei hoher Last (für MVP akzeptabel)
 
-Empfehlung: Option 2 (Select + Insert/Update) für MVP, da Vokabular-Updates selten und nicht zeitkritisch.
+Empfehlung: **Option 1 (RPC-Funktion)** — atomarer Increment ist robuster und vermeidet Race Conditions. Die RPC-Funktion wird in `00011_patient_vocabulary.sql` mitdefiniert:
+
+```sql
+CREATE OR REPLACE FUNCTION upsert_vocabulary_entry(
+  p_account_id UUID,
+  p_patient_term TEXT,
+  p_mapped_term TEXT,
+  p_field_name TEXT
+) RETURNS VOID AS $$
+BEGIN
+  INSERT INTO patient_vocabulary (account_id, patient_term, mapped_term, field_name, usage_count)
+  VALUES (p_account_id, p_patient_term, p_mapped_term, p_field_name, 1)
+  ON CONFLICT (account_id, patient_term, field_name)
+  DO UPDATE SET usage_count = patient_vocabulary.usage_count + 1,
+               mapped_term = EXCLUDED.mapped_term,
+               updated_at = now();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+Der Service nutzt dann `supabase.rpc('upsert_vocabulary_entry', { ... })` statt manuelles Select+Insert/Update.
 
 ### Anti-Patterns (VERMEIDEN)
 
@@ -249,3 +274,4 @@ Empfehlung: Option 2 (Select + Insert/Update) für MVP, da Vokabular-Updates sel
 ## Change Log
 
 - 2026-03-03: Story 3.6 erstellt — Persönliches Vokabular mit automatischem Aufbau aus Korrekturen, Prompt-Enrichment, Read-only Ansicht
+- 2026-03-03: Party-Mode Review — 2 Findings eingearbeitet: (1) RPC-Funktion für atomares usage_count Increment empfohlen statt Select+Update, (2) Mehr-Seite Navigation-Pattern aus Story 1.6/1.7 referenziert

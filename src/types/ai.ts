@@ -30,9 +30,21 @@ export const extractionResultSchema = z.object({
   fields: z.array(extractionFieldSchema).min(1),
 })
 
+// Correction Type (für KI-Lernen aus Korrekturen)
+export interface Correction {
+  fieldName: string
+  originalValue: string
+  correctedValue: string
+}
+
+// Extraction Context (erweiterbarer Kontext für Provider)
+export interface ExtractionContext {
+  corrections?: string
+}
+
 // Provider Interface
 export interface ExtractionProvider {
-  extract(rawInput: string): Promise<ExtractionResult>
+  extract(rawInput: string, context?: ExtractionContext): Promise<ExtractionResult>
 }
 
 // Clarification Types (regelbasierte Nachfrage bei niedriger Konfidenz)

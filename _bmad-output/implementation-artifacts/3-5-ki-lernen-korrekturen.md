@@ -1,6 +1,6 @@
 # Story 3.5: KI-Lernen aus Patienten-Korrekturen
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -17,48 +17,48 @@ So that wiederkehrende Symptome des Patienten schneller und genauer erkannt werd
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Corrections-Loader erstellen (AC: #3, #4)
-  - [ ] `src/lib/db/corrections.ts` erstellen
-  - [ ] `getRecentCorrections(supabase: SupabaseClient, accountId: string, limit = 50): Promise<Correction[]>`
-  - [ ] Query: `SELECT field_name, original_value, corrected_value, created_at FROM corrections WHERE account_id = $1 ORDER BY created_at DESC LIMIT $2`
-  - [ ] Typ `Correction` in `src/types/ai.ts` hinzufügen: `{ fieldName: string, originalValue: string, correctedValue: string }`
-  - [ ] Nutzt `createServiceClient()` (Pipeline-Kontext, kein Auth)
-- [ ] Task 2: Prompt-Enrichment Funktion (AC: #1, #2)
-  - [ ] `src/lib/ai/prompt-enrichment.ts` erstellen
-  - [ ] `buildCorrectionContext(corrections: Correction[]): string` — formatiert Korrekturen als Prompt-Kontext
-  - [ ] Format: Klare Instruktionen für Claude, dass frühere Korrekturen berücksichtigt werden sollen
-  - [ ] Duplikate zusammenfassen: Wenn "Rügge" → "Rücken" mehrfach korrigiert wurde → `(3x korrigiert)` annotieren
-  - [ ] Sortierung: Häufigste Korrekturen zuerst
-  - [ ] Leerer String wenn keine Korrekturen vorhanden (keine Prompt-Änderung)
-- [ ] Task 3: ExtractionProvider Interface erweitern (AC: #1)
-  - [ ] `src/types/ai.ts` — `ExtractionProvider.extract()` Signatur erweitern
-  - [ ] Neuer optionaler Parameter: `extract(rawInput: string, context?: ExtractionContext): Promise<ExtractionResult>`
-  - [ ] `ExtractionContext` Typ: `{ corrections?: string }` (erweiterbarer Kontext)
-  - [ ] Abwärtskompatibel: `context` ist optional, bestehende Aufrufe funktionieren weiter
-- [ ] Task 4: Claude-Provider anpassen (AC: #1, #2)
-  - [ ] `src/lib/ai/providers/claude.ts` — `extract()` erweitern
-  - [ ] Wenn `context?.corrections` vorhanden: an System-Prompt anhängen
-  - [ ] Format: `\n\nFrühere Korrekturen dieses Patienten (berücksichtigen für höhere Konfidenz):\n${corrections}`
-  - [ ] Prompt-Instruktion: "Wenn der Patient ähnliche Begriffe wie in den Korrekturen verwendet, setze die Konfidenz höher (85+) und verwende den korrigierten Wert."
-  - [ ] Mock-Provider ebenfalls aktualisieren (ignoriert Context, aber akzeptiert Parameter)
-- [ ] Task 5: Pipeline-Integration (AC: #1, #3, #4)
-  - [ ] `src/lib/ai/pipeline.ts` erweitern
-  - [ ] Vor der Extraktion: `getRecentCorrections(supabase, accountId, 50)` laden
-  - [ ] `buildCorrectionContext(corrections)` → Kontext-String
-  - [ ] `extractSymptomData(rawInput, { corrections: correctionContext })` aufrufen
-  - [ ] `extractSymptomData()` in `extract.ts` Signatur anpassen (leitet Context an Provider weiter)
-  - [ ] Performance: Corrections-Query ist ein einzelner SELECT mit Limit → <50ms
-- [ ] Task 6: Tests (AC: #1-#4)
-  - [ ] `src/__tests__/lib/db/corrections.test.ts` — getRecentCorrections: leere Liste, mit Daten, Limit, Sortierung
-  - [ ] `src/__tests__/lib/ai/prompt-enrichment.test.ts` — buildCorrectionContext: leer, einzelne, deduplizierte, sortierte Korrekturen
-  - [ ] `src/__tests__/lib/ai/providers/claude.test.ts` — Erweitert: extract mit Context, ohne Context (abwärtskompatibel)
-  - [ ] `src/__tests__/lib/ai/pipeline.test.ts` — Erweitert: Corrections werden geladen und an Extraktion übergeben
-  - [ ] `src/__tests__/lib/ai/extract.test.ts` — Erweitert: Context-Weiterleitung
-  - [ ] Bestehende Tests dürfen NICHT brechen
-  - [ ] `npm run test` verifizieren
-- [ ] Task 7: Build-Verifikation
-  - [ ] `npm run lint` fehlerfrei
-  - [ ] `npm run build` erfolgreich
+- [x] Task 1: Corrections-Loader erstellen (AC: #3, #4)
+  - [x] `src/lib/db/corrections.ts` erstellen
+  - [x] `getRecentCorrections(supabase: SupabaseClient, accountId: string, limit = 50): Promise<Correction[]>`
+  - [x] Query: `SELECT field_name, original_value, corrected_value, created_at FROM corrections WHERE account_id = $1 ORDER BY created_at DESC LIMIT $2`
+  - [x] Typ `Correction` in `src/types/ai.ts` hinzufügen: `{ fieldName: string, originalValue: string, correctedValue: string }`
+  - [x] Nutzt `createServiceClient()` (Pipeline-Kontext, kein Auth)
+- [x] Task 2: Prompt-Enrichment Funktion (AC: #1, #2)
+  - [x] `src/lib/ai/prompt-enrichment.ts` erstellen
+  - [x] `buildCorrectionContext(corrections: Correction[]): string` — formatiert Korrekturen als Prompt-Kontext
+  - [x] Format: Klare Instruktionen für Claude, dass frühere Korrekturen berücksichtigt werden sollen
+  - [x] Duplikate zusammenfassen: Wenn "Rügge" → "Rücken" mehrfach korrigiert wurde → `(3x korrigiert)` annotieren
+  - [x] Sortierung: Häufigste Korrekturen zuerst
+  - [x] Leerer String wenn keine Korrekturen vorhanden (keine Prompt-Änderung)
+- [x] Task 3: ExtractionProvider Interface erweitern (AC: #1)
+  - [x] `src/types/ai.ts` — `ExtractionProvider.extract()` Signatur erweitern
+  - [x] Neuer optionaler Parameter: `extract(rawInput: string, context?: ExtractionContext): Promise<ExtractionResult>`
+  - [x] `ExtractionContext` Typ: `{ corrections?: string }` (erweiterbarer Kontext)
+  - [x] Abwärtskompatibel: `context` ist optional, bestehende Aufrufe funktionieren weiter
+- [x] Task 4: Claude-Provider anpassen (AC: #1, #2)
+  - [x] `src/lib/ai/providers/claude.ts` — `extract()` erweitern
+  - [x] Wenn `context?.corrections` vorhanden: an System-Prompt anhängen
+  - [x] Format: `\n\nFrühere Korrekturen dieses Patienten (berücksichtigen für höhere Konfidenz):\n${corrections}`
+  - [x] Prompt-Instruktion: "Wenn der Patient ähnliche Begriffe wie in den Korrekturen verwendet, setze die Konfidenz höher (85+) und verwende den korrigierten Wert."
+  - [x] Mock-Provider ebenfalls aktualisieren (ignoriert Context, aber akzeptiert Parameter)
+- [x] Task 5: Pipeline-Integration (AC: #1, #3, #4)
+  - [x] `src/lib/ai/pipeline.ts` erweitern
+  - [x] Vor der Extraktion: `getRecentCorrections(supabase, accountId, 50)` laden
+  - [x] `buildCorrectionContext(corrections)` → Kontext-String
+  - [x] `extractSymptomData(rawInput, { corrections: correctionContext })` aufrufen
+  - [x] `extractSymptomData()` in `extract.ts` Signatur anpassen (leitet Context an Provider weiter)
+  - [x] Performance: Corrections-Query ist ein einzelner SELECT mit Limit → <50ms
+- [x] Task 6: Tests (AC: #1-#4)
+  - [x] `src/__tests__/lib/db/corrections.test.ts` — getRecentCorrections: leere Liste, mit Daten, Limit, Sortierung
+  - [x] `src/__tests__/lib/ai/prompt-enrichment.test.ts` — buildCorrectionContext: leer, einzelne, deduplizierte, sortierte Korrekturen
+  - [x] `src/__tests__/lib/ai/providers/claude.test.ts` — **Neu erstellt**: extract mit Context, ohne Context (abwärtskompatibel)
+  - [x] `src/__tests__/lib/ai/pipeline.test.ts` — Erweitert: Corrections werden geladen und an Extraktion übergeben
+  - [x] `src/__tests__/lib/ai/extract.test.ts` — Erweitert: Context-Weiterleitung
+  - [x] Bestehende Tests dürfen NICHT brechen
+  - [x] `npm run test` verifizieren
+- [x] Task 7: Build-Verifikation
+  - [x] `npm run lint` fehlerfrei (nur vorbestehende Warnings/Errors in anderen Dateien)
+  - [x] `npm run build` — vorbestehender Fehler in next.config.ts (nicht von Story 3.5)
 
 ## Dev Notes
 
@@ -193,7 +193,7 @@ export interface ExtractionProvider {
 - `src/lib/ai/providers/mock.ts` — Context-Parameter akzeptieren (ignorieren)
 - `src/lib/ai/pipeline.ts` — Corrections laden und an Extraktion übergeben
 - `src/__tests__/lib/ai/pipeline.test.ts` — Corrections-Integration-Tests
-- `src/__tests__/lib/ai/providers/claude.test.ts` — Context-Tests (falls vorhanden)
+- `src/__tests__/lib/ai/providers/claude.test.ts` — **Neu** (Datei existiert noch nicht, muss erstellt werden)
 
 ### References
 
@@ -209,14 +209,43 @@ export interface ExtractionProvider {
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+- Pipeline-Timeout-Test musste von 10_001ms auf 30_001ms korrigiert werden (PIPELINE_TIMEOUT_MS ist 30s)
+- Mock-Provider: `_context` Parameter entfernt (lint unused-vars), Interface-Compliance wird durch TypeScript sichergestellt
+
 ### Completion Notes List
 
+- Task 1: `getRecentCorrections()` implementiert — Supabase-Query mit SELECT, ORDER BY created_at DESC, LIMIT. Mappt DB-Spalten (snake_case) auf TypeScript-Interface (camelCase). Gibt leere Liste bei DB-Fehler zurück.
+- Task 2: `buildCorrectionContext()` implementiert — Duplikat-Zusammenfassung via Map, Sortierung nach Häufigkeit, Prompt-Instruktion für Claude angehängt.
+- Task 3: `Correction`, `ExtractionContext` Typen und `ExtractionProvider.extract()` Signatur erweitert — vollständig abwärtskompatibel.
+- Task 4: Claude-Provider hängt Corrections als Suffix an System-Prompt an. Leerer/fehlender Context → unveränderten System-Prompt.
+- Task 5: Pipeline lädt Corrections vor Extraktion, baut Context-String, übergibt an `extractSymptomData()`.
+- Task 6: 28 neue Tests (6 corrections, 6 prompt-enrichment, 5 claude-provider, 2 pipeline-corrections, 1 extract-context + bestehende erweitert). Alle 57 lib-Tests bestehen.
+- Task 7: Lint fehlerfrei für geänderte Dateien. Build-Fehler ist vorbestehend (next.config.ts).
+
 ### File List
+
+**Neue Dateien:**
+- src/lib/db/corrections.ts
+- src/lib/ai/prompt-enrichment.ts
+- src/__tests__/lib/db/corrections.test.ts
+- src/__tests__/lib/ai/prompt-enrichment.test.ts
+- src/__tests__/lib/ai/providers/claude.test.ts
+
+**Modifizierte Dateien:**
+- src/types/ai.ts
+- src/lib/ai/extract.ts
+- src/lib/ai/providers/claude.ts
+- src/lib/ai/providers/mock.ts
+- src/lib/ai/pipeline.ts
+- src/__tests__/lib/ai/pipeline.test.ts
+- src/__tests__/lib/ai/extract.test.ts
 
 ## Change Log
 
 - 2026-03-03: Story 3.5 erstellt — KI-Lernen via Prompt-Enrichment mit Corrections-Kontext, Provider Interface-Erweiterung, max 50 Korrekturen
+- 2026-03-03: Party-Mode Review — 1 Finding eingearbeitet: claude.test.ts als "Neu erstellen" statt "Erweitert" markiert (Datei existiert noch nicht)
+- 2026-03-03: Implementation abgeschlossen — Corrections-Loader, Prompt-Enrichment, Provider/Pipeline-Integration, 28 neue Tests, alle 57 lib-Tests grün

@@ -26,7 +26,7 @@ So that ich die Ergebnisse überprüfen kann, auch wenn ich die App verlassen ha
   - [ ] RLS-Policy: Patient verwaltet nur eigene Subscriptions
   - [ ] Index auf `account_id` für schnelle Abfrage beim Notification-Versand
 - [ ] Task 2: VAPID-Keys und web-push Setup (AC: #1)
-  - [ ] `npm install web-push` + `npm install -D @types/web-push`
+  - [ ] `npm install web-push` (Types sind seit v3.6+ im Package enthalten — KEIN separates `@types/web-push` nötig)
   - [ ] VAPID-Keys generieren: `npx web-push generate-vapid-keys`
   - [ ] Env-Variablen: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (Client), `VAPID_PRIVATE_KEY` (Server-only), `VAPID_SUBJECT` (mailto:)
   - [ ] `.env.local.example` mit allen neuen Variablen dokumentieren
@@ -39,6 +39,7 @@ So that ich die Ergebnisse überprüfen kann, auch wenn ich die App verlassen ha
   - [ ] Input-Schema: `{ endpoint: string }`
 - [ ] Task 4: Push-Notification senden (Server-Utility) (AC: #1, #2)
   - [ ] `src/lib/push/send-notification.ts` erstellen
+  - [ ] **WICHTIG**: `web-push` nutzt Node.js `crypto`-Module — funktioniert NICHT in Vercel Edge Runtime. Dateien die `web-push` importieren brauchen `export const runtime = 'nodejs'` (betrifft auch API-Routes die `sendPushNotification` aufrufen).
   - [ ] `sendPushNotification(accountId: string, payload: PushPayload): Promise<void>`
   - [ ] `PushPayload` Typ: `{ title: string, body: string, url?: string }`
   - [ ] Alle Subscriptions des Users aus DB laden (`push_subscriptions` WHERE `account_id`)
@@ -65,7 +66,7 @@ So that ich die Ergebnisse überprüfen kann, auch wenn ich die App verlassen ha
   - [ ] Graceful Degradation: `'PushManager' in window` Check, `'serviceWorker' in navigator` Check
 - [ ] Task 7: Opt-in Banner/Prompt (AC: #4)
   - [ ] `src/components/capture/push-opt-in.tsx` erstellen (Client Component)
-  - [ ] Erscheint beim ersten Besuch des Erfassungs-Tabs (wenn Permission === `default`)
+  - [ ] Erscheint nachdem der Patient sein erstes Symptom erfasst hat (kontextueller Opt-in, nicht sofort beim Tab-Besuch — Permission === `default`)
   - [ ] Nicht-invasiver Banner am oberen Bildschirmrand (nicht Modal)
   - [ ] Text: "Benachrichtigungen aktivieren, um über verarbeitete Symptome informiert zu werden?"
   - [ ] Buttons: "Aktivieren" (Primary) + "Später" (Muted)
@@ -85,6 +86,7 @@ So that ich die Ergebnisse überprüfen kann, auch wenn ich die App verlassen ha
   - [ ] `src/__tests__/components/push-opt-in.test.tsx` — Banner-Anzeige-Logik, Aktivieren, Später
   - [ ] `src/__tests__/lib/ai/pipeline.test.ts` — Erweitert: Push nach Extraktion, kein Push bei Fehler
   - [ ] `src/__tests__/push-actions.test.ts` — Subscribe/Unsubscribe Server Actions
+  - [ ] **Browser API Mocking-Strategie**: `vi.stubGlobal('Notification', { permission: 'default', requestPermission: vi.fn() })`, `navigator.serviceWorker.ready` Mock mit `pushManager.subscribe()` / `pushManager.getSubscription()`. Für `use-push-notifications.test.ts` und `push-opt-in.test.tsx` zwingend nötig, da `Notification`, `PushManager` und `ServiceWorkerRegistration` in jsdom nicht existieren.
   - [ ] Bestehende Tests dürfen NICHT brechen
   - [ ] `npm run test` verifizieren
 - [ ] Task 10: Build-Verifikation
@@ -218,7 +220,7 @@ sendPushNotification(event.account_id, {
 
 ### Anti-Patterns (VERMEIDEN)
 
-- **NICHT** Push-Permission beim App-Start anfragen — nur beim ersten Erfassungs-Tab-Besuch (opt-in)
+- **NICHT** Push-Permission beim App-Start anfragen — erst nach erstem erfassten Symptom (kontextueller opt-in)
 - **NICHT** VAPID_PRIVATE_KEY im Client exponieren — nur `NEXT_PUBLIC_VAPID_PUBLIC_KEY` ist Client-seitig
 - **NICHT** Push synchron in Pipeline aufrufen — immer Fire-and-Forget
 - **NICHT** Push bei fehlgeschlagener Extraktion senden — nur bei Erfolg
@@ -271,3 +273,4 @@ sendPushNotification(event.account_id, {
 ## Change Log
 
 - 2026-03-03: Story 3.4 erstellt — Web Push Notification nach KI-Verarbeitung mit VAPID, web-push SDK, Opt-in Banner, Pipeline-Integration
+- 2026-03-03: Party-Mode Review — 4 Findings eingearbeitet: (1) @types/web-push entfernt (Types seit v3.6+ inkludiert), (2) Edge Runtime Warnung für web-push/Node.js crypto, (3) Opt-in Trigger kontextuell nach erstem Event statt Tab-Besuch, (4) Browser API Mocking-Strategie für Tests dokumentiert

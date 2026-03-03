@@ -8,6 +8,7 @@ import {
   confirmSymptomEvent,
   correctExtractedField,
   createSymptomEvent,
+  createVoiceSymptomEvent,
   endSymptomEvent,
 } from '@/lib/actions/symptom-actions'
 
@@ -24,6 +25,17 @@ export default function CapturePage() {
   const handleSendText = async (text: string) => {
     const optimisticId = addOptimisticEvent(text)
     const result = await createSymptomEvent({ raw_input: text })
+    if (result.error) {
+      removeOptimisticEvent(optimisticId)
+    }
+  }
+
+  const handleSendAudio = async (blob: Blob, mimeType: string) => {
+    const optimisticId = addOptimisticEvent(null, 'voice')
+    const formData = new FormData()
+    formData.append('audio', blob, 'recording.webm')
+    formData.append('mimeType', mimeType)
+    const result = await createVoiceSymptomEvent(formData)
     if (result.error) {
       removeOptimisticEvent(optimisticId)
     }
@@ -88,7 +100,7 @@ export default function CapturePage() {
         onEndSymptom={handleEndSymptom}
         onAnswerClarification={handleAnswerClarification}
       />
-      <InputBar onSendText={handleSendText} />
+      <InputBar onSendText={handleSendText} onSendAudio={handleSendAudio} />
     </div>
   )
 }

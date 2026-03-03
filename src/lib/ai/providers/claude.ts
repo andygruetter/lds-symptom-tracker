@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-import type { ExtractionProvider, ExtractionResult } from '@/types/ai'
+import type { ExtractionContext, ExtractionProvider, ExtractionResult } from '@/types/ai'
 import { extractionResultSchema } from '@/types/ai'
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
@@ -77,13 +77,17 @@ function createClient(): Anthropic {
 }
 
 export const claudeProvider: ExtractionProvider = {
-  async extract(rawInput: string): Promise<ExtractionResult> {
+  async extract(rawInput: string, context?: ExtractionContext): Promise<ExtractionResult> {
     const client = createClient()
+
+    const fullSystemPrompt = context?.corrections
+      ? `${systemPrompt}\n\nFrühere Korrekturen dieses Patienten (berücksichtigen für höhere Konfidenz):\n${context.corrections}`
+      : systemPrompt
 
     const response = await client.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 1024,
-      system: systemPrompt,
+      system: fullSystemPrompt,
       tools: [extractionTool],
       tool_choice: { type: 'tool', name: 'extract_symptom_data' },
       messages: [{ role: 'user', content: rawInput }],

@@ -1,6 +1,6 @@
 'use client'
 
-import { Pill } from 'lucide-react'
+import { Mic, Pill } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { ExtractedData } from '@/types/ai'
@@ -11,6 +11,7 @@ interface ChatBubbleProps {
   timestamp?: string
   isProcessing?: boolean
   isMedication?: boolean
+  isVoice?: boolean
   extractedFields?: ExtractedData[]
   isExtractionFailed?: boolean
   onRetryExtraction?: () => void
@@ -50,6 +51,7 @@ export function ChatBubble({
   timestamp,
   isProcessing = false,
   isMedication = false,
+  isVoice = false,
   extractedFields,
   isExtractionFailed = false,
   onRetryExtraction,
@@ -106,6 +108,12 @@ export function ChatBubble({
             <div className="flex items-start gap-1.5">
               {isMedication && (
                 <Pill className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+              )}
+              {isVoice && !content && (
+                <div className="flex items-center gap-1.5">
+                  <Mic className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="text-sm">Sprachaufnahme</span>
+                </div>
               )}
               {content && <p className="text-sm">{content}</p>}
             </div>

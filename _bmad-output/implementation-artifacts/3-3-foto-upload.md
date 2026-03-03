@@ -13,7 +13,7 @@ So that visuelle Informationen (z.B. Hautausschlag, Schwellung) dokumentiert wer
 1. **Given** ein authentifizierter Patient im Erfassungs-Tab **When** der Patient das Foto-Icon in der InputBar antippt **Then** kann der Patient ein Foto aufnehmen (Kamera) oder aus der Galerie wählen
 2. **And** mehrere Fotos können zu einem Event hinzugefügt werden (vor dem Absenden)
 3. **And** Fotos werden in Supabase Storage (Private Bucket `photos`) hochgeladen
-4. **And** die `event_photos`-Tabelle wird erstellt mit `id`, `symptom_event_id`, `storage_path`, `created_at`
+4. **And** Fotos werden persistent gespeichert und sind dem jeweiligen Event zugeordnet (via `event_photos`-Tabelle)
 5. **And** Fotos sind nur per Signed URL zugänglich (kein direkter Download, NFR10)
 6. **And** eine Vorschau der angehängten Fotos wird im ChatFeed angezeigt
 7. **And** Fotos können vor dem Absenden entfernt werden
@@ -43,6 +43,7 @@ So that visuelle Informationen (z.B. Hautausschlag, Schwellung) dokumentiert wer
   - [ ] State: `pendingPhotos: File[]` — lokale Fotos vor Upload
   - [ ] Komprimierungsfunktion: `compressImage(file: File, maxWidth: number, quality: number): Promise<Blob>`
   - [ ] Komprimierung via Canvas API (client-seitig, kein externer Lib)
+  - [ ] **Testbarkeit:** `compressImage` als injectable Dependency designen (optional als Parameter übergeben), damit in Unit-Tests ein Identity-Mock genutzt werden kann. Canvas API existiert nicht in jsdom/Vitest — nur in E2E testbar.
   - [ ] `aria-label="Fotos hinzufügen"`, Thumbnail-Grid mit `role="list"`
 - [ ] Task 4: InputBar-Integration (AC: #1, #2)
   - [ ] `src/components/capture/input-bar.tsx` erweitern
@@ -72,7 +73,7 @@ So that visuelle Informationen (z.B. Hautausschlag, Schwellung) dokumentiert wer
   - [ ] `EventPhoto` Typ in `types/symptom.ts` exportieren
   - [ ] Photos pro Event als `photos: EventPhoto[]` im State verfügbar
 - [ ] Task 8: Tests (AC: #1-#7)
-  - [ ] `src/__tests__/components/photo-picker.test.tsx` — File-Input, Vorschau, Entfernen, Max-Limit
+  - [ ] `src/__tests__/components/photo-picker.test.tsx` — File-Input, Vorschau, Entfernen, Max-Limit. **Hinweis:** `compressImage` muss gemockt werden (Canvas API nicht in jsdom verfügbar). PhotoPicker sollte `compressImage` als injizierbare Dependency akzeptieren oder via vi.mock() gemockt werden.
   - [ ] `src/__tests__/input-bar.test.tsx` — Erweitert: Kamera-Button, Foto-Vorschau-Integration
   - [ ] `src/__tests__/chat-bubble.test.tsx` — Erweitert: Foto-Thumbnails, Tap-Verhalten
   - [ ] `src/__tests__/lib/media.test.ts` — Erweitert: uploadPhoto, getSignedPhotoUrl, MIME-Validierung
@@ -96,6 +97,7 @@ Diese Story implementiert:
 - Signed URLs für Foto-Zugriff (NFR10)
 
 Gehört NICHT in diese Story:
+- **Fotos nachträglich zu bestehendem Event hinzufügen** → Post-MVP. MVP unterstützt nur gleichzeitiges Senden (Text + Fotos zusammen). Die DB-Struktur (`event_photos` mit `symptom_event_id`) erlaubt nachträgliches Anhängen — aber der UX-Flow dafür (z.B. Tap auf bestehende Bubble → "Foto hinzufügen") ist nicht in Scope.
 - **Foto-Bearbeitung (Crop, Rotate)** → Post-MVP
 - **KI-Analyse von Fotos (Computer Vision)** → Post-MVP
 - **Foto-Download** → Explizit NICHT (NFR10: nur Stream/Ansicht)
@@ -129,7 +131,7 @@ async function compressImage(file: File, maxWidth = 1920, quality = 0.8): Promis
 }
 ```
 
-**Wichtig**: HEIC-Fotos (iPhone) werden automatisch durch Canvas zu JPEG konvertiert.
+**Wichtig iOS HEIC-Handling:** iOS konvertiert HEIC-Fotos automatisch zu JPEG wenn sie über `<input type="file" accept="image/*">` ausgewählt werden — die Konvertierung passiert VOR dem `File`-Objekt im JavaScript. Die Canvas-Komprimierung erhält also bereits ein JPEG. HEIC muss NICHT manuell konvertiert werden.
 
 ### HTML File Input Pattern (PWA-kompatibel)
 
@@ -228,3 +230,4 @@ const signedUrl = await getSignedPhotoUrl(storagePath, 900)
 ## Change Log
 
 - 2026-03-03: Story 3.3 erstellt — Foto-Upload mit Kamera/Galerie, Client-Komprimierung, Supabase Storage, event_photos Tabelle, ChatBubble Integration
+- 2026-03-03: Party-Mode Review — 4 Findings eingearbeitet: (1) Canvas-Testbarkeit-Guidance mit Injectable Dependency, (2) Scope-Entscheidung: nachträgliches Foto-Anhängen explizit Out-of-Scope, (3) HEIC→JPEG Auto-Konvertierung klargestellt, (4) AC #4 von Implementierungsdetail zu User-Kriterium umformuliert

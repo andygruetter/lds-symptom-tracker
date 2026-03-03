@@ -28,7 +28,20 @@ describe('extractSymptomData', () => {
     expect(result.fields).toHaveLength(4)
     expect(result.fields[0].fieldName).toBe('symptom_name')
     expect(result.fields[0].value).toBe('Kopfschmerzen')
-    expect(mockExtract).toHaveBeenCalledWith('Kopfschmerzen rechts stechend')
+    expect(mockExtract).toHaveBeenCalledWith(
+      'Kopfschmerzen rechts stechend',
+      undefined,
+    )
+  })
+
+  it('leitet ExtractionContext an Provider weiter', async () => {
+    mockExtract.mockResolvedValue(symptomExtraction)
+
+    const { extractSymptomData } = await import('@/lib/ai/extract')
+    const context = { corrections: 'Korrekturen...' }
+    await extractSymptomData('Rügge tuet weh', context)
+
+    expect(mockExtract).toHaveBeenCalledWith('Rügge tuet weh', context)
   })
 
   it('extrahiert Medikamenten-Daten via Provider', async () => {

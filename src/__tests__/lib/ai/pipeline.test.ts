@@ -9,6 +9,20 @@ vi.mock('@/lib/ai/extract', () => ({
     mockExtractSymptomData(...args),
 }))
 
+// Mock corrections loader
+const mockGetRecentCorrections = vi.fn()
+vi.mock('@/lib/db/corrections', () => ({
+  getRecentCorrections: (...args: unknown[]) =>
+    mockGetRecentCorrections(...args),
+}))
+
+// Mock prompt enrichment
+const mockBuildCorrectionContext = vi.fn()
+vi.mock('@/lib/ai/prompt-enrichment', () => ({
+  buildCorrectionContext: (...args: unknown[]) =>
+    mockBuildCorrectionContext(...args),
+}))
+
 const mockSelect = vi.fn()
 const mockSingle = vi.fn()
 const mockEq = vi.fn()
@@ -60,6 +74,8 @@ function createMockSupabase() {
 beforeEach(() => {
   vi.clearAllMocks()
   mockExtractSymptomData.mockResolvedValue(symptomExtraction)
+  mockGetRecentCorrections.mockResolvedValue([])
+  mockBuildCorrectionContext.mockReturnValue('')
 })
 
 describe('runExtractionPipeline', () => {
@@ -71,6 +87,7 @@ describe('runExtractionPipeline', () => {
 
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
       'Kopfschmerzen rechts',
+      undefined,
     )
     expect(mockInsert).toHaveBeenCalledWith(
       expect.arrayContaining([
@@ -134,8 +151,8 @@ describe('runExtractionPipeline', () => {
     const promise = runExtractionPipeline(supabase as never, 'event-1')
     promise.catch(() => {}) // Prevent unhandled rejection warning
 
-    // Pipeline-Timeout ist 10s — vorspulen
-    await vi.advanceTimersByTimeAsync(10_001)
+    // Pipeline-Timeout ist 30s — vorspulen
+    await vi.advanceTimersByTimeAsync(30_001)
 
     await expect(promise).rejects.toThrow(/timeout/i)
 
@@ -144,6 +161,50 @@ describe('runExtractionPipeline', () => {
     })
 
     vi.useRealTimers()
+  })
+
+  it('lädt Corrections und übergibt Kontext an Extraktion', async () => {
+    const corrections = [
+      {
+        fieldName: 'body_region',
+        originalValue: 'Rügge',
+        correctedValue: 'Rücken',
+      },
+    ]
+    const correctionContext = 'Frühere Korrekturen...'
+    mockGetRecentCorrections.mockResolvedValue(corrections)
+    mockBuildCorrectionContext.mockReturnValue(correctionContext)
+
+    const supabase = createMockSupabase()
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'event-1')
+
+    expect(mockGetRecentCorrections).toHaveBeenCalledWith(
+      supabase,
+      'user-1',
+      50,
+    )
+    expect(mockBuildCorrectionContext).toHaveBeenCalledWith(corrections)
+    expect(mockExtractSymptomData).toHaveBeenCalledWith(
+      'Kopfschmerzen rechts',
+      { corrections: correctionContext },
+    )
+  })
+
+  it('übergibt keinen Context wenn keine Korrekturen vorhanden', async () => {
+    mockGetRecentCorrections.mockResolvedValue([])
+    mockBuildCorrectionContext.mockReturnValue('')
+
+    const supabase = createMockSupabase()
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'event-1')
+
+    expect(mockExtractSymptomData).toHaveBeenCalledWith(
+      'Kopfschmerzen rechts',
+      undefined,
+    )
   })
 
   it('wirft Fehler bei nicht gefundenem Event', async () => {
@@ -158,5 +219,52 @@ describe('runExtractionPipeline', () => {
     await expect(
       runExtractionPipeline(supabase as never, 'nonexistent'),
     ).rejects.toThrow('Event not found')
+  })
+
+  it('überspringt Voice-Events ohne raw_input (Transkription ausstehend)', async () => {
+    const supabase = createMockSupabase()
+    mockSingle.mockResolvedValue({
+      data: {
+        id: 'voice-1',
+        account_id: 'user-1',
+        event_type: 'voice',
+        raw_input: null,
+        audio_url: 'user-1/voice-1.webm',
+        status: 'pending',
+      },
+      error: null,
+    })
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'voice-1')
+
+    // Kein Claude-Aufruf, kein Status-Update, kein Fehler
+    expect(mockExtractSymptomData).not.toHaveBeenCalled()
+    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockInsert).not.toHaveBeenCalled()
+  })
+
+  it('verarbeitet Voice-Events mit raw_input normal (nach Transkription)', async () => {
+    const supabase = createMockSupabase()
+    mockSingle.mockResolvedValue({
+      data: {
+        id: 'voice-2',
+        account_id: 'user-1',
+        event_type: 'voice',
+        raw_input: 'Kopfschmerzen rechts',
+        audio_url: 'user-1/voice-2.webm',
+        status: 'pending',
+      },
+      error: null,
+    })
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'voice-2')
+
+    // Sollte normal extrahieren
+    expect(mockExtractSymptomData).toHaveBeenCalledWith(
+      'Kopfschmerzen rechts',
+      undefined,
+    )
   })
 })

@@ -1,7 +1,37 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+// Hoisted mutable mock state — can be changed per-test
+const mockRecorderState = vi.hoisted(() => ({
+  state: 'idle' as string,
+  permission: 'prompt' as string,
+  duration: 0,
+  isWarning: false,
+  analyserData: null as Uint8Array | null,
+  mimeType: null as string | null,
+  startRecording: vi.fn(),
+  stopRecording: vi.fn().mockResolvedValue(null),
+  cancelRecording: vi.fn(),
+}))
+
+vi.mock('@/hooks/use-audio-recorder', () => ({
+  useAudioRecorder: () => mockRecorderState,
+}))
 
 import { InputBar } from '@/components/capture/input-bar'
+
+beforeEach(() => {
+  // Reset to default idle state before each test
+  mockRecorderState.state = 'idle'
+  mockRecorderState.permission = 'prompt'
+  mockRecorderState.duration = 0
+  mockRecorderState.isWarning = false
+  mockRecorderState.analyserData = null
+  mockRecorderState.mimeType = null
+  mockRecorderState.startRecording = vi.fn()
+  mockRecorderState.stopRecording = vi.fn().mockResolvedValue(null)
+  mockRecorderState.cancelRecording = vi.fn()
+})
 
 describe('InputBar', () => {
   it('zeigt Placeholder-Text "Symptom..."', () => {
@@ -102,5 +132,67 @@ describe('InputBar', () => {
     const cameraBtn = screen.getByLabelText('Foto aufnehmen')
     expect(cameraBtn.className).toContain('min-h-11')
     expect(cameraBtn.className).toContain('min-w-11')
+  })
+
+  it('zeigt Mikrofon-Button als enabled bei prompt Permission', () => {
+    render(<InputBar onSendText={vi.fn()} />)
+
+    const micBtn = screen.getByLabelText('Sprachaufnahme starten')
+    expect(micBtn).not.toBeDisabled()
+  })
+
+  it('hat onPointerDown und onPointerUp auf Mikrofon-Button', () => {
+    render(<InputBar onSendText={vi.fn()} />)
+
+    const micBtn = screen.getByLabelText('Sprachaufnahme starten')
+    // PointerDown/Up events should be handled
+    expect(micBtn).toBeInTheDocument()
+  })
+})
+
+describe('InputBar Permission-Denied', () => {
+  it('zeigt MicOff-Icon und Hinweis bei denied Permission', () => {
+    mockRecorderState.permission = 'denied'
+
+    render(<InputBar onSendText={vi.fn()} />)
+
+    const micBtn = screen.getByLabelText('Mikrofon-Zugriff benötigt')
+    expect(micBtn).toBeDisabled()
+  })
+})
+
+describe('InputBar Recording-Modus', () => {
+  it('zeigt Waveform und Cancel-Button im Recording-State', () => {
+    mockRecorderState.state = 'recording'
+    mockRecorderState.permission = 'granted'
+    mockRecorderState.duration = 5
+    mockRecorderState.analyserData = new Uint8Array(128).fill(128)
+    mockRecorderState.mimeType = 'audio/webm'
+
+    render(<InputBar onSendText={vi.fn()} />)
+
+    // Cancel-Button sichtbar
+    expect(screen.getByLabelText('Aufnahme abbrechen')).toBeInTheDocument()
+
+    // TextArea nicht sichtbar
+    expect(screen.queryByPlaceholderText('Symptom...')).not.toBeInTheDocument()
+
+    // Waveform duration sichtbar
+    expect(screen.getByText('00:05')).toBeInTheDocument()
+  })
+
+  it('ruft cancelRecording bei Cancel-Button Klick', () => {
+    const mockCancel = vi.fn()
+    mockRecorderState.state = 'recording'
+    mockRecorderState.permission = 'granted'
+    mockRecorderState.duration = 3
+    mockRecorderState.analyserData = new Uint8Array(128).fill(128)
+    mockRecorderState.mimeType = 'audio/webm'
+    mockRecorderState.cancelRecording = mockCancel
+
+    render(<InputBar onSendText={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText('Aufnahme abbrechen'))
+    expect(mockCancel).toHaveBeenCalled()
   })
 })
