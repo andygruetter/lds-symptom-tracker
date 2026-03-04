@@ -166,22 +166,14 @@ export async function createVoiceSymptomEvent(
 
   revalidatePath('/')
 
-  // 6. Fire-and-forget: Trigger extraction pipeline
-  // Voice-Events werden in pipeline.ts als early-return behandelt (Transkription kommt in Story 3.2)
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000')
-  fetch(`${appUrl}/api/ai/extract`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-internal-secret': process.env.INTERNAL_API_SECRET ?? '',
-    },
-    body: JSON.stringify({ symptomEventId: event.id }),
-  }).catch((err) => {
-    console.error('[Voice] Extraction trigger failed:', err)
+  // 6. KI-Pipeline nach Response-Senden ausführen (Vercel-kompatibel)
+  const serviceClient = createServiceClient()
+  after(async () => {
+    try {
+      await runExtractionPipeline(serviceClient, event.id)
+    } catch (err) {
+      console.error('[Voice Extraction Pipeline] Failed:', err)
+    }
   })
 
   return { data: event, error: null }
