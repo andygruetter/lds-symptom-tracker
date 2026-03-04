@@ -1,4 +1,4 @@
-import type { Correction } from '@/types/ai'
+import type { Correction, VocabularyEntry } from '@/types/ai'
 
 interface CorrectionGroup {
   fieldName: string
@@ -16,7 +16,7 @@ export function buildCorrectionContext(corrections: Correction[]): string {
   const grouped = new Map<string, CorrectionGroup>()
 
   for (const c of corrections) {
-    const key = `${c.fieldName}|${c.originalValue}|${c.correctedValue}`
+    const key = `${c.fieldName}\0${c.originalValue}\0${c.correctedValue}`
     const existing = grouped.get(key)
     if (existing) {
       existing.count++
@@ -39,4 +39,17 @@ export function buildCorrectionContext(corrections: Correction[]): string {
   )
 
   return `Frühere Korrekturen dieses Patienten:\n${lines.join('\n')}\n\nWenn der Patient ähnliche Begriffe verwendet, setze Konfidenz höher (85+) und verwende den korrigierten Wert.`
+}
+
+export function buildVocabularyContext(vocabulary: VocabularyEntry[]): string {
+  if (vocabulary.length === 0) {
+    return ''
+  }
+
+  const lines = vocabulary.map(
+    (v) =>
+      `- "${v.patientTerm}" bedeutet "${v.mappedTerm}" (${v.fieldName}, ${v.usageCount}x bestätigt)`,
+  )
+
+  return `Persönliches Vokabular dieses Patienten:\n${lines.join('\n')}\n\nWenn der Patient diese Begriffe verwendet, übersetze sie direkt und setze Konfidenz auf 90+.`
 }

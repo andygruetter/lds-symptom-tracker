@@ -46,14 +46,33 @@ export interface Correction {
   correctedValue: string
 }
 
+// Vocabulary Entry (persönliches Symptom-Vokabular)
+export interface VocabularyEntry {
+  patientTerm: string
+  mappedTerm: string
+  fieldName: string
+  usageCount: number
+}
+
 // Extraction Context (erweiterbarer Kontext für Provider)
 export interface ExtractionContext {
   corrections?: string
+  vocabulary?: string
 }
 
 // Provider Interface
 export interface ExtractionProvider {
   extract(rawInput: string, context?: ExtractionContext): Promise<ExtractionResult>
+}
+
+// Transkription Types (Voice → Text via Whisper/GPT-4o-mini-transcribe)
+export interface TranscriptionResult {
+  text: string
+  duration?: number
+}
+
+export interface TranscriptionProvider {
+  transcribe(audioBuffer: Buffer, mimeType: string): Promise<TranscriptionResult>
 }
 
 // Clarification Types (regelbasierte Nachfrage bei niedriger Konfidenz)

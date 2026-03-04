@@ -2,9 +2,13 @@ import { z } from 'zod/v4'
 
 import type { Database } from '@/types/database'
 
-// DB Row Type
+// DB Row Types
+// Status: pending | transcribed | extracted | extraction_failed | transcription_failed | confirmed
 export type SymptomEvent =
   Database['public']['Tables']['symptom_events']['Row']
+
+export type EventPhoto =
+  Database['public']['Tables']['event_photos']['Row']
 
 // Zod Schema für Server Action Input
 export const createSymptomEventSchema = z.object({
@@ -48,5 +52,11 @@ export const answerClarificationSchema = z.object({
 export const createVoiceSymptomEventSchema = z.object({
   mimeType: z
     .string()
-    .min(1, 'MIME-Type darf nicht leer sein'),
+    .min(1, 'MIME-Type darf nicht leer sein')
+    .refine((val) => val.startsWith('audio/'), 'Nur Audio-MIME-Types erlaubt'),
+})
+
+// Zod Schema für addPhotosToEvent Action (FormData-basiert)
+export const addPhotosToEventSchema = z.object({
+  eventId: z.string().uuid('Ungültige Event-ID'),
 })

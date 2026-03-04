@@ -182,14 +182,28 @@ describe('useAudioRecorder', () => {
   })
 
   it('isWarning ist true ab 50 Sekunden', async () => {
-    const { result } = renderHook(() => useAudioRecorder())
+    vi.useFakeTimers()
 
-    // Duration < 50 → nicht Warning
+    const { result } = renderHook(() => useAudioRecorder())
     expect(result.current.isWarning).toBe(false)
 
-    // Direkt duration prüfen: isWarning basiert auf duration >= 50
-    // Da wir duration nicht einfach setzen können, prüfen wir die Logik
-    // isWarning = duration >= WARNING_DURATION_S (50)
+    await act(async () => {
+      await result.current.startRecording()
+    })
+
+    // Advance past 50s — duration interval fires every 200ms
+    // Mock Date.now to simulate 50s elapsed
+    const startTime = Date.now()
+    vi.spyOn(Date, 'now').mockReturnValue(startTime + 50_000)
+
+    await act(async () => {
+      vi.advanceTimersByTime(200)
+    })
+
+    expect(result.current.duration).toBeGreaterThanOrEqual(50)
+    expect(result.current.isWarning).toBe(true)
+
+    vi.useRealTimers()
   })
 
   it('startet nicht wenn State nicht idle ist', async () => {

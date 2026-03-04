@@ -35,6 +35,7 @@ vi.mock('@/lib/db/client', () => ({
 
 vi.mock('@/lib/db/media', () => ({
   uploadAudio: vi.fn().mockResolvedValue('user-1/event-1.webm'),
+  uploadPhoto: vi.fn().mockResolvedValue('user-1/event-1/123-photo.jpg'),
 }))
 
 const mockRunExtractionPipeline = vi.fn().mockResolvedValue(undefined)
@@ -43,7 +44,18 @@ vi.mock('@/lib/ai/pipeline', () => ({
     mockRunExtractionPipeline(...args),
 }))
 
+const mockUpdateVocabularyFromCorrection = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/lib/ai/vocabulary-builder', () => ({
+  updateVocabularyFromCorrection: (...args: unknown[]) =>
+    mockUpdateVocabularyFromCorrection(...args),
+}))
+
 const mockRevalidatePath = vi.fn()
+const mockAfter = vi.fn((cb: () => void) => cb())
+vi.mock('next/server', () => ({
+  after: (cb: () => void) => mockAfter(cb),
+}))
+
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }))
@@ -436,6 +448,66 @@ describe('correctExtractedField', () => {
     expect(result.error).toBeNull()
     expect(mockRevalidatePath).toHaveBeenCalledWith('/')
   })
+
+  it('ruft updateVocabularyFromCorrection nach Korrektur auf', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'user-1' } },
+    })
+
+    mockEq.mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: 'field-1',
+            symptom_event_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+            field_name: 'body_region',
+            value: 'Schulterblatt',
+            confidence: 75,
+            confirmed: false,
+            created_at: '2026-03-02T10:00:00Z',
+          },
+          error: null,
+        }),
+      }),
+    })
+
+    const updatedField = {
+      id: 'field-1',
+      symptom_event_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      field_name: 'body_region',
+      value: 'Oberer Rücken',
+      confidence: 75,
+      confirmed: true,
+      created_at: '2026-03-02T10:00:00Z',
+    }
+    const updateSingle = vi.fn().mockResolvedValue({
+      data: updatedField,
+      error: null,
+    })
+    const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
+    const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
+    mockUpdate.mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: updateEqInner }) })
+    mockInsert.mockResolvedValue({ error: null })
+
+    const { correctExtractedField } = await import(
+      '@/lib/actions/symptom-actions'
+    )
+    await correctExtractedField({
+      eventId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      fieldName: 'body_region',
+      newValue: 'Oberer Rücken',
+    })
+
+    expect(mockUpdateVocabularyFromCorrection).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      {
+        fieldName: 'body_region',
+        originalValue: 'Schulterblatt',
+        correctedValue: 'Oberer Rücken',
+      },
+    )
+  })
 })
 
 describe('endSymptomEvent', () => {
@@ -704,6 +776,157 @@ describe('answerClarification', () => {
     expect(result.data?.value).toBe('Links')
     expect(result.data?.confirmed).toBe(true)
     expect(result.error).toBeNull()
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/')
+  })
+
+  it('ruft updateVocabularyFromCorrection nach Antwort auf', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'user-1' } },
+    })
+
+    mockEq.mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: 'field-1',
+            symptom_event_id: validInput.eventId,
+            field_name: 'Seite',
+            value: 'rechts',
+            confidence: 55,
+            confirmed: false,
+            created_at: '2026-03-03T10:00:00Z',
+          },
+          error: null,
+        }),
+      }),
+    })
+
+    const updatedField = {
+      id: 'field-1',
+      symptom_event_id: validInput.eventId,
+      field_name: 'Seite',
+      value: 'Links',
+      confidence: 55,
+      confirmed: true,
+      created_at: '2026-03-03T10:00:00Z',
+    }
+    const updateSingle = vi.fn().mockResolvedValue({
+      data: updatedField,
+      error: null,
+    })
+    const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
+    const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
+    mockUpdate.mockReturnValue({
+      eq: vi.fn().mockReturnValue({ eq: updateEqInner }),
+    })
+    mockInsert.mockResolvedValue({ error: null })
+
+    const { answerClarification } = await import(
+      '@/lib/actions/symptom-actions'
+    )
+    await answerClarification(validInput)
+
+    expect(mockUpdateVocabularyFromCorrection).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      {
+        fieldName: 'Seite',
+        originalValue: 'rechts',
+        correctedValue: 'Links',
+      },
+    )
+  })
+})
+
+describe('addPhotosToEvent', () => {
+  const validEventId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+
+  it('gibt VALIDATION_ERROR zurück bei fehlender Event-ID', async () => {
+    const { addPhotosToEvent } = await import(
+      '@/lib/actions/symptom-actions'
+    )
+    const formData = new FormData()
+    const result = await addPhotosToEvent(formData)
+
+    expect(result.error?.code).toBe('VALIDATION_ERROR')
+    expect(result.data).toBeNull()
+  })
+
+  it('gibt VALIDATION_ERROR zurück bei fehlenden Fotos', async () => {
+    const { addPhotosToEvent } = await import(
+      '@/lib/actions/symptom-actions'
+    )
+    const formData = new FormData()
+    formData.append('eventId', validEventId)
+    const result = await addPhotosToEvent(formData)
+
+    expect(result.error?.code).toBe('VALIDATION_ERROR')
+    expect(result.error?.error).toBe('Keine Fotos')
+  })
+
+  it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const { addPhotosToEvent } = await import(
+      '@/lib/actions/symptom-actions'
+    )
+    const formData = new FormData()
+    formData.append('eventId', validEventId)
+    formData.append('photos', new File(['photo'], 'test.jpg', { type: 'image/jpeg' }))
+    const result = await addPhotosToEvent(formData)
+
+    expect(result.error?.code).toBe('AUTH_REQUIRED')
+  })
+
+  it('gibt NOT_FOUND zurück wenn Event nicht dem User gehört', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+    })
+
+    // Ownership check returns null
+    mockEq.mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }),
+    })
+
+    const { addPhotosToEvent } = await import(
+      '@/lib/actions/symptom-actions'
+    )
+    const formData = new FormData()
+    formData.append('eventId', validEventId)
+    formData.append('photos', new File(['photo'], 'test.jpg', { type: 'image/jpeg' }))
+    const result = await addPhotosToEvent(formData)
+
+    expect(result.error?.code).toBe('NOT_FOUND')
+  })
+
+  it('lädt Fotos erfolgreich hoch und gibt count zurück', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+    })
+
+    // Ownership check succeeds
+    mockEq.mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: { id: validEventId }, error: null }),
+      }),
+    })
+
+    // event_photos insert succeeds
+    mockInsert.mockResolvedValue({ error: null })
+
+    const { addPhotosToEvent } = await import(
+      '@/lib/actions/symptom-actions'
+    )
+    const formData = new FormData()
+    formData.append('eventId', validEventId)
+    formData.append('photos', new File(['photo1'], 'img1.jpg', { type: 'image/jpeg' }))
+    formData.append('photos', new File(['photo2'], 'img2.jpg', { type: 'image/jpeg' }))
+    const result = await addPhotosToEvent(formData)
+
+    expect(result.error).toBeNull()
+    expect(result.data?.count).toBe(2)
     expect(mockRevalidatePath).toHaveBeenCalledWith('/')
   })
 })

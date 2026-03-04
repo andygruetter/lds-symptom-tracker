@@ -62,3 +62,5 @@ public/serwist-*.js.map
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+AuthKey_963TLMDZZS.p8

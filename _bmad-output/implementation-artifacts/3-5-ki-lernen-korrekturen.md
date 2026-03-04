@@ -1,6 +1,6 @@
 # Story 3.5: KI-Lernen aus Patienten-Korrekturen
 
-Status: review
+Status: done
 
 ## Story
 
@@ -249,3 +249,4 @@ Claude Opus 4.6 (claude-opus-4-6)
 - 2026-03-03: Story 3.5 erstellt — KI-Lernen via Prompt-Enrichment mit Corrections-Kontext, Provider Interface-Erweiterung, max 50 Korrekturen
 - 2026-03-03: Party-Mode Review — 1 Finding eingearbeitet: claude.test.ts als "Neu erstellen" statt "Erweitert" markiert (Datei existiert noch nicht)
 - 2026-03-03: Implementation abgeschlossen — Corrections-Loader, Prompt-Enrichment, Provider/Pipeline-Integration, 28 neue Tests, alle 57 lib-Tests grün
+- 2026-03-03: Code Review — 4 Issues gefixt: H1 doppelter Prompt-Header entfernt, M1 Error-Logging in corrections.ts, M2 robuster Map-Key-Separator, M3 Kommentar-Nummerierung + L4 non-null assertion entfernt

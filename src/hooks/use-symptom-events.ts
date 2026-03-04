@@ -4,15 +4,36 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { createBrowserClient } from '@/lib/db/client'
 import type { ExtractedData } from '@/types/ai'
-import type { SymptomEvent } from '@/types/symptom'
+import type { EventPhoto, SymptomEvent } from '@/types/symptom'
 
 export function useSymptomEvents() {
   const [events, setEvents] = useState<SymptomEvent[]>([])
   const [extractedDataMap, setExtractedDataMap] = useState<
     Record<string, ExtractedData[]>
   >({})
+  const [photosMap, setPhotosMap] = useState<Record<string, EventPhoto[]>>({})
   const [isLoading, setIsLoading] = useState(true)
   const supabaseRef = useRef(createBrowserClient())
+
+  const loadPhotos = useCallback(async (eventIds: string[]) => {
+    if (eventIds.length === 0) return
+
+    const { data } = await supabaseRef.current
+      .from('event_photos')
+      .select('*')
+      .in('symptom_event_id', eventIds)
+
+    if (data) {
+      const grouped: Record<string, EventPhoto[]> = {}
+      for (const row of data as EventPhoto[]) {
+        if (!grouped[row.symptom_event_id]) {
+          grouped[row.symptom_event_id] = []
+        }
+        grouped[row.symptom_event_id].push(row)
+      }
+      setPhotosMap((prev) => ({ ...prev, ...grouped }))
+    }
+  }, [])
 
   const loadEvents = useCallback(async () => {
     const { data } = await supabaseRef.current
@@ -23,6 +44,8 @@ export function useSymptomEvents() {
     if (data) {
       setEvents(data as SymptomEvent[])
 
+      const eventIds = (data as SymptomEvent[]).map((e) => e.id)
+
       // Lade extracted_data für bereits extrahierte Events
       const extractedIds = (data as SymptomEvent[])
         .filter(
@@ -32,6 +55,11 @@ export function useSymptomEvents() {
 
       if (extractedIds.length > 0) {
         loadExtractedData(extractedIds)
+      }
+
+      // Lade event_photos für alle Events
+      if (eventIds.length > 0) {
+        loadPhotos(eventIds)
       }
     }
     setIsLoading(false)
@@ -98,12 +126,15 @@ export function useSymptomEvents() {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
+            const newEvent = payload.new as SymptomEvent
             setEvents((prev) => {
               const withoutOptimistic = prev.filter(
                 (e) => !e.id.startsWith('optimistic-'),
               )
-              return [payload.new as SymptomEvent, ...withoutOptimistic]
+              return [newEvent, ...withoutOptimistic]
             })
+            // Lade Fotos für neues Event
+            loadPhotos([newEvent.id])
           }
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as SymptomEvent
@@ -125,14 +156,16 @@ export function useSymptomEvents() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [loadEvents, loadExtractedData])
+  }, [loadEvents, loadExtractedData, loadPhotos])
 
   return {
     events,
     extractedDataMap,
+    photosMap,
     isLoading,
     addOptimisticEvent,
     removeOptimisticEvent,
     refreshExtractedData: loadExtractedData,
+    refreshPhotos: loadPhotos,
   }
 }

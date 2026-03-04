@@ -1,15 +1,17 @@
 'use server'
 
-import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 
 import { runExtractionPipeline } from '@/lib/ai/pipeline'
+import { updateVocabularyFromCorrection } from '@/lib/ai/vocabulary-builder'
 import { createServerClient, createServiceClient } from '@/lib/db/client'
+import { uploadAudio, uploadPhoto } from '@/lib/db/media'
 import type { ExtractedData } from '@/types/ai'
 import type { ActionResult } from '@/types/common'
 import type { SymptomEvent } from '@/types/symptom'
-import { uploadAudio } from '@/lib/db/media'
 import {
+  addPhotosToEventSchema,
   answerClarificationSchema,
   confirmSymptomEventSchema,
   correctExtractedFieldSchema,
@@ -390,6 +392,15 @@ export async function correctExtractedField(
     }
   }
 
+  // 6. Vokabular-Update (Fire-and-Forget)
+  updateVocabularyFromCorrection(supabase, user.id, {
+    fieldName,
+    originalValue,
+    correctedValue: newValue,
+  }).catch((err) => {
+    console.error('[Vocabulary] Update fehlgeschlagen:', err)
+  })
+
   revalidatePath('/')
 
   return { data: updatedField as ExtractedData, error: null }
@@ -491,6 +502,15 @@ export async function answerClarification(
     }
   }
 
+  // 6b. Vokabular-Update (Fire-and-Forget)
+  updateVocabularyFromCorrection(supabase, user.id, {
+    fieldName,
+    originalValue,
+    correctedValue: answer,
+  }).catch((err) => {
+    console.error('[Vocabulary] Update fehlgeschlagen:', err)
+  })
+
   // 7. Check if all uncertain fields are now confirmed → auto-confirm event
   const { data: remainingFields } = await supabase
     .from('extracted_data')
@@ -508,4 +528,93 @@ export async function answerClarification(
   revalidatePath('/')
 
   return { data: updatedField as ExtractedData, error: null }
+}
+
+export async function addPhotosToEvent(
+  formData: FormData,
+): Promise<ActionResult<{ count: number }>> {
+  // 1. Extract and validate FormData
+  const eventIdRaw = formData.get('eventId')
+  const parsed = addPhotosToEventSchema.safeParse({ eventId: eventIdRaw })
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { error: 'Ungültige Event-ID', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  const photos = formData.getAll('photos') as File[]
+  if (photos.length === 0 || !photos[0]?.size) {
+    return {
+      data: null,
+      error: { error: 'Keine Fotos', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  // 2. Auth-Check
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      data: null,
+      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
+    }
+  }
+
+  const { eventId } = parsed.data
+
+  // 3. Ownership-Check
+  const { data: event } = await supabase
+    .from('symptom_events')
+    .select('id')
+    .eq('id', eventId)
+    .eq('account_id', user.id)
+    .single()
+
+  if (!event) {
+    return {
+      data: null,
+      error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' },
+    }
+  }
+
+  // 4. Upload each photo and insert into event_photos
+  let uploadedCount = 0
+  for (const photo of photos) {
+    try {
+      const photoBlob = new Blob([await photo.arrayBuffer()], {
+        type: photo.type || 'image/jpeg',
+      })
+      const storagePath = await uploadPhoto(
+        supabase,
+        user.id,
+        eventId,
+        photoBlob,
+        photo.name,
+      )
+
+      await supabase.from('event_photos').insert({
+        symptom_event_id: eventId,
+        storage_path: storagePath,
+      })
+
+      uploadedCount++
+    } catch (err) {
+      console.error('[Photo] Upload failed for', photo.name, err)
+    }
+  }
+
+  if (uploadedCount === 0) {
+    return {
+      data: null,
+      error: { error: 'Foto-Upload fehlgeschlagen', code: 'UPLOAD_ERROR' },
+    }
+  }
+
+  revalidatePath('/')
+
+  return { data: { count: uploadedCount }, error: null }
 }

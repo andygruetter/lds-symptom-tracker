@@ -62,12 +62,12 @@ development_status:
 
   # Epic 3: Sprach-Erfassung & Foto-Dokumentation
   epic-3: in-progress
-  3-1-hold-to-record: review
-  3-2-schweizerdeutsch-transkription: ready-for-dev
-  3-3-foto-upload: ready-for-dev
-  3-4-push-benachrichtigung: ready-for-dev
-  3-5-ki-lernen-korrekturen: review
-  3-6-persoenliches-vokabular: ready-for-dev
+  3-1-hold-to-record: done
+  3-2-schweizerdeutsch-transkription: done
+  3-3-foto-upload: done
+  3-4-push-benachrichtigung: done
+  3-5-ki-lernen-korrekturen: done
+  3-6-persoenliches-vokabular: done
   epic-3-retrospective: optional
 
   # Epic 4: Patienten-Auswertung

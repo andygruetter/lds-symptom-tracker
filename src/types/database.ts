@@ -13,6 +13,27 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      event_photos: {
+        Row: {
+          id: string
+          symptom_event_id: string
+          storage_path: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          symptom_event_id: string
+          storage_path: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          symptom_event_id?: string
+          storage_path?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       corrections: {
         Row: {
           id: string
@@ -94,6 +115,69 @@ export interface Database {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          id: string
+          account_id: string
+          endpoint: string
+          keys_auth: string
+          keys_p256dh: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          endpoint: string
+          keys_auth: string
+          keys_p256dh: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          endpoint?: string
+          keys_auth?: string
+          keys_p256dh?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      patient_vocabulary: {
+        Row: {
+          id: string
+          account_id: string
+          patient_term: string
+          mapped_term: string
+          field_name: string
+          usage_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          patient_term: string
+          mapped_term: string
+          field_name: string
+          usage_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          patient_term?: string
+          mapped_term?: string
+          field_name?: string
+          usage_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       symptom_events: {
         Row: {
           id: string
@@ -132,7 +216,17 @@ export interface Database {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      upsert_vocabulary_entry: {
+        Args: {
+          p_account_id: string
+          p_patient_term: string
+          p_mapped_term: string
+          p_field_name: string
+        }
+        Returns: undefined
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

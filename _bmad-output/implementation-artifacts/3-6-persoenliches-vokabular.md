@@ -1,6 +1,6 @@
 # Story 3.6: Persönliches Symptom-Vokabular
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -17,60 +17,61 @@ So that meine individuellen Beschreibungen (z.B. "Stächä" für stechender Schm
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: DB-Migration für patient_vocabulary (AC: #1)
-  - [ ] `supabase/migrations/00011_patient_vocabulary.sql` erstellen
-  - [ ] `patient_vocabulary`-Tabelle: `id UUID PK DEFAULT gen_random_uuid()`, `account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE`, `patient_term TEXT NOT NULL`, `mapped_term TEXT NOT NULL`, `field_name TEXT NOT NULL`, `usage_count INT NOT NULL DEFAULT 1`, `created_at TIMESTAMPTZ DEFAULT now()`, `updated_at TIMESTAMPTZ DEFAULT now()`
-  - [ ] UNIQUE Constraint auf `(account_id, patient_term, field_name)` — ein Mapping pro Term+Feld pro Patient
-  - [ ] RLS-Policy: Patient liest/schreibt nur eigenes Vokabular (`auth.uid() = account_id`)
-  - [ ] Index auf `account_id` für schnelle Abfragen
-  - [ ] TypeScript-Typen regenerieren
-- [ ] Task 2: Vokabular-Service (AC: #1, #2)
-  - [ ] `src/lib/db/vocabulary.ts` erstellen
-  - [ ] `getVocabulary(supabase: SupabaseClient, accountId: string): Promise<VocabularyEntry[]>` — alle Einträge des Patienten
-  - [ ] `upsertVocabularyEntry(supabase: SupabaseClient, entry: UpsertVocabulary): Promise<void>` — Eintrag erstellen oder `usage_count` erhöhen
-  - [ ] `VocabularyEntry` Typ: `{ patientTerm: string, mappedTerm: string, fieldName: string, usageCount: number }`
-  - [ ] Service-Client für Pipeline-Kontext, Server-Client für Server Actions
-- [ ] Task 3: Vokabular aus Korrekturen aufbauen (AC: #1)
-  - [ ] `src/lib/ai/vocabulary-builder.ts` erstellen
-  - [ ] `updateVocabularyFromCorrection(supabase: SupabaseClient, accountId: string, correction: { fieldName: string, originalValue: string, correctedValue: string }): Promise<void>`
-  - [ ] Logik: Wenn `originalValue !== correctedValue` → Upsert in `patient_vocabulary`
-  - [ ] Bei bestehendem Eintrag: `usage_count` incrementieren, `updated_at` aktualisieren
-  - [ ] Aufgerufen nach jeder Korrektur in `correctExtractedField` und `answerClarification`
-- [ ] Task 4: Prompt-Enrichment erweitern (AC: #2, #3)
-  - [ ] `src/lib/ai/prompt-enrichment.ts` erweitern
-  - [ ] `buildVocabularyContext(vocabulary: VocabularyEntry[]): string` — formatiert Vokabular als Prompt-Kontext
-  - [ ] Format: `Persönliches Vokabular:\n- "Rügge" → "Rücken" (body_region, 5x verwendet)\n- "Stächä" → "stechend" (symptom_type, 3x)`
-  - [ ] `ExtractionContext` erweitern: `{ corrections?: string, vocabulary?: string }`
-  - [ ] Pipeline-Integration: Vokabular laden und an Extraktion übergeben
-- [ ] Task 5: Pipeline-Integration (AC: #2, #3)
-  - [ ] `src/lib/ai/pipeline.ts` erweitern
-  - [ ] Vor Extraktion: `getVocabulary(supabase, accountId)` laden
-  - [ ] `buildVocabularyContext(vocabulary)` → Kontext-String
-  - [ ] `extractSymptomData(rawInput, { corrections, vocabulary })` aufrufen
-  - [ ] Claude-Provider: Vokabular-Kontext an System-Prompt anhängen (analog zu Corrections in Story 3.5)
-  - [ ] Performance: Vocabulary-Query einzelner SELECT → <50ms
-- [ ] Task 6: Mehr-Seite Vokabular-Ansicht (AC: #4)
-  - [ ] `src/app/(app)/mehr/vokabular/page.tsx` erstellen (Server Component)
-  - [ ] Vokabular des Patienten laden (Server-seitig via `createServerClient`)
-  - [ ] Read-only Liste: Tabelle mit Spalten "Mein Begriff", "Bedeutung", "Häufigkeit"
-  - [ ] Sortiert nach `usage_count` DESC (häufigste zuerst)
-  - [ ] Empty-State: "Noch keine Begriffe gelernt. Das System lernt automatisch aus deinen Korrekturen."
-  - [ ] Link in Mehr-Seite (`src/app/(app)/mehr/page.tsx`) hinzufügen: "Mein Vokabular"
-- [ ] Task 7: Server Actions erweitern (AC: #1)
-  - [ ] `src/lib/actions/symptom-actions.ts` — `correctExtractedField` und `answerClarification` erweitern
-  - [ ] Nach erfolgreicher Korrektur: `updateVocabularyFromCorrection()` aufrufen
-  - [ ] Fire-and-Forget: Vokabular-Update darf Korrektur nicht blockieren (`.catch()` mit Logging)
-- [ ] Task 8: Tests (AC: #1-#4)
-  - [ ] `src/__tests__/lib/db/vocabulary.test.ts` — getVocabulary, upsertVocabularyEntry
-  - [ ] `src/__tests__/lib/ai/vocabulary-builder.test.ts` — updateVocabularyFromCorrection: neuer Eintrag, bestehender Eintrag (increment), gleicher Wert (kein Eintrag)
-  - [ ] `src/__tests__/lib/ai/prompt-enrichment.test.ts` — Erweitert: buildVocabularyContext, kombinierter Kontext
-  - [ ] `src/__tests__/lib/ai/pipeline.test.ts` — Erweitert: Vokabular in Pipeline
-  - [ ] `src/__tests__/app/vokabular-page.test.tsx` — Vokabular-Anzeige, Empty-State
-  - [ ] Bestehende Tests dürfen NICHT brechen
-  - [ ] `npm run test` verifizieren
-- [ ] Task 9: Build-Verifikation
-  - [ ] `npm run lint` fehlerfrei
-  - [ ] `npm run build` erfolgreich
+- [x] Task 1: DB-Migration für patient_vocabulary (AC: #1)
+  - [x] `supabase/migrations/00011_patient_vocabulary.sql` erstellen
+  - [x] `patient_vocabulary`-Tabelle: `id UUID PK DEFAULT gen_random_uuid()`, `account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE`, `patient_term TEXT NOT NULL`, `mapped_term TEXT NOT NULL`, `field_name TEXT NOT NULL`, `usage_count INT NOT NULL DEFAULT 1`, `created_at TIMESTAMPTZ DEFAULT now()`, `updated_at TIMESTAMPTZ DEFAULT now()`
+  - [x] UNIQUE Constraint auf `(account_id, patient_term, field_name)` — ein Mapping pro Term+Feld pro Patient
+  - [x] RLS-Policy: Patient liest/schreibt nur eigenes Vokabular (`auth.uid() = account_id`)
+  - [x] Index auf `account_id` für schnelle Abfragen
+  - [x] TypeScript-Typen regenerieren
+- [x] Task 2: Vokabular-Service (AC: #1, #2)
+  - [x] `src/lib/db/vocabulary.ts` erstellen
+  - [x] `getVocabulary(supabase: SupabaseClient, accountId: string): Promise<VocabularyEntry[]>` — alle Einträge des Patienten
+  - [x] `upsertVocabularyEntry(supabase: SupabaseClient, entry: UpsertVocabulary): Promise<void>` — Eintrag erstellen oder `usage_count` erhöhen
+  - [x] `VocabularyEntry` Typ: `{ patientTerm: string, mappedTerm: string, fieldName: string, usageCount: number }`
+  - [x] Service-Client für Pipeline-Kontext, Server-Client für Server Actions
+- [x] Task 3: Vokabular aus Korrekturen aufbauen (AC: #1)
+  - [x] `src/lib/ai/vocabulary-builder.ts` erstellen
+  - [x] `updateVocabularyFromCorrection(supabase: SupabaseClient, accountId: string, correction: { fieldName: string, originalValue: string, correctedValue: string }): Promise<void>`
+  - [x] Logik: Wenn `originalValue !== correctedValue` → Upsert in `patient_vocabulary`
+  - [x] Bei bestehendem Eintrag: `usage_count` incrementieren, `updated_at` aktualisieren
+  - [x] Aufgerufen nach jeder Korrektur in `correctExtractedField` und `answerClarification`
+- [x] Task 4: Prompt-Enrichment erweitern (AC: #2, #3)
+  - [x] `src/lib/ai/prompt-enrichment.ts` erweitern
+  - [x] `buildVocabularyContext(vocabulary: VocabularyEntry[]): string` — formatiert Vokabular als Prompt-Kontext
+  - [x] Format: `Persönliches Vokabular:\n- "Rügge" → "Rücken" (body_region, 5x verwendet)\n- "Stächä" → "stechend" (symptom_type, 3x)`
+  - [x] `ExtractionContext` erweitern: `{ corrections?: string, vocabulary?: string }`
+  - [x] Pipeline-Integration: Vokabular laden und an Extraktion übergeben
+- [x] Task 5: Pipeline-Integration (AC: #2, #3)
+  - [x] `src/lib/ai/pipeline.ts` erweitern
+  - [x] Vor Extraktion: `getVocabulary(supabase, accountId)` laden
+  - [x] `buildVocabularyContext(vocabulary)` → Kontext-String
+  - [x] `extractSymptomData(rawInput, { corrections, vocabulary })` aufrufen
+  - [x] Claude-Provider: Vokabular-Kontext an System-Prompt anhängen (analog zu Corrections in Story 3.5)
+  - [x] Performance: Vocabulary-Query einzelner SELECT → <50ms
+- [x] Task 6: Mehr-Seite Vokabular-Ansicht (AC: #4)
+  - [x] `src/app/(app)/more/vokabular/page.tsx` erstellen (Server Component)
+  - [x] Vokabular des Patienten laden (Server-seitig via `createServerClient`)
+  - [x] Read-only Liste: Tabelle mit Spalten "Mein Begriff", "Bedeutung", "Häufigkeit"
+  - [x] Sortiert nach `usage_count` DESC (häufigste zuerst)
+  - [x] Empty-State: "Noch keine Begriffe gelernt. Das System lernt automatisch aus deinen Korrekturen."
+  - [x] Link in Mehr-Seite (`src/app/(app)/more/page.tsx`) hinzufügen: "Mein Vokabular"
+- [x] Task 7: Server Actions erweitern (AC: #1)
+  - [x] `src/lib/actions/symptom-actions.ts` — `correctExtractedField` und `answerClarification` erweitern
+  - [x] Nach erfolgreicher Korrektur: `updateVocabularyFromCorrection()` aufrufen
+  - [x] Fire-and-Forget: Vokabular-Update darf Korrektur nicht blockieren (`.catch()` mit Logging)
+- [x] Task 8: Tests (AC: #1-#4)
+  - [x] `src/__tests__/lib/db/vocabulary.test.ts` — getVocabulary, upsertVocabularyEntry (6 Tests)
+  - [x] `src/__tests__/lib/ai/vocabulary-builder.test.ts` — updateVocabularyFromCorrection: neuer Eintrag, bestehender Eintrag (increment), gleicher Wert (kein Eintrag) (3 Tests)
+  - [x] `src/__tests__/lib/ai/prompt-enrichment.test.ts` — Erweitert: buildVocabularyContext, kombinierter Kontext (4 neue Tests)
+  - [x] `src/__tests__/lib/ai/pipeline.test.ts` — Erweitert: Vokabular in Pipeline (3 neue Tests)
+  - [x] `src/__tests__/app/vokabular-page.test.tsx` — Vokabular-Anzeige, Empty-State (5 Tests)
+  - [x] `src/__tests__/more-page.test.tsx` — Erweitert: Vokabular-Link (2 neue Tests)
+  - [x] Bestehende Tests dürfen NICHT brechen
+  - [x] `npm run test` verifizieren — 357/357 Tests bestanden
+- [x] Task 9: Build-Verifikation
+  - [x] `npm run lint` — keine neuen Fehler (alle vorbestehend in e2e/sw.js)
+  - [x] `npm run build` — vorbestehender Fehler in `web-push` Types (Story 3.4), keine neuen Fehler
 
 ## Dev Notes
 
@@ -263,15 +264,51 @@ Der Service nutzt dann `supabase.rpc('upsert_vocabulary_entry', { ... })` statt 
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+- Alle 363 Unit-Tests bestanden (43 Testdateien)
+- Lint: Keine neuen Fehler (vorbestehende in e2e/sw.js)
+- Build: Vorbestehender `web-push` Types-Fehler (Story 3.4), keine neuen Fehler
+- TypeScript: Keine Fehler in allen neuen/modifizierten Dateien
+- Code-Review: 4 Fixes angewendet (1 HIGH, 3 MEDIUM)
+
 ### Completion Notes List
 
+- RPC-Funktion `upsert_vocabulary_entry` für atomares usage_count Increment implementiert (wie in Dev Notes empfohlen)
+- Mehr-Seite Route ist `/more/` nicht `/mehr/` — Vokabular-Seite entsprechend unter `/more/vokabular/` erstellt
+- Vocabulary-Loading parallel mit Corrections via `Promise.all` für optimale Performance
+- Fire-and-Forget Pattern für Vokabular-Updates in Server Actions (`.catch()` mit Logging)
+- `patient_term` wird immer als `toLowerCase()` gespeichert für konsistenten Match
+
 ### File List
+
+**Neue Dateien:**
+- `supabase/migrations/00011_patient_vocabulary.sql` — DB-Migration mit Tabelle, RLS, Index, RPC-Funktion
+- `src/lib/db/vocabulary.ts` — Vokabular-Service (getVocabulary, upsertVocabularyEntry)
+- `src/lib/ai/vocabulary-builder.ts` — Vokabular aus Korrekturen aufbauen
+- `src/app/(app)/more/vokabular/page.tsx` — Read-only Vokabular-Ansicht (Server Component)
+- `src/__tests__/lib/db/vocabulary.test.ts` — 6 Tests
+- `src/__tests__/lib/ai/vocabulary-builder.test.ts` — 5 Tests
+- `src/__tests__/app/vokabular-page.test.tsx` — 5 Tests
+
+**Modifizierte Dateien:**
+- `src/types/ai.ts` — VocabularyEntry Interface, ExtractionContext um vocabulary erweitert
+- `src/types/database.ts` — patient_vocabulary Tabellen-Typen und RPC-Funktion-Typ
+- `src/lib/ai/prompt-enrichment.ts` — buildVocabularyContext() hinzugefügt
+- `src/lib/ai/pipeline.ts` — Paralleles Laden von Vocabulary + Corrections, kombinierter Context
+- `src/lib/ai/providers/claude.ts` — Vocabulary-Kontext an System-Prompt anhängen
+- `src/lib/actions/symptom-actions.ts` — Vocabulary-Update nach Korrekturen (Fire-and-Forget)
+- `src/app/(app)/more/page.tsx` — "KI & Lernen" Section mit "Mein Vokabular" Link
+- `src/__tests__/lib/ai/prompt-enrichment.test.ts` — 4 neue Tests (10 total)
+- `src/__tests__/lib/ai/pipeline.test.ts` — 3 neue Tests
+- `src/__tests__/more-page.test.tsx` — 2 neue Tests (9 total)
+- `src/__tests__/symptom-actions.test.ts` — 2 neue Tests für Vocabulary-Integration
 
 ## Change Log
 
 - 2026-03-03: Story 3.6 erstellt — Persönliches Vokabular mit automatischem Aufbau aus Korrekturen, Prompt-Enrichment, Read-only Ansicht
 - 2026-03-03: Party-Mode Review — 2 Findings eingearbeitet: (1) RPC-Funktion für atomares usage_count Increment empfohlen statt Select+Update, (2) Mehr-Seite Navigation-Pattern aus Story 1.6/1.7 referenziert
+- 2026-03-03: Implementation abgeschlossen — Alle 9 Tasks implementiert, 357/357 Tests bestanden, Status → review
+- 2026-03-04: Code-Review — 4 Fixes: (H1) auth.uid()-Check in RPC-Funktion, (M1) Leere-String-Guard in vocabulary-builder, (M2) Vocabulary-Integration-Tests in symptom-actions, (M3) LIMIT(200) in getVocabulary. 363/363 Tests bestanden.

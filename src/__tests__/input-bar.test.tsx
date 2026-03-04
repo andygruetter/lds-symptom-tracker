@@ -119,11 +119,11 @@ describe('InputBar', () => {
     expect(onSendText).not.toHaveBeenCalled()
   })
 
-  it('zeigt disabled Kamera-Button', () => {
+  it('zeigt aktiven Kamera-Button', () => {
     render(<InputBar onSendText={vi.fn()} />)
 
     const cameraBtn = screen.getByLabelText('Foto aufnehmen')
-    expect(cameraBtn).toBeDisabled()
+    expect(cameraBtn).not.toBeDisabled()
   })
 
   it('hat min 44x44px Touch-Targets (min-h-11 min-w-11)', () => {

@@ -80,8 +80,13 @@ export const claudeProvider: ExtractionProvider = {
   async extract(rawInput: string, context?: ExtractionContext): Promise<ExtractionResult> {
     const client = createClient()
 
-    const fullSystemPrompt = context?.corrections
-      ? `${systemPrompt}\n\nFrühere Korrekturen dieses Patienten (berücksichtigen für höhere Konfidenz):\n${context.corrections}`
+    const contextParts = [
+      context?.corrections,
+      context?.vocabulary,
+    ].filter(Boolean)
+
+    const fullSystemPrompt = contextParts.length > 0
+      ? `${systemPrompt}\n\n${contextParts.join('\n\n')}`
       : systemPrompt
 
     const response = await client.messages.create({

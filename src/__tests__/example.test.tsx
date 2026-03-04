@@ -7,14 +7,33 @@ vi.mock('@/hooks/use-symptom-events', () => ({
   useSymptomEvents: () => ({
     events: [],
     extractedDataMap: {},
+    photosMap: {},
     isLoading: false,
     addOptimisticEvent: vi.fn(() => 'optimistic-1'),
     removeOptimisticEvent: vi.fn(),
+    refreshExtractedData: vi.fn(),
+    refreshPhotos: vi.fn(),
   }),
+}))
+
+vi.mock('@/lib/db/client', () => ({
+  createBrowserClient: vi.fn(() => ({
+    storage: { from: vi.fn() },
+  })),
+}))
+
+vi.mock('@/lib/db/media', () => ({
+  getSignedPhotoUrl: vi.fn(),
 }))
 
 vi.mock('@/lib/actions/symptom-actions', () => ({
   createSymptomEvent: vi.fn(),
+  createVoiceSymptomEvent: vi.fn(),
+  addPhotosToEvent: vi.fn(),
+  confirmSymptomEvent: vi.fn(),
+  correctExtractedField: vi.fn(),
+  endSymptomEvent: vi.fn(),
+  answerClarification: vi.fn(),
 }))
 
 describe('Capture Page', () => {

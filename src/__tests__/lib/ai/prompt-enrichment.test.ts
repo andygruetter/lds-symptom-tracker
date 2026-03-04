@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Correction } from '@/types/ai'
+import type { Correction, VocabularyEntry } from '@/types/ai'
 
-import { buildCorrectionContext } from '@/lib/ai/prompt-enrichment'
+import { buildCorrectionContext, buildVocabularyContext } from '@/lib/ai/prompt-enrichment'
 
 describe('buildCorrectionContext', () => {
   it('gibt leeren String zurück wenn keine Korrekturen vorhanden', () => {
@@ -127,5 +127,76 @@ describe('buildCorrectionContext', () => {
     expect(result).toContain('Rügge')
     expect(result).toContain('links')
     expect(result).toContain('Chopfweh')
+  })
+})
+
+describe('buildVocabularyContext', () => {
+  it('gibt leeren String zurück wenn kein Vokabular vorhanden', () => {
+    const result = buildVocabularyContext([])
+    expect(result).toBe('')
+  })
+
+  it('formatiert einzelnen Vokabular-Eintrag korrekt', () => {
+    const vocabulary: VocabularyEntry[] = [
+      {
+        patientTerm: 'rügge',
+        mappedTerm: 'Rücken',
+        fieldName: 'body_region',
+        usageCount: 5,
+      },
+    ]
+
+    const result = buildVocabularyContext(vocabulary)
+
+    expect(result).toContain('rügge')
+    expect(result).toContain('Rücken')
+    expect(result).toContain('body_region')
+    expect(result).toContain('5x bestätigt')
+  })
+
+  it('formatiert mehrere Einträge korrekt', () => {
+    const vocabulary: VocabularyEntry[] = [
+      {
+        patientTerm: 'rügge',
+        mappedTerm: 'Rücken',
+        fieldName: 'body_region',
+        usageCount: 5,
+      },
+      {
+        patientTerm: 'stächä',
+        mappedTerm: 'stechend',
+        fieldName: 'symptom_type',
+        usageCount: 3,
+      },
+      {
+        patientTerm: 'chopfweh',
+        mappedTerm: 'Kopfschmerzen',
+        fieldName: 'symptom_name',
+        usageCount: 2,
+      },
+    ]
+
+    const result = buildVocabularyContext(vocabulary)
+
+    expect(result).toContain('rügge')
+    expect(result).toContain('stächä')
+    expect(result).toContain('chopfweh')
+    expect(result).toContain('Persönliches Vokabular')
+  })
+
+  it('enthält Instruktion für Claude', () => {
+    const vocabulary: VocabularyEntry[] = [
+      {
+        patientTerm: 'rügge',
+        mappedTerm: 'Rücken',
+        fieldName: 'body_region',
+        usageCount: 1,
+      },
+    ]
+
+    const result = buildVocabularyContext(vocabulary)
+
+    expect(result).toContain('Konfidenz')
+    expect(result).toContain('90+')
   })
 })

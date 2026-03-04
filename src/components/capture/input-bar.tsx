@@ -2,25 +2,29 @@
 
 import { useRef, useState } from 'react'
 
-import { Camera, Mic, MicOff, SendHorizontal, X } from 'lucide-react'
+import { Mic, MicOff, SendHorizontal, X } from 'lucide-react'
 
 import { AudioWaveform } from '@/components/capture/audio-waveform'
+import { PhotoPicker } from '@/components/capture/photo-picker'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { cn } from '@/lib/utils'
 
 interface InputBarProps {
   onSendText: (text: string) => void | Promise<void>
   onSendAudio?: (blob: Blob, mimeType: string) => void | Promise<void>
+  onSendPhotos?: (text: string | null, photos: File[]) => void | Promise<void>
   disabled?: boolean
 }
 
 export function InputBar({
   onSendText,
   onSendAudio,
+  onSendPhotos,
   disabled = false,
 }: InputBarProps) {
   const [text, setText] = useState('')
   const [isSendingMessage, setIsSendingMessage] = useState(false)
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const {
@@ -36,6 +40,7 @@ export function InputBar({
   } = useAudioRecorder()
 
   const hasText = text.trim().length > 0
+  const hasPhotos = pendingPhotos.length > 0
   const isRecording = recordingState === 'recording'
   const isProcessing = recordingState === 'processing'
   const isPermissionDenied = permission === 'denied'
@@ -44,6 +49,26 @@ export function InputBar({
 
   const handleSend = async () => {
     const trimmed = text.trim()
+
+    // Photos (with or without text)
+    if (hasPhotos && onSendPhotos) {
+      setIsSendingMessage(true)
+      setText('')
+      setPendingPhotos([])
+
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto'
+      }
+
+      try {
+        await onSendPhotos(trimmed || null, pendingPhotos)
+      } finally {
+        setIsSendingMessage(false)
+      }
+      return
+    }
+
+    // Text only
     if (!trimmed || isSendingMessage) return
 
     setIsSendingMessage(true)
@@ -96,9 +121,19 @@ export function InputBar({
     cancelRecording()
   }
 
+  const handlePhotosSelected = (files: File[]) => {
+    setPendingPhotos((prev) => [...prev, ...files])
+  }
+
+  const handleRemovePhoto = (index: number) => {
+    setPendingPhotos((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const showSendButton = hasText || hasPhotos
+
   return (
     <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-background px-4 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-      <div className="mx-auto flex max-w-screen-sm items-end gap-2">
+      <div className="relative mx-auto flex max-w-screen-sm items-end gap-2">
         {isRecording || isProcessing ? (
           <>
             {/* Cancel-Button */}
@@ -127,15 +162,13 @@ export function InputBar({
           </>
         ) : (
           <>
-            {/* Kamera-Button (Platzhalter) */}
-            <button
-              type="button"
-              disabled
-              aria-label="Foto aufnehmen"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground opacity-40"
-            >
-              <Camera className="size-5" aria-hidden="true" />
-            </button>
+            {/* Photo Picker (Kamera-Button + Vorschau) */}
+            <PhotoPicker
+              pendingPhotos={pendingPhotos}
+              onPhotosSelected={handlePhotosSelected}
+              onRemovePhoto={handleRemovePhoto}
+              disabled={disabled || isSendingMessage}
+            />
 
             {/* Text-Input */}
             <textarea
@@ -155,7 +188,7 @@ export function InputBar({
             />
 
             {/* Send / Mikrofon Button */}
-            {hasText ? (
+            {showSendButton ? (
               <button
                 type="button"
                 onClick={handleSend}
@@ -170,6 +203,8 @@ export function InputBar({
                 type="button"
                 onPointerDown={handlePointerDown}
                 onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+                onPointerCancel={handlePointerUp}
                 disabled={isMicDisabled || disabled}
                 aria-label={
                   isMicDisabled
@@ -177,6 +212,7 @@ export function InputBar({
                     : 'Sprachaufnahme starten'
                 }
                 title={isMicDisabled ? 'Mikrofon-Zugriff benötigt' : undefined}
+                style={{ touchAction: 'none' }}
                 className={cn(
                   'flex min-h-11 min-w-11 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50',
                   isMicDisabled && 'opacity-40',

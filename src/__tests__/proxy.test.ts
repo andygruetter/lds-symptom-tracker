@@ -55,7 +55,7 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('middleware', () => {
+describe('proxy', () => {
   it('leitet unauthentifizierte Nutzer zu /auth/login um', async () => {
     const mockResponse = new Response()
     mockUpdateSession.mockResolvedValue({
@@ -63,10 +63,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result?.status).toBe(307)
     expect(result?.headers.get('Location')).toContain('/auth/login')
@@ -82,10 +82,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result).toBe(mockResponse)
   })
@@ -97,10 +97,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result?.status).toBe(307)
     expect(result?.headers.get('Location')).toContain('/disclaimer')
@@ -113,10 +113,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/disclaimer')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result).toBe(mockResponse)
   })
@@ -131,10 +131,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/auth/login')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result?.status).toBe(307)
     expect(result?.headers.get('Location')).toContain('/')
@@ -148,10 +148,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/auth/login')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result).toBe(mockResponse)
   })
@@ -163,10 +163,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/api/health')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result).toBe(mockResponse)
   })
@@ -178,10 +178,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/share/abc123')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result).toBe(mockResponse)
   })
@@ -193,10 +193,10 @@ describe('middleware', () => {
       supabaseResponse: mockResponse,
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('/~offline')
 
-    const result = await middleware(request as Parameters<typeof middleware>[0])
+    const result = await proxy(request as Parameters<typeof proxy>[0])
 
     expect(result).toBe(mockResponse)
   })

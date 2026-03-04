@@ -211,4 +211,100 @@ describe('ChatBubble', () => {
     expect(screen.getByText('Transkribierter Text')).toBeInTheDocument()
     expect(screen.queryByText('Sprachaufnahme')).not.toBeInTheDocument()
   })
+
+  it('zeigt Mikrofon-Icon bei Voice-Event mit transkribiertem Text', () => {
+    const { container } = render(
+      <ChatBubble
+        variant="sent"
+        isVoice
+        content="Ich habe Kopfschmerzen"
+        timestamp="10:30"
+      />,
+    )
+
+    // Mikrofon-Icon sollte sichtbar sein (als Voice-Indikator)
+    const micIcon = container.querySelector('[aria-hidden="true"]')
+    expect(micIcon).toBeInTheDocument()
+    expect(screen.getByText('Ich habe Kopfschmerzen')).toBeInTheDocument()
+  })
+
+  it('zeigt Transcription-Failed mit Retry-Button', () => {
+    const onRetry = vi.fn()
+    render(
+      <ChatBubble
+        variant="received"
+        isTranscriptionFailed
+        onRetryExtraction={onRetry}
+      />,
+    )
+
+    expect(
+      screen.getByText('Transkription fehlgeschlagen'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Erneut versuchen')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Erneut versuchen'))
+    expect(onRetry).toHaveBeenCalledTimes(1)
+  })
+
+  it('zeigt Foto-Indikator bei isPhoto ohne Content', () => {
+    render(
+      <ChatBubble variant="sent" isPhoto timestamp="10:30" />,
+    )
+
+    expect(screen.getByText('Foto')).toBeInTheDocument()
+  })
+
+  it('zeigt Content statt Foto-Indikator wenn beides gesetzt', () => {
+    render(
+      <ChatBubble
+        variant="sent"
+        isPhoto
+        content="Hautausschlag am Arm"
+        timestamp="10:30"
+      />,
+    )
+
+    expect(screen.getByText('Hautausschlag am Arm')).toBeInTheDocument()
+    expect(screen.queryByText('Foto')).not.toBeInTheDocument()
+  })
+
+  it('zeigt Photo-Grid mit Loading-Skeletons ohne getSignedUrl', () => {
+    const photos = [
+      { id: 'p1', symptom_event_id: 'e1', storage_path: 'path/photo1.jpg', created_at: '2026-03-03T10:00:00Z' },
+      { id: 'p2', symptom_event_id: 'e1', storage_path: 'path/photo2.jpg', created_at: '2026-03-03T10:00:00Z' },
+    ]
+
+    render(
+      <ChatBubble
+        variant="sent"
+        content="Foto-Dokumentation"
+        photos={photos}
+        timestamp="10:30"
+      />,
+    )
+
+    const skeletons = document.querySelectorAll('.animate-pulse')
+    expect(skeletons.length).toBeGreaterThan(0)
+  })
+
+  it('zeigt +X Badge bei mehr als 3 Fotos', () => {
+    const photos = Array.from({ length: 5 }, (_, i) => ({
+      id: `p${i}`,
+      symptom_event_id: 'e1',
+      storage_path: `path/photo${i}.jpg`,
+      created_at: '2026-03-03T10:00:00Z',
+    }))
+
+    render(
+      <ChatBubble
+        variant="sent"
+        content="Viele Fotos"
+        photos={photos}
+        timestamp="10:30"
+      />,
+    )
+
+    expect(screen.getByText('+2')).toBeInTheDocument()
+  })
 })

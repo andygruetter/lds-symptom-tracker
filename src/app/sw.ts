@@ -44,6 +44,7 @@ self.addEventListener('push', (event) => {
       body: data.body ?? '',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
+      tag: 'symptom-processed',
       data: { url: data.url ?? '/' },
     }),
   )

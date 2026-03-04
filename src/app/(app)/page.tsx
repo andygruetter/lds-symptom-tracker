@@ -1,9 +1,13 @@
 'use client'
 
+import { useCallback, useRef } from 'react'
+
 import { ChatFeed } from '@/components/capture/chat-feed'
 import { InputBar } from '@/components/capture/input-bar'
+import { PushOptIn } from '@/components/capture/push-opt-in'
 import { useSymptomEvents } from '@/hooks/use-symptom-events'
 import {
+  addPhotosToEvent,
   answerClarification,
   confirmSymptomEvent,
   correctExtractedField,
@@ -11,15 +15,25 @@ import {
   createVoiceSymptomEvent,
   endSymptomEvent,
 } from '@/lib/actions/symptom-actions'
+import { createBrowserClient } from '@/lib/db/client'
+import { getSignedPhotoUrl } from '@/lib/db/media'
 
 export default function CapturePage() {
+  const supabaseRef = useRef(createBrowserClient())
+
+  const handleGetSignedPhotoUrl = useCallback(async (storagePath: string) => {
+    return getSignedPhotoUrl(supabaseRef.current, storagePath)
+  }, [])
+
   const {
     events,
     extractedDataMap,
+    photosMap,
     isLoading,
     addOptimisticEvent,
     removeOptimisticEvent,
     refreshExtractedData,
+    refreshPhotos,
   } = useSymptomEvents()
 
   const handleSendText = async (text: string) => {
@@ -38,6 +52,32 @@ export default function CapturePage() {
     const result = await createVoiceSymptomEvent(formData)
     if (result.error) {
       removeOptimisticEvent(optimisticId)
+    }
+  }
+
+  const handleSendPhotos = async (text: string | null, photos: File[]) => {
+    // Create event first (text or default "Foto-Dokumentation")
+    const rawInput = text || 'Foto-Dokumentation'
+    const optimisticId = addOptimisticEvent(rawInput)
+    const eventResult = await createSymptomEvent({ raw_input: rawInput })
+
+    if (eventResult.error || !eventResult.data) {
+      removeOptimisticEvent(optimisticId)
+      return
+    }
+
+    // Upload photos to event
+    const formData = new FormData()
+    formData.append('eventId', eventResult.data.id)
+    for (const photo of photos) {
+      formData.append('photos', photo)
+    }
+    const photoResult = await addPhotosToEvent(formData)
+    if (photoResult.error) {
+      console.error('[Photo] Upload failed:', photoResult.error.error)
+    } else {
+      // Fotos nach Upload laden (kein Realtime-Subscription für event_photos)
+      await refreshPhotos([eventResult.data.id])
     }
   }
 
@@ -90,9 +130,12 @@ export default function CapturePage() {
 
   return (
     <div className="flex h-[calc(100dvh-5rem)] flex-col pb-[4.5rem]">
+      {events.length > 0 && <PushOptIn />}
       <ChatFeed
         events={events}
         extractedDataMap={extractedDataMap}
+        photosMap={photosMap}
+        getSignedPhotoUrl={handleGetSignedPhotoUrl}
         isLoading={isLoading}
         onRetryExtraction={handleRetryExtraction}
         onConfirmEvent={handleConfirmEvent}
@@ -100,7 +143,11 @@ export default function CapturePage() {
         onEndSymptom={handleEndSymptom}
         onAnswerClarification={handleAnswerClarification}
       />
-      <InputBar onSendText={handleSendText} onSendAudio={handleSendAudio} />
+      <InputBar
+        onSendText={handleSendText}
+        onSendAudio={handleSendAudio}
+        onSendPhotos={handleSendPhotos}
+      />
     </div>
   )
 }

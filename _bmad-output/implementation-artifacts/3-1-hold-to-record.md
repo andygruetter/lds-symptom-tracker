@@ -1,6 +1,6 @@
 # Story 3.1: Hold-to-Record Audio-Erfassung
 
-Status: review
+Status: done
 
 ## Story
 
@@ -231,6 +231,27 @@ Claude Opus 4.6
 - `DOMException` Konstruktor: zweiter Parameter ist der Name (`new DOMException('msg', 'NotAllowedError')`)
 - `delete (globalThis as any).MediaRecorder` nötig statt `vi.stubGlobal(undefined)` — `in` Operator prüft Key-Existenz
 
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-03-03
+**Reviewer Model:** Claude Opus 4.6
+**Review Outcome:** Changes Requested → All Fixed
+
+### Action Items
+
+- [x] [HIGH] `after()` aus `next/server` nicht gemockt in `symptom-actions.test.ts` — 3 Tests schlugen fehl
+- [x] [MED] Fehlende `onPointerLeave`/`onPointerCancel` Handler auf Mikrofon-Button — Aufnahme lief weiter bei Finger-Wegziehen
+- [x] [MED] Fehlende `touch-action: none` auf Mikrofon-Button — Browser-Default-Touch konnte Aufnahme stören
+- [x] [MED] Schwacher `isWarning`-Test — testete nie den positiven Fall (duration >= 50s)
+- [x] [MED] `createVoiceSymptomEventSchema` validierte MIME-Type nicht als Audio-Typ — jeder String akzeptiert
+- [x] [MED] Fehlende DELETE RLS-Policy für Audio-Storage — Patienten konnten eigene Audio-Dateien nicht löschen
+
+### Unaddressed Low Issues (Akzeptiert)
+
+- [LOW] Hardcodierter `recording.webm` Dateiname in `page.tsx` (kein funktionaler Bug)
+- [LOW] Keine Behandlung von nicht-`NotAllowedError` DOMExceptions in `getUserMedia` catch
+- [LOW] Uncommitted `pipeline.ts` Null-Safety Fix (separate Änderung)
+
 ### Change Log
 
 | Datei | Aktion | Beschreibung |
@@ -257,6 +278,11 @@ Claude Opus 4.6
 | `src/__tests__/lib/ai/pipeline.test.ts` | Modifiziert | 2 neue Voice-Tests |
 | `src/__tests__/symptom-actions.test.ts` | Modifiziert | Erweiterte Mocks (createServiceClient, media, pipeline) |
 | `src/__tests__/chat-feed.test.tsx` | Modifiziert | audio_url in Test-Fixture |
+| `src/__tests__/symptom-actions.test.ts` | Review-Fix | `after()` Mock hinzugefügt |
+| `src/components/capture/input-bar.tsx` | Review-Fix | onPointerLeave/Cancel + touch-action:none |
+| `src/__tests__/hooks/use-audio-recorder.test.ts` | Review-Fix | isWarning-Test mit Fake-Timers gestärkt |
+| `src/types/symptom.ts` | Review-Fix | Audio-MIME-Prefix-Validierung |
+| `supabase/migrations/00008_audio_support.sql` | Review-Fix | DELETE RLS-Policy hinzugefügt |
 
 ### File List
 

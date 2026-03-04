@@ -1,13 +1,21 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { getRecentCorrections } from '@/lib/db/corrections'
+import { getSignedAudioUrl } from '@/lib/db/media'
+import { getVocabulary } from '@/lib/db/vocabulary'
+import { sendPushNotification } from '@/lib/push/send-notification'
+import type { ExtractionContext } from '@/types/ai'
 import type { Database } from '@/types/database'
 import type { SymptomEvent } from '@/types/symptom'
 
+import { audioMimeFromPath } from '@/lib/utils/mime'
+
 import { extractSymptomData } from './extract'
-import { buildCorrectionContext } from './prompt-enrichment'
+import { buildCorrectionContext, buildVocabularyContext } from './prompt-enrichment'
+import { transcribeAudio } from './transcribe'
 
 const PIPELINE_TIMEOUT_MS = 30_000 // 30 Sekunden für Claude API + Retries
+const TRANSCRIPTION_TIMEOUT_MS = 15_000 // 15 Sekunden für Transkription
 
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -59,30 +67,62 @@ export async function runExtractionPipeline(
 
   const event = data as SymptomEvent
 
-  if (event.status !== 'pending') {
-    return // Bereits verarbeitet
-  }
-
-  // Voice-Events ohne raw_input: Transkription ausstehend (Story 3.2)
-  if (event.event_type === 'voice' && !event.raw_input) {
-    console.log(
-      `[KI-Pipeline] Voice-Event ${symptomEventId} — Transkription ausstehend, Extraktion übersprungen`,
-    )
-    return
+  const retriableStatuses = ['pending', 'transcribed', 'extraction_failed', 'transcription_failed']
+  if (!retriableStatuses.includes(event.status)) {
+    return // Bereits verarbeitet oder bestätigt
   }
 
   try {
-    await withTimeout(async () => {
-      // 2. Corrections laden für Prompt-Enrichment
-      const corrections = await getRecentCorrections(supabase, event.account_id, 50)
-      const correctionContext = buildCorrectionContext(corrections)
+    // 2. Voice-Events: Transkription durchführen
+    let rawInput = event.raw_input ?? ''
 
-      // 3. Claude Extract mit Retry und Correction-Context
+    if (event.event_type === 'voice' && !event.raw_input) {
+      if (!event.audio_url) {
+        throw new Error('Voice-Event ohne audio_url — Upload fehlgeschlagen?')
+      }
+
+      try {
+        rawInput = await transcribeVoiceEvent(supabase, event, symptomEventId)
+      } catch (error) {
+        // Transkriptions-Fehler: Status auf transcription_failed setzen
+        const { error: statusError } = await supabase
+          .from('symptom_events')
+          .update({ status: 'transcription_failed' as string })
+          .eq('id', symptomEventId)
+
+        if (statusError) {
+          console.error(
+            '[KI-Pipeline] Failed to set transcription_failed status:',
+            statusError.message,
+          )
+        }
+
+        throw error
+      }
+    }
+
+    await withTimeout(async () => {
+      // 3. Corrections + Vokabular laden für Prompt-Enrichment
+      const [corrections, vocabulary] = await Promise.all([
+        getRecentCorrections(supabase, event.account_id, 50),
+        getVocabulary(supabase, event.account_id),
+      ])
+      const correctionContext = buildCorrectionContext(corrections)
+      const vocabularyContext = buildVocabularyContext(vocabulary)
+
+      // 4. Claude Extract mit Retry und Enrichment-Context
+      const context: ExtractionContext | undefined =
+        correctionContext || vocabularyContext
+          ? {
+              ...(correctionContext ? { corrections: correctionContext } : {}),
+              ...(vocabularyContext ? { vocabulary: vocabularyContext } : {}),
+            }
+          : undefined
       const result = await withRetry(() =>
-        extractSymptomData(event.raw_input!, correctionContext ? { corrections: correctionContext } : undefined),
+        extractSymptomData(rawInput, context),
       )
 
-      // 3. Insert extracted_data rows
+      // 5. Insert extracted_data rows
       const extractedRows = result.fields.map((field) => ({
         symptom_event_id: symptomEventId,
         field_name: field.fieldName,
@@ -102,7 +142,7 @@ export async function runExtractionPipeline(
         }
       }
 
-      // 4. Update symptom_event status + event_type
+      // 6. Update symptom_event status + event_type
       const { error: updateError } = await supabase
         .from('symptom_events')
         .update({
@@ -116,21 +156,77 @@ export async function runExtractionPipeline(
           `Failed to update event status: ${updateError.message}`,
         )
       }
+
+      // 7. Push-Notification nach erfolgreicher Extraktion (Fire-and-Forget)
+      sendPushNotification(event.account_id, {
+        title: 'Symptom verarbeitet',
+        body: 'Dein Symptom wurde verarbeitet — tippe zum Überprüfen',
+        url: '/',
+      }).catch((err) => {
+        console.error('[Push] Notification fehlgeschlagen:', err)
+      })
     }, PIPELINE_TIMEOUT_MS)
   } catch (error) {
-    // 5. Fehler: Status auf extraction_failed setzen
-    const { error: statusError } = await supabase
+    // 7. Fehler: Status auf extraction_failed setzen (falls nicht bereits transcription_failed)
+    // Bei Transkriptions-Fehler ist der Status bereits auf transcription_failed gesetzt
+    const { data: currentEvent } = await supabase
       .from('symptom_events')
-      .update({ status: 'extraction_failed' })
+      .select('status')
       .eq('id', symptomEventId)
+      .single()
 
-    if (statusError) {
-      console.error(
-        '[KI-Pipeline] Failed to set extraction_failed status:',
-        statusError.message,
-      )
+    if (currentEvent?.status !== 'transcription_failed') {
+      const { error: statusError } = await supabase
+        .from('symptom_events')
+        .update({ status: 'extraction_failed' })
+        .eq('id', symptomEventId)
+
+      if (statusError) {
+        console.error(
+          '[KI-Pipeline] Failed to set extraction_failed status:',
+          statusError.message,
+        )
+      }
     }
 
     throw error // Re-throw für Logging in API Route
   }
+}
+
+async function transcribeVoiceEvent(
+  supabase: SupabaseClient<Database>,
+  event: SymptomEvent,
+  symptomEventId: string,
+): Promise<string> {
+  // a. Audio aus Supabase Storage herunterladen
+  const signedUrl = await getSignedAudioUrl(supabase, event.audio_url!)
+  const response = await fetch(signedUrl)
+  if (!response.ok) {
+    throw new Error(`Audio-Download fehlgeschlagen: ${response.status}`)
+  }
+  const arrayBuffer = await response.arrayBuffer()
+  const audioBuffer = Buffer.from(arrayBuffer)
+
+  // b. MIME-Type aus Storage-Pfad ableiten
+  const mimeType = audioMimeFromPath(event.audio_url!)
+
+  // c. Transkription mit Retry und Timeout
+  const transcript = await withRetry(
+    () => withTimeout(() => transcribeAudio(audioBuffer, mimeType), TRANSCRIPTION_TIMEOUT_MS),
+  )
+
+  // d. raw_input in DB speichern
+  const { error: updateError } = await supabase
+    .from('symptom_events')
+    .update({
+      raw_input: transcript.text,
+      status: 'transcribed' as string,
+    })
+    .eq('id', symptomEventId)
+
+  if (updateError) {
+    throw new Error(`Failed to update raw_input: ${updateError.message}`)
+  }
+
+  return transcript.text
 }

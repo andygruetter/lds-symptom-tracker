@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 
-import { ChevronRight, FileText, Trash2 } from 'lucide-react'
+import { BookOpen, ChevronRight, FileText, LogOut, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 
 import { DeleteAccountDialog } from '@/components/account/delete-account-dialog'
+import { signOut } from '@/lib/actions/auth-actions'
 import { DisclaimerContent } from '@/components/disclaimer/disclaimer-content'
 import {
   Dialog,
@@ -42,12 +44,41 @@ export default function MorePage() {
         </div>
       </section>
 
+      {/* KI & Lernen */}
+      <section className="mb-6">
+        <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          KI & Lernen
+        </h2>
+        <div className="divide-y divide-border rounded-xl bg-card">
+          <Link
+            href="/more/vokabular"
+            className="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left"
+          >
+            <span className="flex items-center gap-3">
+              <BookOpen className="size-5 text-muted-foreground" />
+              <span className="text-sm">Mein Vokabular</span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Link>
+        </div>
+      </section>
+
       {/* Account */}
       <section>
         <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
           Account
         </h2>
         <div className="divide-y divide-border rounded-xl bg-card">
+          <button
+            onClick={() => signOut()}
+            className="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left"
+          >
+            <span className="flex items-center gap-3">
+              <LogOut className="size-5 text-muted-foreground" />
+              <span className="text-sm">Abmelden</span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
           <button
             onClick={() => setDeleteOpen(true)}
             className="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left"

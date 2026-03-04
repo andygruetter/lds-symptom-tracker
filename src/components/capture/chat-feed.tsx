@@ -7,11 +7,13 @@ import { ReviewBubble } from '@/components/capture/review-bubble'
 import { generateClarificationQuestions } from '@/lib/ai/clarification'
 import { formatActiveSince, formatDuration } from '@/lib/utils/duration'
 import type { ExtractedData } from '@/types/ai'
-import type { SymptomEvent } from '@/types/symptom'
+import type { EventPhoto, SymptomEvent } from '@/types/symptom'
 
 interface ChatFeedProps {
   events: SymptomEvent[]
   extractedDataMap?: Record<string, ExtractedData[]>
+  photosMap?: Record<string, EventPhoto[]>
+  getSignedPhotoUrl?: (storagePath: string) => Promise<string>
   isLoading: boolean
   onRetryExtraction?: (eventId: string) => void
   onConfirmEvent?: (eventId: string) => void
@@ -39,6 +41,8 @@ function formatTimestamp(dateString: string): string {
 export function ChatFeed({
   events,
   extractedDataMap = {},
+  photosMap = {},
+  getSignedPhotoUrl,
   isLoading,
   onRetryExtraction,
   onConfirmEvent,
@@ -93,8 +97,10 @@ export function ChatFeed({
         {[...events].reverse().map((event) => {
           const isMedication = event.event_type === 'medication'
           const extractedFields = extractedDataMap[event.id]
+          const eventPhotos = photosMap[event.id]
 
           const isVoice = event.event_type === 'voice'
+          const hasPhotos = eventPhotos && eventPhotos.length > 0
 
           return (
             <div key={event.id} className="flex flex-col gap-1.5">
@@ -105,18 +111,23 @@ export function ChatFeed({
                 timestamp={formatTimestamp(event.created_at)}
                 isMedication={isMedication}
                 isVoice={isVoice}
+                isPhoto={!!hasPhotos}
+                photos={eventPhotos}
+                getSignedUrl={getSignedPhotoUrl}
               />
 
-              {/* Processing indicator for pending events */}
-              {event.status === 'pending' && (
+              {/* Processing indicator for pending/transcribed events
+                 Voice+pending: Text "Sprachaufnahme wird verarbeitet..." (Transkription läuft)
+                 Voice+transcribed / Text+pending: ProcessingDots (Extraktion läuft) */}
+              {(event.status === 'pending' || event.status === 'transcribed') && (
                 <ChatBubble
                   variant="system"
                   content={
-                    isVoice
+                    isVoice && event.status === 'pending'
                       ? 'Sprachaufnahme wird verarbeitet...'
                       : undefined
                   }
-                  isProcessing={!isVoice}
+                  isProcessing={!(isVoice && event.status === 'pending')}
                 />
               )}
 
@@ -182,6 +193,19 @@ export function ChatFeed({
                 <ChatBubble
                   variant="received"
                   isExtractionFailed
+                  onRetryExtraction={
+                    onRetryExtraction
+                      ? () => onRetryExtraction(event.id)
+                      : undefined
+                  }
+                />
+              )}
+
+              {/* Transcription failed */}
+              {event.status === 'transcription_failed' && (
+                <ChatBubble
+                  variant="received"
+                  isTranscriptionFailed
                   onRetryExtraction={
                     onRetryExtraction
                       ? () => onRetryExtraction(event.id)

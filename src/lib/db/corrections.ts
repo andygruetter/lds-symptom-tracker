@@ -16,6 +16,9 @@ export async function getRecentCorrections(
     .limit(limit)
 
   if (error || !data) {
+    if (error) {
+      console.error('[Corrections] Failed to load corrections:', error.message)
+    }
     return []
   }
 

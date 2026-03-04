@@ -43,3 +43,10 @@ CREATE POLICY "audio_patient_read" ON storage.objects
     bucket_id = 'audio'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
+
+CREATE POLICY "audio_patient_delete" ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'audio'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );

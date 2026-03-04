@@ -77,4 +77,18 @@ describe('Mehr-Seite', () => {
       expect(screen.getByText(/30 Tagen unwiderruflich/)).toBeInTheDocument()
     })
   })
+
+  it('zeigt Mein Vokabular Link', async () => {
+    const MorePage = (await import('@/app/(app)/more/page')).default
+    render(<MorePage />)
+
+    expect(screen.getByText('Mein Vokabular')).toBeInTheDocument()
+  })
+
+  it('hat KI & Lernen Section', async () => {
+    const MorePage = (await import('@/app/(app)/more/page')).default
+    render(<MorePage />)
+
+    expect(screen.getByText('KI & Lernen')).toBeInTheDocument()
+  })
 })

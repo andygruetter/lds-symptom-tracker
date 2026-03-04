@@ -77,6 +77,18 @@ src/
 └── types/                # TypeScript-Typen
 ```
 
+## CI/CD
+
+GitHub Actions Pipeline (`.github/workflows/ci.yml`) läuft auf `push` (main) und Pull Requests:
+
+| Job | Beschreibung |
+|-----|-------------|
+| **lint-and-test** | ESLint, Prettier-Check, Vitest Unit-Tests |
+| **build** | Next.js Produktions-Build |
+| **e2e** | Playwright E2E-Tests (Chromium), startet nach lint-and-test + build |
+
+Benötigte GitHub Secrets: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `INTERNAL_API_SECRET`
+
 ## Status
 
 Das Projekt befindet sich in aktiver Entwicklung (MVP / Pilot-Phase). Aktuell implementiert:
@@ -87,6 +99,7 @@ Das Projekt befindet sich in aktiver Entwicklung (MVP / Pilot-Phase). Aktuell im
 - Supabase-Integration (Client, Server, Middleware)
 - PWA mit Service Worker und Offline-Fallback
 - Disclaimer-Anzeige und Mehr-Seite
+- CI-Pipeline mit GitHub Actions (Lint, Tests, Build, E2E)
 
 ## Lizenz
 
