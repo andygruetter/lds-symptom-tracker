@@ -59,7 +59,12 @@ export default function CapturePage() {
 
     const optimisticId = addOptimisticEvent(null, 'voice')
     const formData = new FormData()
-    const ext = audioMime === 'audio/wav' ? 'wav' : mimeType.includes('mp4') ? 'm4a' : 'webm'
+    const ext =
+      audioMime === 'audio/wav'
+        ? 'wav'
+        : mimeType.includes('mp4')
+          ? 'm4a'
+          : 'webm'
     formData.append('audio', audioBlob, `recording.${ext}`)
     formData.append('mimeType', audioMime)
     try {
