@@ -83,7 +83,7 @@ export async function runExtractionPipeline(
     // 2. Voice-Events: Transkription durchführen
     let rawInput = event.raw_input ?? ''
 
-    if (event.event_type === 'voice' && !event.raw_input) {
+    if (event.event_type === 'voice' && !event.raw_input?.trim()) {
       if (!event.audio_url) {
         throw new Error('Voice-Event ohne audio_url — Upload fehlgeschlagen?')
       }
@@ -106,6 +106,10 @@ export async function runExtractionPipeline(
 
         throw error
       }
+    }
+
+    if (!rawInput.trim()) {
+      throw new Error('Kein Text für Extraktion vorhanden')
     }
 
     await withTimeout(async () => {

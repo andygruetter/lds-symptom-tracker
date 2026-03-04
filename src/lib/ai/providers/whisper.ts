@@ -3,7 +3,7 @@ import OpenAI, { toFile } from 'openai'
 import { audioExtensionFromMime } from '@/lib/utils/mime'
 import type { TranscriptionProvider, TranscriptionResult } from '@/types/ai'
 
-const WHISPER_MODEL = 'gpt-4o-mini-transcribe'
+const WHISPER_MODEL = 'gpt-4o-transcribe'
 
 function createClient(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -24,8 +24,8 @@ export const whisperProvider: TranscriptionProvider = {
     const result = await client.audio.transcriptions.create({
       file,
       model: WHISPER_MODEL,
-      language: 'de',
-      response_format: 'json',
+      prompt:
+        'Falls Deutsch oder Schweizerdeutsch gesprochen wird, bitte in Hochdeutsch transkribieren.',
     })
 
     return { text: result.text }

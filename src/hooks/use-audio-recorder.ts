@@ -38,6 +38,7 @@ export function useAudioRecorder(): AudioRecorderResult {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const mediaStreamRef = useRef<MediaStream | null>(null)
+  const analyserStreamRef = useRef<MediaStream | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -75,6 +76,12 @@ export function useAudioRecorder(): AudioRecorderResult {
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop())
       mediaStreamRef.current = null
+    }
+
+    // Stop cloned analyser stream tracks
+    if (analyserStreamRef.current) {
+      analyserStreamRef.current.getTracks().forEach((track) => track.stop())
+      analyserStreamRef.current = null
     }
 
     // Close audio context
@@ -132,6 +139,9 @@ export function useAudioRecorder(): AudioRecorderResult {
       chunksRef.current = []
 
       // Setup AudioContext + AnalyserNode for waveform
+      // IMPORTANT: Use a cloned stream for the AudioContext to prevent
+      // interference with MediaRecorder (known Chrome bug where shared
+      // streams cause MediaRecorder to produce silent audio)
       const audioContext = new AudioContext()
       audioContextRef.current = audioContext
 
@@ -140,7 +150,9 @@ export function useAudioRecorder(): AudioRecorderResult {
         await audioContext.resume()
       }
 
-      const source = audioContext.createMediaStreamSource(stream)
+      const analyserStream = stream.clone()
+      analyserStreamRef.current = analyserStream
+      const source = audioContext.createMediaStreamSource(analyserStream)
       const analyser = audioContext.createAnalyser()
       analyser.fftSize = 256
       source.connect(analyser)
@@ -171,9 +183,9 @@ export function useAudioRecorder(): AudioRecorderResult {
           return
         }
 
-        setState('processing')
         resolveStopRef.current?.(blob)
         resolveStopRef.current = null
+        cleanup()
       }
 
       // Start recording — NO timeslice parameter (Safari bug!)
@@ -209,9 +221,8 @@ export function useAudioRecorder(): AudioRecorderResult {
       }
 
       resolveStopRef.current = resolve
-      mediaRecorderRef.current.stop()
 
-      // Stop duration timer and animation but keep state as 'processing'
+      // Stop timer and animation immediately
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current)
         durationIntervalRef.current = null
@@ -221,18 +232,9 @@ export function useAudioRecorder(): AudioRecorderResult {
         animationFrameRef.current = 0
       }
 
-      // Stop media tracks
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop())
-        mediaStreamRef.current = null
-      }
-
-      // Close audio context
-      if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {})
-        audioContextRef.current = null
-        analyserRef.current = null
-      }
+      // stop() triggers ondataavailable + onstop asynchronously
+      // Media tracks and audio context are cleaned up in onstop via cleanup()
+      mediaRecorderRef.current.stop()
     })
   }, [])
 

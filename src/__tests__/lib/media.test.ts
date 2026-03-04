@@ -21,12 +21,12 @@ describe('uploadAudio', () => {
     mockUpload.mockResolvedValue({ error: null })
 
     const { uploadAudio } = await import('@/lib/db/media')
-    const blob = new Blob(['audio'], { type: 'audio/webm' })
+    const buf = Buffer.from('audio')
     const path = await uploadAudio(
       mockSupabase as never,
       'user-1',
       'event-1',
-      blob,
+      buf,
       'audio/webm',
     )
 
@@ -34,7 +34,7 @@ describe('uploadAudio', () => {
     expect(mockSupabase.storage.from).toHaveBeenCalledWith('audio')
     expect(mockUpload).toHaveBeenCalledWith(
       'user-1/event-1.webm',
-      blob,
+      buf,
       expect.objectContaining({
         contentType: 'audio/webm',
         upsert: false,
@@ -46,12 +46,12 @@ describe('uploadAudio', () => {
     mockUpload.mockResolvedValue({ error: null })
 
     const { uploadAudio } = await import('@/lib/db/media')
-    const blob = new Blob(['audio'], { type: 'audio/mp4' })
+    const buf = Buffer.from('audio')
     const path = await uploadAudio(
       mockSupabase as never,
       'user-1',
       'event-1',
-      blob,
+      buf,
       'audio/mp4',
     )
 
@@ -62,19 +62,19 @@ describe('uploadAudio', () => {
     mockUpload.mockResolvedValue({ error: null })
 
     const { uploadAudio } = await import('@/lib/db/media')
-    const blob = new Blob(['audio'], { type: 'audio/webm' })
+    const buf = Buffer.from('audio')
     const path = await uploadAudio(
       mockSupabase as never,
       'user-1',
       'event-1',
-      blob,
+      buf,
       'audio/webm;codecs=opus',
     )
 
     expect(path).toBe('user-1/event-1.webm')
     expect(mockUpload).toHaveBeenCalledWith(
       'user-1/event-1.webm',
-      blob,
+      buf,
       expect.objectContaining({ contentType: 'audio/webm' }),
     )
   })
@@ -85,14 +85,14 @@ describe('uploadAudio', () => {
     })
 
     const { uploadAudio } = await import('@/lib/db/media')
-    const blob = new Blob(['audio'], { type: 'audio/webm' })
+    const buf = Buffer.from('audio')
 
     await expect(
       uploadAudio(
         mockSupabase as never,
         'user-1',
         'event-1',
-        blob,
+        buf,
         'audio/webm',
       ),
     ).rejects.toThrow('Audio upload fehlgeschlagen')
@@ -102,12 +102,12 @@ describe('uploadAudio', () => {
     mockUpload.mockResolvedValue({ error: null })
 
     const { uploadAudio } = await import('@/lib/db/media')
-    const blob = new Blob(['audio'], { type: 'audio/unknown' })
+    const buf = Buffer.from('audio')
     const path = await uploadAudio(
       mockSupabase as never,
       'user-1',
       'event-1',
-      blob,
+      buf,
       'audio/unknown',
     )
 

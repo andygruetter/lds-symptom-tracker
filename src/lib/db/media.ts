@@ -25,7 +25,7 @@ export async function uploadAudio(
   supabase: SupabaseClient<Database>,
   accountId: string,
   eventId: string,
-  blob: Blob,
+  audioData: Buffer | Uint8Array,
   mimeType: string,
 ): Promise<string> {
   const ext = audioStorageExtension(mimeType)
@@ -33,7 +33,7 @@ export async function uploadAudio(
 
   const { error } = await supabase.storage
     .from('audio')
-    .upload(storagePath, blob, {
+    .upload(storagePath, audioData, {
       contentType: mimeType.split(';')[0].trim(),
       upsert: false,
     })

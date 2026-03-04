@@ -103,17 +103,16 @@ export function InputBar({
     textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`
   }
 
-  const handlePointerDown = async () => {
+  const handleMicTap = async () => {
     if (isMicDisabled || disabled) return
-    await startRecording()
-  }
 
-  const handlePointerUp = async () => {
-    if (recordingState !== 'recording') return
-
-    const blob = await stopRecording()
-    if (blob && mimeType && onSendAudio) {
-      await onSendAudio(blob, mimeType)
+    if (recordingState === 'recording') {
+      const blob = await stopRecording()
+      if (blob && mimeType && onSendAudio) {
+        await onSendAudio(blob, mimeType)
+      }
+    } else {
+      await startRecording()
     }
   }
 
@@ -155,10 +154,15 @@ export function InputBar({
               />
             </div>
 
-            {/* Recording indicator (pulsing dot) */}
-            <div className="flex min-h-11 min-w-11 items-center justify-center">
-              <span className="size-3 animate-pulse rounded-full bg-destructive" />
-            </div>
+            {/* Stop & Send Button */}
+            <button
+              type="button"
+              onClick={handleMicTap}
+              aria-label="Aufnahme stoppen und senden"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <SendHorizontal className="size-5" aria-hidden="true" />
+            </button>
           </>
         ) : (
           <>
@@ -201,10 +205,7 @@ export function InputBar({
             ) : (
               <button
                 type="button"
-                onPointerDown={handlePointerDown}
-                onPointerUp={handlePointerUp}
-                onPointerLeave={handlePointerUp}
-                onPointerCancel={handlePointerUp}
+                onClick={handleMicTap}
                 disabled={isMicDisabled || disabled}
                 aria-label={
                   isMicDisabled
@@ -212,7 +213,6 @@ export function InputBar({
                     : 'Sprachaufnahme starten'
                 }
                 title={isMicDisabled ? 'Mikrofon-Zugriff benötigt' : undefined}
-                style={{ touchAction: 'none' }}
                 className={cn(
                   'flex min-h-11 min-w-11 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50',
                   isMicDisabled && 'opacity-40',

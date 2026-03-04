@@ -86,6 +86,9 @@ class MockMediaStream {
   getTracks() {
     return [{ stop: vi.fn() }]
   }
+  clone() {
+    return new MockMediaStream()
+  }
 }
 
 beforeEach(() => {

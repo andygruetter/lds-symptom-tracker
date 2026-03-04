@@ -119,6 +119,7 @@ beforeEach(() => {
     vi.fn().mockResolvedValue({
       ok: true,
       arrayBuffer: () => Promise.resolve(new ArrayBuffer(100)),
+      headers: new Headers({ 'content-type': 'audio/webm' }),
     }),
   )
 })

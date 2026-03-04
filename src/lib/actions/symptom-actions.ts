@@ -119,6 +119,7 @@ export async function createVoiceSymptomEvent(
     .insert({
       account_id: user.id,
       event_type: 'voice',
+      raw_input: '',
       status: 'pending',
     })
     .select()
@@ -135,14 +136,12 @@ export async function createVoiceSymptomEvent(
 
   // 4. Upload audio to Supabase Storage
   try {
-    const audioBlob = new Blob([await audio.arrayBuffer()], {
-      type: parsed.data.mimeType,
-    })
+    const audioBuffer = Buffer.from(await audio.arrayBuffer())
     const storagePath = await uploadAudio(
       supabase,
       user.id,
       event.id,
-      audioBlob,
+      audioBuffer,
       parsed.data.mimeType,
     )
 
