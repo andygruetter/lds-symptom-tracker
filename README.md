@@ -12,16 +12,16 @@ Ereignisbasierte Web-App zur Symptomerfassung für Patienten mit seltenen Erkran
 
 ## Tech Stack
 
-| Technologie | Zweck |
-|-------------|-------|
-| **Next.js 16** (App Router) | Framework, SSR, API Routes |
-| **React 19** | UI mit Server Components |
-| **TypeScript** | Type-Safety |
-| **Tailwind CSS 4 + shadcn/ui** | Styling & UI-Komponenten |
-| **Supabase** | PostgreSQL, Auth, Storage, Realtime |
-| **Serwist** | PWA / Service Worker |
-| **Vitest + Playwright** | Unit-/E2E-Tests |
-| **Vercel** | Deployment (Pay-per-Use, EU Edge) |
+| Technologie                    | Zweck                               |
+| ------------------------------ | ----------------------------------- |
+| **Next.js 16** (App Router)    | Framework, SSR, API Routes          |
+| **React 19**                   | UI mit Server Components            |
+| **TypeScript**                 | Type-Safety                         |
+| **Tailwind CSS 4 + shadcn/ui** | Styling & UI-Komponenten            |
+| **Supabase**                   | PostgreSQL, Auth, Storage, Realtime |
+| **Serwist**                    | PWA / Service Worker                |
+| **Vitest + Playwright**        | Unit-/E2E-Tests                     |
+| **Vercel**                     | Deployment (Pay-per-Use, EU Edge)   |
 
 ## Voraussetzungen
 
@@ -48,17 +48,17 @@ Die App läuft unter [http://localhost:3000](http://localhost:3000).
 
 ## Scripts
 
-| Befehl | Beschreibung |
-|--------|-------------|
-| `npm run dev` | Entwicklungsserver (Turbopack) |
-| `npm run build` | Produktions-Build |
-| `npm run start` | Produktions-Server |
-| `npm run lint` | ESLint ausführen |
-| `npm run format` | Prettier formatieren |
-| `npm run test` | Unit-Tests (Vitest) |
-| `npm run test:watch` | Tests im Watch-Modus |
-| `npm run test:coverage` | Tests mit Coverage-Report |
-| `npm run test:e2e` | E2E-Tests (Playwright) |
+| Befehl                  | Beschreibung                   |
+| ----------------------- | ------------------------------ |
+| `npm run dev`           | Entwicklungsserver (Turbopack) |
+| `npm run build`         | Produktions-Build              |
+| `npm run start`         | Produktions-Server             |
+| `npm run lint`          | ESLint ausführen               |
+| `npm run format`        | Prettier formatieren           |
+| `npm run test`          | Unit-Tests (Vitest)            |
+| `npm run test:watch`    | Tests im Watch-Modus           |
+| `npm run test:coverage` | Tests mit Coverage-Report      |
+| `npm run test:e2e`      | E2E-Tests (Playwright)         |
 
 ## Projektstruktur
 
@@ -81,11 +81,11 @@ src/
 
 GitHub Actions Pipeline (`.github/workflows/ci.yml`) läuft auf `push` (main) und Pull Requests:
 
-| Job | Beschreibung |
-|-----|-------------|
-| **lint-and-test** | ESLint, Prettier-Check, Vitest Unit-Tests |
-| **build** | Next.js Produktions-Build |
-| **e2e** | Playwright E2E-Tests (Chromium), startet nach lint-and-test + build |
+| Job               | Beschreibung                                                        |
+| ----------------- | ------------------------------------------------------------------- |
+| **lint-and-test** | ESLint, Prettier-Check, Vitest Unit-Tests                           |
+| **build**         | Next.js Produktions-Build                                           |
+| **e2e**           | Playwright E2E-Tests (Chromium), startet nach lint-and-test + build |
 
 Benötigte GitHub Secrets: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `INTERNAL_API_SECRET`
 
