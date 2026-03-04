@@ -9,9 +9,7 @@ test.describe('Insights-Seite (Auswertung)', () => {
     ).toBeVisible()
   })
 
-  test('Auswertung-Tab ist aktiv auf der Insights-Seite', async ({
-    page,
-  }) => {
+  test('Auswertung-Tab ist aktiv auf der Insights-Seite', async ({ page }) => {
     await page.goto('/insights')
     const nav = page.getByRole('navigation', { name: 'Hauptnavigation' })
     const auswertungLink = nav.locator('a[href="/insights"]')

@@ -14,7 +14,11 @@ interface PhotoPickerProps {
   onPhotosSelected: (files: File[]) => void
   onRemovePhoto: (index: number) => void
   disabled?: boolean
-  compressImage?: (file: File, maxWidth: number, quality: number) => Promise<Blob>
+  compressImage?: (
+    file: File,
+    maxWidth: number,
+    quality: number,
+  ) => Promise<Blob>
 }
 
 async function defaultCompressImage(
@@ -39,7 +43,10 @@ async function defaultCompressImage(
 
   return new Promise((resolve, reject) =>
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Bild-Komprimierung fehlgeschlagen'))),
+      (blob) =>
+        blob
+          ? resolve(blob)
+          : reject(new Error('Bild-Komprimierung fehlgeschlagen')),
       'image/jpeg',
       quality,
     ),
@@ -67,14 +74,17 @@ export function PhotoPicker({
       try {
         const blob = await compressImage(file, 1920, 0.8)
         if (blob.size > MAX_FILE_SIZE) {
-          console.warn(`[PhotoPicker] ${file.name} zu gross nach Komprimierung (${(blob.size / 1024 / 1024).toFixed(1)}MB), übersprungen`)
+          console.warn(
+            `[PhotoPicker] ${file.name} zu gross nach Komprimierung (${(blob.size / 1024 / 1024).toFixed(1)}MB), übersprungen`,
+          )
           continue
         }
-        compressed.push(
-          new File([blob], file.name, { type: 'image/jpeg' }),
-        )
+        compressed.push(new File([blob], file.name, { type: 'image/jpeg' }))
       } catch (err) {
-        console.warn(`[PhotoPicker] Komprimierung fehlgeschlagen für ${file.name}:`, err)
+        console.warn(
+          `[PhotoPicker] Komprimierung fehlgeschlagen für ${file.name}:`,
+          err,
+        )
       }
     }
 

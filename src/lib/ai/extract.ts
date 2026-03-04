@@ -1,4 +1,8 @@
-import type { ExtractionContext, ExtractionProvider, ExtractionResult } from '@/types/ai'
+import type {
+  ExtractionContext,
+  ExtractionProvider,
+  ExtractionResult,
+} from '@/types/ai'
 
 import { claudeProvider } from './providers/claude'
 import { mockProvider } from './providers/mock'

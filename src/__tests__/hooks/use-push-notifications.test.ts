@@ -53,9 +53,8 @@ beforeEach(() => {
 
 describe('usePushNotifications', () => {
   it('initialisiert mit korrekten Defaults', async () => {
-    const { usePushNotifications } = await import(
-      '@/hooks/use-push-notifications'
-    )
+    const { usePushNotifications } =
+      await import('@/hooks/use-push-notifications')
 
     const { result } = renderHook(() => usePushNotifications())
 
@@ -73,9 +72,8 @@ describe('usePushNotifications', () => {
   it('erkennt bestehende Subscription', async () => {
     mockPushManager.getSubscription.mockResolvedValueOnce(mockPushSubscription)
 
-    const { usePushNotifications } = await import(
-      '@/hooks/use-push-notifications'
-    )
+    const { usePushNotifications } =
+      await import('@/hooks/use-push-notifications')
 
     const { result } = renderHook(() => usePushNotifications())
 
@@ -89,9 +87,8 @@ describe('usePushNotifications', () => {
   it('subscribe() fragt Permission an und subscribed', async () => {
     mockSubscribePush.mockResolvedValue({ data: undefined, error: null })
 
-    const { usePushNotifications } = await import(
-      '@/hooks/use-push-notifications'
-    )
+    const { usePushNotifications } =
+      await import('@/hooks/use-push-notifications')
 
     const { result } = renderHook(() => usePushNotifications())
 
@@ -116,11 +113,12 @@ describe('usePushNotifications', () => {
   })
 
   it('subscribe() stoppt wenn Permission denied', async () => {
-    ;(Notification.requestPermission as ReturnType<typeof vi.fn>).mockResolvedValueOnce('denied')
+    ;(
+      Notification.requestPermission as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce('denied')
 
-    const { usePushNotifications } = await import(
-      '@/hooks/use-push-notifications'
-    )
+    const { usePushNotifications } =
+      await import('@/hooks/use-push-notifications')
 
     const { result } = renderHook(() => usePushNotifications())
 
@@ -141,9 +139,8 @@ describe('usePushNotifications', () => {
     mockPushManager.getSubscription.mockResolvedValue(mockPushSubscription)
     mockUnsubscribePush.mockResolvedValue({ data: undefined, error: null })
 
-    const { usePushNotifications } = await import(
-      '@/hooks/use-push-notifications'
-    )
+    const { usePushNotifications } =
+      await import('@/hooks/use-push-notifications')
 
     const { result } = renderHook(() => usePushNotifications())
 
@@ -166,9 +163,8 @@ describe('usePushNotifications', () => {
     // @ts-expect-error - testing undefined PushManager
     delete window.PushManager
 
-    const { usePushNotifications } = await import(
-      '@/hooks/use-push-notifications'
-    )
+    const { usePushNotifications } =
+      await import('@/hooks/use-push-notifications')
 
     const { result } = renderHook(() => usePushNotifications())
 

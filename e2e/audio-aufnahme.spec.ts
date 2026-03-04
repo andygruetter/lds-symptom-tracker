@@ -17,9 +17,7 @@ test.describe('Audio-Aufnahme (Sprachaufnahme)', () => {
     await cleanupTestData(userId)
   })
 
-  test('zeigt Mikrofon-Button wenn kein Text eingegeben', async ({
-    page,
-  }) => {
+  test('zeigt Mikrofon-Button wenn kein Text eingegeben', async ({ page }) => {
     // Without text, the mic button should be shown (not the send button)
     const micButton = page.getByRole('button', {
       name: /Sprachaufnahme starten|Mikrofon-Zugriff benötigt/,

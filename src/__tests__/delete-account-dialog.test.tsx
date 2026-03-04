@@ -62,9 +62,7 @@ describe('DeleteAccountDialog', () => {
     fireEvent.click(deleteButton)
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Account wird gelöscht...'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Account wird gelöscht...')).toBeInTheDocument()
     })
   })
 
@@ -83,9 +81,7 @@ describe('DeleteAccountDialog', () => {
     fireEvent.click(deleteButton)
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Löschung fehlgeschlagen'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Löschung fehlgeschlagen')).toBeInTheDocument()
     })
   })
 

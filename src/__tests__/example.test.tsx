@@ -40,9 +40,7 @@ describe('Capture Page', () => {
   it('zeigt leeren Zustand mit Hinweis-Text', () => {
     render(<CapturePage />)
 
-    expect(
-      screen.getByText(/Beschreibe dein Symptom/),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Beschreibe dein Symptom/)).toBeInTheDocument()
   })
 
   it('zeigt Input-Bar mit Placeholder', () => {

@@ -28,9 +28,7 @@ describe('ConfidenceIndicator', () => {
     render(<ConfidenceIndicator score={55} />)
 
     expect(screen.getByText('55%')).toBeInTheDocument()
-    expect(
-      screen.getByText('— unsicher, bitte überprüfen'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('— unsicher, bitte überprüfen')).toBeInTheDocument()
 
     const dot = screen.getByText('55%').previousElementSibling
     expect(dot).toHaveStyle({ backgroundColor: '#C06A3C' })
@@ -48,9 +46,7 @@ describe('ConfidenceIndicator', () => {
 
   it('zeigt Grenzwert 69% als niedrig', () => {
     render(<ConfidenceIndicator score={69} />)
-    expect(
-      screen.getByText('— unsicher, bitte überprüfen'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('— unsicher, bitte überprüfen')).toBeInTheDocument()
   })
 
   it('hat immer Text-Label neben Farbe (Accessibility)', () => {

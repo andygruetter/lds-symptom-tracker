@@ -46,9 +46,7 @@ test.describe('Medikamenten-Erfassung', () => {
 
     await capturePage.goto()
 
-    await expect(
-      page.getByText('Ibuprofen 400mg eingenommen'),
-    ).toBeVisible()
+    await expect(page.getByText('Ibuprofen 400mg eingenommen')).toBeVisible()
     await expect(page.getByText('Gespeichert ✓')).toBeVisible()
   })
 

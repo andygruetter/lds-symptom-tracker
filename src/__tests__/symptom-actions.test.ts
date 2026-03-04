@@ -104,9 +104,7 @@ describe('createSymptomEvent', () => {
       data: { user: { id: 'user-1' } },
     })
 
-    const { createSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { createSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await createSymptomEvent({ raw_input: '' })
 
     expect(result.error?.code).toBe('VALIDATION_ERROR')
@@ -114,9 +112,7 @@ describe('createSymptomEvent', () => {
   })
 
   it('gibt VALIDATION_ERROR zurück bei fehlendem raw_input', async () => {
-    const { createSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { createSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await createSymptomEvent({})
 
     expect(result.error?.code).toBe('VALIDATION_ERROR')
@@ -125,9 +121,7 @@ describe('createSymptomEvent', () => {
   it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
-    const { createSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { createSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await createSymptomEvent({
       raw_input: 'Kopfschmerzen rechts',
     })
@@ -141,9 +135,7 @@ describe('createSymptomEvent', () => {
       data: { user: { id: 'user-1' } },
     })
 
-    const { createSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { createSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await createSymptomEvent({
       raw_input: 'Kopfschmerzen rechts',
     })
@@ -164,9 +156,7 @@ describe('createSymptomEvent', () => {
       error: { message: 'DB error' },
     })
 
-    const { createSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { createSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await createSymptomEvent({
       raw_input: 'Kopfschmerzen rechts',
     })
@@ -181,9 +171,7 @@ describe('createSymptomEvent', () => {
       data: { user: { id: 'user-1' } },
     })
 
-    const { createSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { createSymptomEvent } = await import('@/lib/actions/symptom-actions')
     await createSymptomEvent({ raw_input: 'Rückenschmerzen links' })
 
     expect(mockInsert).toHaveBeenCalledWith({
@@ -197,9 +185,7 @@ describe('createSymptomEvent', () => {
       data: { user: { id: 'user-1' } },
     })
 
-    const { createSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { createSymptomEvent } = await import('@/lib/actions/symptom-actions')
     await createSymptomEvent({ raw_input: 'Kopfschmerzen rechts' })
 
     expect(mockRunExtractionPipeline).toHaveBeenCalledWith(
@@ -217,9 +203,7 @@ describe('createSymptomEvent', () => {
       error: { message: 'DB error' },
     })
 
-    const { createSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { createSymptomEvent } = await import('@/lib/actions/symptom-actions')
     await createSymptomEvent({ raw_input: 'Kopfschmerzen rechts' })
 
     expect(mockRunExtractionPipeline).not.toHaveBeenCalled()
@@ -248,9 +232,8 @@ describe('confirmSymptomEvent', () => {
   }
 
   it('gibt VALIDATION_ERROR zurück bei ungültiger Event-ID', async () => {
-    const { confirmSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { confirmSymptomEvent } =
+      await import('@/lib/actions/symptom-actions')
     const result = await confirmSymptomEvent({ eventId: 'not-a-uuid' })
 
     expect(result.error?.code).toBe('VALIDATION_ERROR')
@@ -260,9 +243,8 @@ describe('confirmSymptomEvent', () => {
   it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
-    const { confirmSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { confirmSymptomEvent } =
+      await import('@/lib/actions/symptom-actions')
     const result = await confirmSymptomEvent({ eventId: validEventId })
 
     expect(result.error?.code).toBe('AUTH_REQUIRED')
@@ -291,9 +273,8 @@ describe('confirmSymptomEvent', () => {
       },
     )
 
-    const { confirmSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { confirmSymptomEvent } =
+      await import('@/lib/actions/symptom-actions')
     const result = await confirmSymptomEvent({ eventId: validEventId })
 
     expect(result.data?.status).toBe('confirmed')
@@ -308,9 +289,8 @@ describe('confirmSymptomEvent', () => {
 
     setupConfirmMocks({ error: { message: 'Update failed' } })
 
-    const { confirmSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { confirmSymptomEvent } =
+      await import('@/lib/actions/symptom-actions')
     const result = await confirmSymptomEvent({ eventId: validEventId })
 
     expect(result.error?.code).toBe('DB_ERROR')
@@ -320,9 +300,8 @@ describe('confirmSymptomEvent', () => {
 
 describe('correctExtractedField', () => {
   it('gibt VALIDATION_ERROR zurück bei ungültigem Input', async () => {
-    const { correctExtractedField } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
     const result = await correctExtractedField({})
 
     expect(result.error?.code).toBe('VALIDATION_ERROR')
@@ -330,9 +309,8 @@ describe('correctExtractedField', () => {
   })
 
   it('gibt VALIDATION_ERROR zurück bei leerem fieldName', async () => {
-    const { correctExtractedField } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
     const result = await correctExtractedField({
       eventId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
       fieldName: '',
@@ -345,9 +323,8 @@ describe('correctExtractedField', () => {
   it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: null } })
 
-    const { correctExtractedField } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
     const result = await correctExtractedField({
       eventId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
       fieldName: 'Körperteil',
@@ -373,9 +350,8 @@ describe('correctExtractedField', () => {
       }),
     })
 
-    const { correctExtractedField } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
     const result = await correctExtractedField({
       eventId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
       fieldName: 'Körperteil',
@@ -425,17 +401,20 @@ describe('correctExtractedField', () => {
     })
     const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
     const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
-    mockUpdate.mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: updateEqInner }) })
+    mockUpdate.mockReturnValue({
+      eq: vi.fn().mockReturnValue({ eq: updateEqInner }),
+    })
 
     // Mock: insert for corrections table
-    mockInsert.mockReturnValue({ select: vi.fn().mockReturnValue({ single: vi.fn() }) })
+    mockInsert.mockReturnValue({
+      select: vi.fn().mockReturnValue({ single: vi.fn() }),
+    })
     // Override insert specifically for corrections (second from() call)
     // The mock setup uses a single from() mock, so we chain insert to resolve with no error
     mockInsert.mockResolvedValue({ error: null })
 
-    const { correctExtractedField } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
     const result = await correctExtractedField({
       eventId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
       fieldName: 'Körperteil',
@@ -486,12 +465,13 @@ describe('correctExtractedField', () => {
     })
     const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
     const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
-    mockUpdate.mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: updateEqInner }) })
+    mockUpdate.mockReturnValue({
+      eq: vi.fn().mockReturnValue({ eq: updateEqInner }),
+    })
     mockInsert.mockResolvedValue({ error: null })
 
-    const { correctExtractedField } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
     await correctExtractedField({
       eventId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
       fieldName: 'body_region',
@@ -550,9 +530,7 @@ describe('endSymptomEvent', () => {
   }
 
   it('gibt VALIDATION_ERROR zurück bei ungültiger Event-ID', async () => {
-    const { endSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { endSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await endSymptomEvent({ eventId: 'not-a-uuid' })
 
     expect(result.error?.code).toBe('VALIDATION_ERROR')
@@ -562,9 +540,7 @@ describe('endSymptomEvent', () => {
   it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
-    const { endSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { endSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await endSymptomEvent({ eventId: validEventId })
 
     expect(result.error?.code).toBe('AUTH_REQUIRED')
@@ -577,9 +553,7 @@ describe('endSymptomEvent', () => {
     })
     setupEndMocks({ data: null, error: null })
 
-    const { endSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { endSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await endSymptomEvent({ eventId: validEventId })
 
     expect(result.error?.code).toBe('NOT_FOUND')
@@ -592,9 +566,7 @@ describe('endSymptomEvent', () => {
     })
     setupEndMocks({ data: null, error: null })
 
-    const { endSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { endSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await endSymptomEvent({ eventId: validEventId })
 
     expect(result.error?.code).toBe('NOT_FOUND')
@@ -609,9 +581,7 @@ describe('endSymptomEvent', () => {
       { data: endedEvent, error: null },
     )
 
-    const { endSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { endSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await endSymptomEvent({ eventId: validEventId })
 
     expect(result.data).not.toBeNull()
@@ -629,9 +599,7 @@ describe('endSymptomEvent', () => {
       { data: null, error: { message: 'Update failed' } },
     )
 
-    const { endSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { endSymptomEvent } = await import('@/lib/actions/symptom-actions')
     const result = await endSymptomEvent({ eventId: validEventId })
 
     expect(result.error?.code).toBe('UPDATE_FAILED')
@@ -648,9 +616,7 @@ describe('endSymptomEvent', () => {
       { data: endedEvent, error: null },
     )
 
-    const { endSymptomEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { endSymptomEvent } = await import('@/lib/actions/symptom-actions')
     await endSymptomEvent({ eventId: validEventId })
 
     expect(mockRevalidatePath).toHaveBeenCalledWith('/')
@@ -665,9 +631,8 @@ describe('answerClarification', () => {
   }
 
   it('gibt VALIDATION_ERROR zurück bei ungültigem Input', async () => {
-    const { answerClarification } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { answerClarification } =
+      await import('@/lib/actions/symptom-actions')
     const result = await answerClarification({})
 
     expect(result.error?.code).toBe('VALIDATION_ERROR')
@@ -675,9 +640,8 @@ describe('answerClarification', () => {
   })
 
   it('gibt VALIDATION_ERROR zurück bei leerer Antwort', async () => {
-    const { answerClarification } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { answerClarification } =
+      await import('@/lib/actions/symptom-actions')
     const result = await answerClarification({
       ...validInput,
       answer: '',
@@ -689,9 +653,8 @@ describe('answerClarification', () => {
   it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: null } })
 
-    const { answerClarification } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { answerClarification } =
+      await import('@/lib/actions/symptom-actions')
     const result = await answerClarification(validInput)
 
     expect(result.error?.code).toBe('AUTH_REQUIRED')
@@ -712,9 +675,8 @@ describe('answerClarification', () => {
       }),
     })
 
-    const { answerClarification } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { answerClarification } =
+      await import('@/lib/actions/symptom-actions')
     const result = await answerClarification(validInput)
 
     expect(result.error?.code).toBe('NOT_FOUND')
@@ -767,9 +729,8 @@ describe('answerClarification', () => {
     // Mock: insert for corrections table
     mockInsert.mockResolvedValue({ error: null })
 
-    const { answerClarification } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { answerClarification } =
+      await import('@/lib/actions/symptom-actions')
     const result = await answerClarification(validInput)
 
     expect(result.data).not.toBeNull()
@@ -821,9 +782,8 @@ describe('answerClarification', () => {
     })
     mockInsert.mockResolvedValue({ error: null })
 
-    const { answerClarification } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { answerClarification } =
+      await import('@/lib/actions/symptom-actions')
     await answerClarification(validInput)
 
     expect(mockUpdateVocabularyFromCorrection).toHaveBeenCalledWith(
@@ -842,9 +802,7 @@ describe('addPhotosToEvent', () => {
   const validEventId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
 
   it('gibt VALIDATION_ERROR zurück bei fehlender Event-ID', async () => {
-    const { addPhotosToEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { addPhotosToEvent } = await import('@/lib/actions/symptom-actions')
     const formData = new FormData()
     const result = await addPhotosToEvent(formData)
 
@@ -853,9 +811,7 @@ describe('addPhotosToEvent', () => {
   })
 
   it('gibt VALIDATION_ERROR zurück bei fehlenden Fotos', async () => {
-    const { addPhotosToEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { addPhotosToEvent } = await import('@/lib/actions/symptom-actions')
     const formData = new FormData()
     formData.append('eventId', validEventId)
     const result = await addPhotosToEvent(formData)
@@ -867,12 +823,13 @@ describe('addPhotosToEvent', () => {
   it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
-    const { addPhotosToEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { addPhotosToEvent } = await import('@/lib/actions/symptom-actions')
     const formData = new FormData()
     formData.append('eventId', validEventId)
-    formData.append('photos', new File(['photo'], 'test.jpg', { type: 'image/jpeg' }))
+    formData.append(
+      'photos',
+      new File(['photo'], 'test.jpg', { type: 'image/jpeg' }),
+    )
     const result = await addPhotosToEvent(formData)
 
     expect(result.error?.code).toBe('AUTH_REQUIRED')
@@ -890,12 +847,13 @@ describe('addPhotosToEvent', () => {
       }),
     })
 
-    const { addPhotosToEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { addPhotosToEvent } = await import('@/lib/actions/symptom-actions')
     const formData = new FormData()
     formData.append('eventId', validEventId)
-    formData.append('photos', new File(['photo'], 'test.jpg', { type: 'image/jpeg' }))
+    formData.append(
+      'photos',
+      new File(['photo'], 'test.jpg', { type: 'image/jpeg' }),
+    )
     const result = await addPhotosToEvent(formData)
 
     expect(result.error?.code).toBe('NOT_FOUND')
@@ -909,20 +867,26 @@ describe('addPhotosToEvent', () => {
     // Ownership check succeeds
     mockEq.mockReturnValue({
       eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({ data: { id: validEventId }, error: null }),
+        single: vi
+          .fn()
+          .mockResolvedValue({ data: { id: validEventId }, error: null }),
       }),
     })
 
     // event_photos insert succeeds
     mockInsert.mockResolvedValue({ error: null })
 
-    const { addPhotosToEvent } = await import(
-      '@/lib/actions/symptom-actions'
-    )
+    const { addPhotosToEvent } = await import('@/lib/actions/symptom-actions')
     const formData = new FormData()
     formData.append('eventId', validEventId)
-    formData.append('photos', new File(['photo1'], 'img1.jpg', { type: 'image/jpeg' }))
-    formData.append('photos', new File(['photo2'], 'img2.jpg', { type: 'image/jpeg' }))
+    formData.append(
+      'photos',
+      new File(['photo1'], 'img1.jpg', { type: 'image/jpeg' }),
+    )
+    formData.append(
+      'photos',
+      new File(['photo2'], 'img2.jpg', { type: 'image/jpeg' }),
+    )
     const result = await addPhotosToEvent(formData)
 
     expect(result.error).toBeNull()

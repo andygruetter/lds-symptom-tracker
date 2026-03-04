@@ -40,15 +40,9 @@ test.describe('Nachfragen bei unsicheren Feldern', () => {
     await capturePage.goto()
 
     await expect(page.getByText('Welche Seite?')).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: 'Links' }),
-    ).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: 'Rechts' }),
-    ).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: 'Beidseits' }),
-    ).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Links' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Rechts' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Beidseits' })).toBeVisible()
   })
 
   test('Antwort auf Nachfrage speichert den Wert', async ({ page }) => {

@@ -65,9 +65,7 @@ describe('Disclaimer-Seite', () => {
     fireEvent.click(button)
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Speichern fehlgeschlagen'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Speichern fehlgeschlagen')).toBeInTheDocument()
     })
   })
 })

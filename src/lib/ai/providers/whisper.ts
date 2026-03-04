@@ -1,7 +1,7 @@
 import OpenAI, { toFile } from 'openai'
 
-import type { TranscriptionProvider, TranscriptionResult } from '@/types/ai'
 import { audioExtensionFromMime } from '@/lib/utils/mime'
+import type { TranscriptionProvider, TranscriptionResult } from '@/types/ai'
 
 const WHISPER_MODEL = 'gpt-4o-mini-transcribe'
 

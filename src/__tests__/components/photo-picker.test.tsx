@@ -76,8 +76,9 @@ describe('PhotoPicker', () => {
   })
 
   it('deaktiviert Kamera-Button bei max 5 Fotos', () => {
-    const files = Array.from({ length: 5 }, (_, i) =>
-      new File(['photo'], `test${i}.jpg`, { type: 'image/jpeg' }),
+    const files = Array.from(
+      { length: 5 },
+      (_, i) => new File(['photo'], `test${i}.jpg`, { type: 'image/jpeg' }),
     )
     global.URL.createObjectURL = vi.fn(() => 'blob:test-url')
 

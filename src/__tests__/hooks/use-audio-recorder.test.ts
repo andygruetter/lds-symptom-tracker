@@ -6,8 +6,8 @@ import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 // Mock MediaRecorder
 const mockStart = vi.fn()
 const mockStop = vi.fn()
-let mockOndataavailable: ((e: { data: Blob }) => void) | null = null
-let mockOnstop: (() => void) | null = null
+const mockOndataavailable: ((e: { data: Blob }) => void) | null = null
+const mockOnstop: (() => void) | null = null
 
 class MockMediaRecorder {
   state = 'inactive'
@@ -20,7 +20,9 @@ class MockMediaRecorder {
     mockStop.mockImplementation(() => {
       this.state = 'inactive'
       if (mockOndataavailable) {
-        mockOndataavailable({ data: new Blob(['audio-data'], { type: 'audio/webm' }) })
+        mockOndataavailable({
+          data: new Blob(['audio-data'], { type: 'audio/webm' }),
+        })
       }
       if (mockOnstop) {
         mockOnstop()
@@ -39,7 +41,9 @@ class MockMediaRecorder {
     // Simulate async events
     setTimeout(() => {
       if (this.ondataavailable) {
-        this.ondataavailable({ data: new Blob(['audio-data'], { type: 'audio/webm' }) } as never)
+        this.ondataavailable({
+          data: new Blob(['audio-data'], { type: 'audio/webm' }),
+        } as never)
       }
       if (this.onstop) {
         this.onstop(new Event('stop') as never)
@@ -126,9 +130,9 @@ describe('useAudioRecorder', () => {
   })
 
   it('setzt Permission auf denied bei NotAllowedError', async () => {
-    const mockGetUserMedia = vi.fn().mockRejectedValue(
-      new DOMException('Not allowed', 'NotAllowedError'),
-    )
+    const mockGetUserMedia = vi
+      .fn()
+      .mockRejectedValue(new DOMException('Not allowed', 'NotAllowedError'))
     Object.defineProperty(navigator, 'mediaDevices', {
       value: { getUserMedia: mockGetUserMedia },
       writable: true,
@@ -215,10 +219,15 @@ describe('useAudioRecorder', () => {
     expect(result.current.state).toBe('recording')
 
     // Zweiter Aufruf sollte ignoriert werden
-    const getUserMediaCalls = (navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>).mock.calls.length
+    const getUserMediaCalls = (
+      navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>
+    ).mock.calls.length
     await act(async () => {
       await result.current.startRecording()
     })
-    expect((navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>).mock.calls.length).toBe(getUserMediaCalls)
+    expect(
+      (navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>).mock
+        .calls.length,
+    ).toBe(getUserMediaCalls)
   })
 })

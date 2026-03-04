@@ -59,11 +59,13 @@ export async function sendPushNotification(
         )
       } catch (err: unknown) {
         // 410 Gone → Subscription abgelaufen/revoked → aus DB entfernen
-        if (err && typeof err === 'object' && 'statusCode' in err && (err as { statusCode: number }).statusCode === 410) {
-          await supabase
-            .from('push_subscriptions')
-            .delete()
-            .eq('id', sub.id)
+        if (
+          err &&
+          typeof err === 'object' &&
+          'statusCode' in err &&
+          (err as { statusCode: number }).statusCode === 410
+        ) {
+          await supabase.from('push_subscriptions').delete().eq('id', sub.id)
           return
         }
         throw err

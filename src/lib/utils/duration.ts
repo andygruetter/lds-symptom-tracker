@@ -7,8 +7,7 @@ export function formatDuration(start: Date, end: Date): string {
   if (days > 0) return `${days} Tag${days > 1 ? 'e' : ''}`
   if (hours > 0) {
     const remainMinutes = minutes % 60
-    if (remainMinutes === 0)
-      return `${hours} Stunde${hours > 1 ? 'n' : ''}`
+    if (remainMinutes === 0) return `${hours} Stunde${hours > 1 ? 'n' : ''}`
     return `${hours} Std. ${remainMinutes} Min.`
   }
   return `${minutes} Minute${minutes !== 1 ? 'n' : ''}`

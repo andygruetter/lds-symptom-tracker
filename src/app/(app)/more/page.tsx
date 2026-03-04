@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 
-import { BookOpen, ChevronRight, FileText, LogOut, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 
+import { BookOpen, ChevronRight, FileText, LogOut, Trash2 } from 'lucide-react'
+
 import { DeleteAccountDialog } from '@/components/account/delete-account-dialog'
-import { signOut } from '@/lib/actions/auth-actions'
 import { DisclaimerContent } from '@/components/disclaimer/disclaimer-content'
 import {
   Dialog,
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { signOut } from '@/lib/actions/auth-actions'
 import { DISCLAIMER_TITLE } from '@/lib/constants/disclaimer'
 
 export default function MorePage() {

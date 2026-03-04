@@ -65,7 +65,8 @@ export function usePushNotifications() {
       const registration = await navigator.serviceWorker.ready
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey).buffer as ArrayBuffer,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+          .buffer as ArrayBuffer,
       })
 
       const subscriptionJSON = subscription.toJSON()
@@ -78,7 +79,10 @@ export function usePushNotifications() {
       })
 
       if (serverResult.error) {
-        console.error('[Push] Server-Subscription fehlgeschlagen:', serverResult.error.error)
+        console.error(
+          '[Push] Server-Subscription fehlgeschlagen:',
+          serverResult.error.error,
+        )
         return
       }
 
@@ -102,9 +106,14 @@ export function usePushNotifications() {
 
       await subscription.unsubscribe()
 
-      const serverResult = await unsubscribePush({ endpoint: subscription.endpoint })
+      const serverResult = await unsubscribePush({
+        endpoint: subscription.endpoint,
+      })
       if (serverResult.error) {
-        console.error('[Push] Server-Unsubscribe fehlgeschlagen:', serverResult.error.error)
+        console.error(
+          '[Push] Server-Unsubscribe fehlgeschlagen:',
+          serverResult.error.error,
+        )
       }
 
       setIsSubscribed(false)

@@ -41,9 +41,8 @@ beforeEach(() => {
 
 describe('AppleSignInButton', () => {
   it('rendert den Button mit korrektem Text', async () => {
-    const { AppleSignInButton } = await import(
-      '@/components/auth/apple-sign-in-button'
-    )
+    const { AppleSignInButton } =
+      await import('@/components/auth/apple-sign-in-button')
     render(<AppleSignInButton />)
 
     expect(
@@ -55,9 +54,8 @@ describe('AppleSignInButton', () => {
     mockMatchMedia(false)
     mockSignInWithOAuth.mockResolvedValue({ data: {}, error: null })
 
-    const { AppleSignInButton } = await import(
-      '@/components/auth/apple-sign-in-button'
-    )
+    const { AppleSignInButton } =
+      await import('@/components/auth/apple-sign-in-button')
     render(<AppleSignInButton />)
 
     fireEvent.click(
@@ -81,9 +79,8 @@ describe('AppleSignInButton', () => {
       error: null,
     })
 
-    const { AppleSignInButton } = await import(
-      '@/components/auth/apple-sign-in-button'
-    )
+    const { AppleSignInButton } =
+      await import('@/components/auth/apple-sign-in-button')
     render(<AppleSignInButton />)
 
     fireEvent.click(
@@ -108,9 +105,8 @@ describe('AppleSignInButton', () => {
       error: new Error('OAuth failed'),
     })
 
-    const { AppleSignInButton } = await import(
-      '@/components/auth/apple-sign-in-button'
-    )
+    const { AppleSignInButton } =
+      await import('@/components/auth/apple-sign-in-button')
     render(<AppleSignInButton />)
 
     fireEvent.click(
@@ -133,9 +129,8 @@ describe('AppleSignInButton', () => {
       error: new Error('OAuth failed'),
     })
 
-    const { AppleSignInButton } = await import(
-      '@/components/auth/apple-sign-in-button'
-    )
+    const { AppleSignInButton } =
+      await import('@/components/auth/apple-sign-in-button')
     render(<AppleSignInButton />)
 
     fireEvent.click(

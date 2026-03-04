@@ -44,9 +44,8 @@ describe('acceptDisclaimer', () => {
   it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
-    const { acceptDisclaimer } = await import(
-      '@/lib/actions/disclaimer-actions'
-    )
+    const { acceptDisclaimer } =
+      await import('@/lib/actions/disclaimer-actions')
     const result = await acceptDisclaimer()
 
     expect(result.error?.code).toBe('AUTH_REQUIRED')
@@ -60,9 +59,8 @@ describe('acceptDisclaimer', () => {
     mockEq.mockResolvedValue({ error: null })
     mockUpdateUser.mockResolvedValue({ error: null })
 
-    const { acceptDisclaimer } = await import(
-      '@/lib/actions/disclaimer-actions'
-    )
+    const { acceptDisclaimer } =
+      await import('@/lib/actions/disclaimer-actions')
     const result = await acceptDisclaimer()
 
     expect(result.data).not.toBeNull()
@@ -80,9 +78,8 @@ describe('acceptDisclaimer', () => {
     })
     mockEq.mockResolvedValue({ error: new Error('DB failure') })
 
-    const { acceptDisclaimer } = await import(
-      '@/lib/actions/disclaimer-actions'
-    )
+    const { acceptDisclaimer } =
+      await import('@/lib/actions/disclaimer-actions')
     const result = await acceptDisclaimer()
 
     expect(result.error?.code).toBe('DB_ERROR')
@@ -99,9 +96,8 @@ describe('acceptDisclaimer', () => {
       error: { message: 'metadata update failed' },
     })
 
-    const { acceptDisclaimer } = await import(
-      '@/lib/actions/disclaimer-actions'
-    )
+    const { acceptDisclaimer } =
+      await import('@/lib/actions/disclaimer-actions')
     const result = await acceptDisclaimer()
 
     // DB erfolgreich → Gesamtergebnis ist Erfolg

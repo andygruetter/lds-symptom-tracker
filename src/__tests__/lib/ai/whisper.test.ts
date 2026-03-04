@@ -25,18 +25,14 @@ beforeEach(() => {
 
 describe('whisperProvider', () => {
   it('sendet Audio an OpenAI Transcriptions API', async () => {
-    const { whisperProvider } = await import(
-      '@/lib/ai/providers/whisper'
-    )
+    const { whisperProvider } = await import('@/lib/ai/providers/whisper')
 
     const buffer = Buffer.from('fake-audio-data')
     const result = await whisperProvider.transcribe(buffer, 'audio/webm')
 
-    expect(mockToFile).toHaveBeenCalledWith(
-      buffer,
-      'audio.webm',
-      { type: 'audio/webm' },
-    )
+    expect(mockToFile).toHaveBeenCalledWith(buffer, 'audio.webm', {
+      type: 'audio/webm',
+    })
     expect(mockCreate).toHaveBeenCalledWith({
       file: expect.anything(),
       model: 'gpt-4o-mini-transcribe',
@@ -47,41 +43,31 @@ describe('whisperProvider', () => {
   })
 
   it('leitet MIME-Type korrekt in Extension um', async () => {
-    const { whisperProvider } = await import(
-      '@/lib/ai/providers/whisper'
-    )
+    const { whisperProvider } = await import('@/lib/ai/providers/whisper')
 
     const buffer = Buffer.from('audio')
     await whisperProvider.transcribe(buffer, 'audio/mp4')
 
-    expect(mockToFile).toHaveBeenCalledWith(
-      buffer,
-      'audio.m4a',
-      { type: 'audio/mp4' },
-    )
+    expect(mockToFile).toHaveBeenCalledWith(buffer, 'audio.m4a', {
+      type: 'audio/mp4',
+    })
   })
 
   it('verwendet webm als Fallback für unbekannte MIME-Types', async () => {
-    const { whisperProvider } = await import(
-      '@/lib/ai/providers/whisper'
-    )
+    const { whisperProvider } = await import('@/lib/ai/providers/whisper')
 
     const buffer = Buffer.from('audio')
     await whisperProvider.transcribe(buffer, 'audio/unknown')
 
-    expect(mockToFile).toHaveBeenCalledWith(
-      buffer,
-      'audio.webm',
-      { type: 'audio/unknown' },
-    )
+    expect(mockToFile).toHaveBeenCalledWith(buffer, 'audio.webm', {
+      type: 'audio/unknown',
+    })
   })
 
   it('wirft Fehler bei API-Ausfall', async () => {
     mockCreate.mockRejectedValue(new Error('OpenAI API Error'))
 
-    const { whisperProvider } = await import(
-      '@/lib/ai/providers/whisper'
-    )
+    const { whisperProvider } = await import('@/lib/ai/providers/whisper')
 
     const buffer = Buffer.from('audio')
     await expect(
@@ -90,17 +76,13 @@ describe('whisperProvider', () => {
   })
 
   it('behandelt MIME-Type mit Codec-Suffix korrekt', async () => {
-    const { whisperProvider } = await import(
-      '@/lib/ai/providers/whisper'
-    )
+    const { whisperProvider } = await import('@/lib/ai/providers/whisper')
 
     const buffer = Buffer.from('audio')
     await whisperProvider.transcribe(buffer, 'audio/webm;codecs=opus')
 
-    expect(mockToFile).toHaveBeenCalledWith(
-      buffer,
-      'audio.webm',
-      { type: 'audio/webm;codecs=opus' },
-    )
+    expect(mockToFile).toHaveBeenCalledWith(buffer, 'audio.webm', {
+      type: 'audio/webm;codecs=opus',
+    })
   })
 })

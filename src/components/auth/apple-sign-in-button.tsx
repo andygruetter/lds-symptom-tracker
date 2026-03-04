@@ -12,9 +12,7 @@ export function AppleSignInButton() {
     setIsLoading(true)
     setErrorMessage(null)
     const supabase = createBrowserClient()
-    const isStandalone = window.matchMedia(
-      '(display-mode: standalone)',
-    ).matches
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
 
     if (isStandalone) {
       // PWA Standalone Mode: window.location.href statt Supabase-Default,
@@ -28,9 +26,7 @@ export function AppleSignInButton() {
       })
 
       if (error) {
-        setErrorMessage(
-          'Verbindung fehlgeschlagen. Bitte versuche es erneut.',
-        )
+        setErrorMessage('Verbindung fehlgeschlagen. Bitte versuche es erneut.')
         setIsLoading(false)
         return
       }
@@ -50,9 +46,7 @@ export function AppleSignInButton() {
       })
 
       if (error) {
-        setErrorMessage(
-          'Verbindung fehlgeschlagen. Bitte versuche es erneut.',
-        )
+        setErrorMessage('Verbindung fehlgeschlagen. Bitte versuche es erneut.')
         setIsLoading(false)
       }
     }

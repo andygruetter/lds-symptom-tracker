@@ -43,9 +43,7 @@ describe('InputBar', () => {
   it('zeigt Mikrofon-Button wenn kein Text eingegeben', () => {
     render(<InputBar onSendText={vi.fn()} />)
 
-    expect(
-      screen.getByLabelText('Sprachaufnahme starten'),
-    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Sprachaufnahme starten')).toBeInTheDocument()
     expect(screen.queryByLabelText('Nachricht senden')).not.toBeInTheDocument()
   })
 

@@ -23,14 +23,16 @@ test.describe('Mein Vokabular', () => {
 
   test('zeigt Empty-State wenn keine Begriffe gelernt', async ({ page }) => {
     await morePage.navigateToVokabular()
-    await expect(
-      page.getByText('Noch keine Begriffe gelernt'),
-    ).toBeVisible()
+    await expect(page.getByText('Noch keine Begriffe gelernt')).toBeVisible()
   })
 
   test('Zurück-Link führt zu /more', async ({ page }) => {
     await morePage.navigateToVokabular()
-    await page.getByRole('link', { name: '' }).or(page.locator('a[href="/more"]')).first().click()
+    await page
+      .getByRole('link', { name: '' })
+      .or(page.locator('a[href="/more"]'))
+      .first()
+      .click()
     await page.waitForURL('/more')
     await expect(page).toHaveURL('/more')
   })

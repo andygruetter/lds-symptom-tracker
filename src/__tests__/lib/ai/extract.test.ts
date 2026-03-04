@@ -60,8 +60,6 @@ describe('extractSymptomData', () => {
 
     const { extractSymptomData } = await import('@/lib/ai/extract')
 
-    await expect(
-      extractSymptomData('Test'),
-    ).rejects.toThrow('API unavailable')
+    await expect(extractSymptomData('Test')).rejects.toThrow('API unavailable')
   })
 })

@@ -33,9 +33,7 @@ test.describe.fixme('Transkription Fehler', () => {
 
     await capturePage.goto()
 
-    await expect(
-      page.getByText('Transkription fehlgeschlagen'),
-    ).toBeVisible()
+    await expect(page.getByText('Transkription fehlgeschlagen')).toBeVisible()
   })
 
   test('zeigt "Erneut versuchen" Link bei Transkription-Fehler', async ({
@@ -59,9 +57,10 @@ test.describe.fixme('Transkription Fehler', () => {
 
     await capturePage.goto()
 
-    const retryPromise = page.waitForRequest((request) =>
-      request.url().includes('/api/ai/extract') &&
-      request.method() === 'POST',
+    const retryPromise = page.waitForRequest(
+      (request) =>
+        request.url().includes('/api/ai/extract') &&
+        request.method() === 'POST',
     )
 
     await capturePage.retryExtraction()

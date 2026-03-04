@@ -99,9 +99,7 @@ describe('POST /api/ai/extract', () => {
   })
 
   it('gibt 500 zurück bei Pipeline-Fehler', async () => {
-    mockRunExtractionPipeline.mockRejectedValue(
-      new Error('Pipeline failed'),
-    )
+    mockRunExtractionPipeline.mockRejectedValue(new Error('Pipeline failed'))
 
     const { POST } = await import('@/app/api/ai/extract/route')
 

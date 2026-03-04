@@ -1,7 +1,7 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { ArrowLeft, BookOpen } from 'lucide-react'
-import Link from 'next/link'
 
 import { createServerClient } from '@/lib/db/client'
 import { getVocabulary } from '@/lib/db/vocabulary'
@@ -48,8 +48,8 @@ export default async function VokabularPage() {
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <BookOpen className="size-10 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            Noch keine Begriffe gelernt. Das System lernt automatisch aus
-            deinen Korrekturen.
+            Noch keine Begriffe gelernt. Das System lernt automatisch aus deinen
+            Korrekturen.
           </p>
         </div>
       ) : (
@@ -65,9 +65,7 @@ export default async function VokabularPage() {
             <tbody className="divide-y divide-border">
               {vocabulary.map((entry) => (
                 <tr key={`${entry.patientTerm}-${entry.fieldName}`}>
-                  <td className="px-4 py-3 font-medium">
-                    {entry.patientTerm}
-                  </td>
+                  <td className="px-4 py-3 font-medium">{entry.patientTerm}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     <span>{entry.mappedTerm}</span>
                     <span className="ml-1.5 text-xs text-muted-foreground/60">

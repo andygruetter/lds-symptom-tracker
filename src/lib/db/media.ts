@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { Database } from '@/types/database'
 import { audioStorageExtension } from '@/lib/utils/mime'
+import type { Database } from '@/types/database'
 
 const IMAGE_MIME_TO_EXT: Record<string, string> = {
   'image/jpeg': '.jpg',
@@ -115,7 +115,9 @@ export async function getSignedPhotoUrl(
     .createSignedUrl(storagePath, expiresIn)
 
   if (error || !data?.signedUrl) {
-    throw new Error(`Foto Signed URL Generierung fehlgeschlagen: ${error?.message}`)
+    throw new Error(
+      `Foto Signed URL Generierung fehlgeschlagen: ${error?.message}`,
+    )
   }
 
   return data.signedUrl

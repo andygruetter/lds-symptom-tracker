@@ -47,7 +47,9 @@ test.describe('Foto-Upload', () => {
     })
 
     // Thumbnail preview should appear
-    await expect(page.getByRole('list', { name: 'Ausgewählte Fotos' })).toBeVisible()
+    await expect(
+      page.getByRole('list', { name: 'Ausgewählte Fotos' }),
+    ).toBeVisible()
     await expect(page.getByRole('listitem')).toBeVisible()
   })
 
@@ -66,11 +68,11 @@ test.describe('Foto-Upload', () => {
     await expect(page.getByRole('listitem')).toBeVisible()
 
     // Click the remove button
-    await page
-      .getByRole('button', { name: /Foto .* entfernen/ })
-      .click()
+    await page.getByRole('button', { name: /Foto .* entfernen/ }).click()
 
-    await expect(page.getByRole('list', { name: 'Ausgewählte Fotos' })).not.toBeVisible()
+    await expect(
+      page.getByRole('list', { name: 'Ausgewählte Fotos' }),
+    ).not.toBeVisible()
   })
 
   test('Send-Button erscheint wenn Foto ausgewählt', async ({ page }) => {

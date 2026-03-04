@@ -4,11 +4,9 @@ import type { Database } from '@/types/database'
 
 // DB Row Types
 // Status: pending | transcribed | extracted | extraction_failed | transcription_failed | confirmed
-export type SymptomEvent =
-  Database['public']['Tables']['symptom_events']['Row']
+export type SymptomEvent = Database['public']['Tables']['symptom_events']['Row']
 
-export type EventPhoto =
-  Database['public']['Tables']['event_photos']['Row']
+export type EventPhoto = Database['public']['Tables']['event_photos']['Row']
 
 // Zod Schema für Server Action Input
 export const createSymptomEventSchema = z.object({

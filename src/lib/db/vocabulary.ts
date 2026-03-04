@@ -44,7 +44,10 @@ export async function upsertVocabularyEntry(
   })
 
   if (error) {
-    console.error('[Vocabulary] Failed to upsert vocabulary entry:', error.message)
+    console.error(
+      '[Vocabulary] Failed to upsert vocabulary entry:',
+      error.message,
+    )
     throw error
   }
 }

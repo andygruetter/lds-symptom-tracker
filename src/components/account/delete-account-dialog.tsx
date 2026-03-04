@@ -58,9 +58,7 @@ export function DeleteAccountDialog({
             Tagen unwiderruflich gelöscht. Du wirst sofort abgemeldet.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeletingAccount}>
             Abbrechen

@@ -15,9 +15,8 @@ describe('updateVocabularyFromCorrection', () => {
   it('erstellt Vokabular-Eintrag bei neuer Korrektur', async () => {
     const supabase = {} as never
 
-    const { updateVocabularyFromCorrection } = await import(
-      '@/lib/ai/vocabulary-builder'
-    )
+    const { updateVocabularyFromCorrection } =
+      await import('@/lib/ai/vocabulary-builder')
     await updateVocabularyFromCorrection(supabase, 'user-1', {
       fieldName: 'body_region',
       originalValue: 'Rügge',
@@ -36,9 +35,8 @@ describe('updateVocabularyFromCorrection', () => {
   it('überspringt Eintrag wenn original === corrected (keine Korrektur)', async () => {
     const supabase = {} as never
 
-    const { updateVocabularyFromCorrection } = await import(
-      '@/lib/ai/vocabulary-builder'
-    )
+    const { updateVocabularyFromCorrection } =
+      await import('@/lib/ai/vocabulary-builder')
     await updateVocabularyFromCorrection(supabase, 'user-1', {
       fieldName: 'body_region',
       originalValue: 'Rücken',
@@ -51,9 +49,8 @@ describe('updateVocabularyFromCorrection', () => {
   it('überspringt Eintrag bei leerem originalValue', async () => {
     const supabase = {} as never
 
-    const { updateVocabularyFromCorrection } = await import(
-      '@/lib/ai/vocabulary-builder'
-    )
+    const { updateVocabularyFromCorrection } =
+      await import('@/lib/ai/vocabulary-builder')
     await updateVocabularyFromCorrection(supabase, 'user-1', {
       fieldName: 'body_region',
       originalValue: '',
@@ -66,9 +63,8 @@ describe('updateVocabularyFromCorrection', () => {
   it('überspringt Eintrag bei leerem correctedValue', async () => {
     const supabase = {} as never
 
-    const { updateVocabularyFromCorrection } = await import(
-      '@/lib/ai/vocabulary-builder'
-    )
+    const { updateVocabularyFromCorrection } =
+      await import('@/lib/ai/vocabulary-builder')
     await updateVocabularyFromCorrection(supabase, 'user-1', {
       fieldName: 'body_region',
       originalValue: 'Rügge',
@@ -82,9 +78,8 @@ describe('updateVocabularyFromCorrection', () => {
     const supabase = {} as never
     mockUpsertVocabularyEntry.mockRejectedValue(new Error('DB error'))
 
-    const { updateVocabularyFromCorrection } = await import(
-      '@/lib/ai/vocabulary-builder'
-    )
+    const { updateVocabularyFromCorrection } =
+      await import('@/lib/ai/vocabulary-builder')
 
     await expect(
       updateVocabularyFromCorrection(supabase, 'user-1', {

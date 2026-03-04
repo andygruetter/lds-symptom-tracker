@@ -13,17 +13,13 @@ test.describe('Mehr-Seite', () => {
     await expect(morePage.heading).toBeVisible()
   })
 
-  test('zeigt Bereich "Rechtliches" mit Disclaimer-Link', async ({
-    page,
-  }) => {
+  test('zeigt Bereich "Rechtliches" mit Disclaimer-Link', async ({ page }) => {
     await expect(page.getByText('Rechtliches')).toBeVisible()
     await expect(morePage.disclaimerButton).toBeVisible()
   })
 
   test('zeigt Bereich "Account" mit Löschen-Option', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: 'Account' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
     await expect(morePage.deleteAccountButton).toBeVisible()
   })
 

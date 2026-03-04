@@ -31,19 +31,16 @@ export async function POST(request: Request) {
 
   const parsed = extractRequestSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'Ungültige Event-ID' },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: 'Ungültige Event-ID' }, { status: 400 })
   }
 
   // 2. Pipeline mit Service Client ausführen (RLS bypassed)
   const supabase = createServiceClient()
 
   try {
-    console.log('[DEBUG extract] Starting pipeline for:', parsed.data.symptomEventId)
+    console.info('[extract] Starting pipeline for:', parsed.data.symptomEventId)
     await runExtractionPipeline(supabase, parsed.data.symptomEventId)
-    console.log('[DEBUG extract] Pipeline completed successfully')
+    console.info('[extract] Pipeline completed successfully')
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error(

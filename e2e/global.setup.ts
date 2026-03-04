@@ -23,7 +23,8 @@ export default async function globalSetup() {
       email_confirm: true,
       user_metadata: { disclaimer_accepted: true },
     })
-    if (error) throw new Error(`Test-User erstellen fehlgeschlagen: ${error.message}`)
+    if (error)
+      throw new Error(`Test-User erstellen fehlgeschlagen: ${error.message}`)
 
     await supabase.from('accounts').insert({
       id: data.user.id,

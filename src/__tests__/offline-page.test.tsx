@@ -7,9 +7,7 @@ describe('Offline-Fallback-Seite', () => {
   it('zeigt Offline-Meldung an', () => {
     render(<OfflinePage />)
 
-    expect(
-      screen.getByText('Keine Internetverbindung'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Keine Internetverbindung')).toBeInTheDocument()
     expect(
       screen.getByText(
         'Bitte überprüfe deine Verbindung und versuche es erneut.',

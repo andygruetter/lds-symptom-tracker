@@ -83,9 +83,7 @@ describe('SymptomTag', () => {
     })
 
     it('hat dashed Border im Edit-Mode', () => {
-      const { container } = render(
-        <SymptomTag {...defaultProps} isEditing />,
-      )
+      const { container } = render(<SymptomTag {...defaultProps} isEditing />)
       expect(container.firstChild).toHaveClass('border-dashed')
     })
 
@@ -103,11 +101,7 @@ describe('SymptomTag', () => {
     it('ruft onCancelEdit bei Escape auf', () => {
       const onCancelEdit = vi.fn()
       render(
-        <SymptomTag
-          {...defaultProps}
-          isEditing
-          onCancelEdit={onCancelEdit}
-        />,
+        <SymptomTag {...defaultProps} isEditing onCancelEdit={onCancelEdit} />,
       )
 
       fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' })

@@ -88,11 +88,7 @@ describe('ReviewBubble', () => {
   it('hat Received-Bubble Styling', () => {
     const { container } = render(<ReviewBubble {...defaultProps} />)
     const bubble = container.querySelector('.bg-card')
-    expect(bubble).toHaveClass(
-      'rounded-2xl',
-      'rounded-bl-sm',
-      'shadow-sm',
-    )
+    expect(bubble).toHaveClass('rounded-2xl', 'rounded-bl-sm', 'shadow-sm')
   })
 
   it('Ändern-Button aktiviert Edit-Mode für erstes unbestätigtes Feld', () => {

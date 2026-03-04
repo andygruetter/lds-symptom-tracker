@@ -25,7 +25,11 @@ export function ConfidenceIndicator({ score }: ConfidenceIndicatorProps) {
   const { color, label } = getConfidenceLevel(score)
 
   return (
-    <div className="flex items-center gap-1.5 text-xs" role="img" aria-label={`Konfidenz: ${score}% — ${label}`}>
+    <div
+      className="flex items-center gap-1.5 text-xs"
+      role="img"
+      aria-label={`Konfidenz: ${score}% — ${label}`}
+    >
       <span
         className="inline-block size-2.5 rounded-full"
         style={{ backgroundColor: color }}

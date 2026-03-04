@@ -34,9 +34,15 @@ export const extractionFieldSchema = z.object({
 
 export const extractionResultSchema = z.object({
   eventType: z.enum(['symptom', 'medication']),
-  fields: z.array(rawExtractionFieldSchema).min(1).transform(
-    (fields) => fields.filter((f): f is { fieldName: string; value: string; confidence: number } => f.value !== null)
-  ),
+  fields: z
+    .array(rawExtractionFieldSchema)
+    .min(1)
+    .transform((fields) =>
+      fields.filter(
+        (f): f is { fieldName: string; value: string; confidence: number } =>
+          f.value !== null,
+      ),
+    ),
 })
 
 // Correction Type (für KI-Lernen aus Korrekturen)
@@ -62,7 +68,10 @@ export interface ExtractionContext {
 
 // Provider Interface
 export interface ExtractionProvider {
-  extract(rawInput: string, context?: ExtractionContext): Promise<ExtractionResult>
+  extract(
+    rawInput: string,
+    context?: ExtractionContext,
+  ): Promise<ExtractionResult>
 }
 
 // Transkription Types (Voice → Text via Whisper/GPT-4o-mini-transcribe)
@@ -72,7 +81,10 @@ export interface TranscriptionResult {
 }
 
 export interface TranscriptionProvider {
-  transcribe(audioBuffer: Buffer, mimeType: string): Promise<TranscriptionResult>
+  transcribe(
+    audioBuffer: Buffer,
+    mimeType: string,
+  ): Promise<TranscriptionResult>
 }
 
 // Clarification Types (regelbasierte Nachfrage bei niedriger Konfidenz)

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  buildCorrectionContext,
+  buildVocabularyContext,
+} from '@/lib/ai/prompt-enrichment'
 import type { Correction, VocabularyEntry } from '@/types/ai'
-
-import { buildCorrectionContext, buildVocabularyContext } from '@/lib/ai/prompt-enrichment'
 
 describe('buildCorrectionContext', () => {
   it('gibt leeren String zurück wenn keine Korrekturen vorhanden', () => {
@@ -50,9 +52,7 @@ describe('buildCorrectionContext', () => {
 
     expect(result).toContain('3x')
     // Sollte nur einmal erscheinen, nicht 3x
-    const lines = result
-      .split('\n')
-      .filter((l) => l.includes('Rügge'))
+    const lines = result.split('\n').filter((l) => l.includes('Rügge'))
     expect(lines).toHaveLength(1)
   })
 

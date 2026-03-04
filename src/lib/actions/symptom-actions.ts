@@ -372,15 +372,13 @@ export async function correctExtractedField(
   }
 
   // 5. Insert corrections: original_value, corrected_value
-  const { error: correctionError } = await supabase
-    .from('corrections')
-    .insert({
-      account_id: user.id,
-      symptom_event_id: eventId,
-      field_name: fieldName,
-      original_value: originalValue,
-      corrected_value: newValue,
-    })
+  const { error: correctionError } = await supabase.from('corrections').insert({
+    account_id: user.id,
+    symptom_event_id: eventId,
+    field_name: fieldName,
+    original_value: originalValue,
+    corrected_value: newValue,
+  })
 
   if (correctionError) {
     return {
@@ -482,15 +480,13 @@ export async function answerClarification(
   }
 
   // 6. Insert corrections (original_value → answer)
-  const { error: correctionError } = await supabase
-    .from('corrections')
-    .insert({
-      account_id: user.id,
-      symptom_event_id: eventId,
-      field_name: fieldName,
-      original_value: originalValue,
-      corrected_value: answer,
-    })
+  const { error: correctionError } = await supabase.from('corrections').insert({
+    account_id: user.id,
+    symptom_event_id: eventId,
+    field_name: fieldName,
+    original_value: originalValue,
+    corrected_value: answer,
+  })
 
   if (correctionError) {
     return {

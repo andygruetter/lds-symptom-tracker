@@ -42,9 +42,7 @@ export class CapturePage {
   }
 
   async confirmExtraction() {
-    await this.page
-      .getByRole('button', { name: /^Bestätigen$/i })
-      .click()
+    await this.page.getByRole('button', { name: /^Bestätigen$/i }).click()
   }
 
   async waitForConfirmed() {
@@ -52,9 +50,7 @@ export class CapturePage {
   }
 
   async endSymptom() {
-    await this.page
-      .getByRole('button', { name: 'Symptom beendet' })
-      .click()
+    await this.page.getByRole('button', { name: 'Symptom beendet' }).click()
   }
 
   async waitForEndedMessage() {

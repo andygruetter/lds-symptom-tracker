@@ -30,9 +30,7 @@ test.describe('Extraktion Fehler und Retry', () => {
 
     await capturePage.goto()
 
-    await expect(
-      capturePage.getExtractionFailedMessage(),
-    ).toBeVisible()
+    await expect(capturePage.getExtractionFailedMessage()).toBeVisible()
   })
 
   test('zeigt "Erneut versuchen" Link', async ({ page }) => {
@@ -55,9 +53,10 @@ test.describe('Extraktion Fehler und Retry', () => {
     await capturePage.goto()
 
     // Intercept the retry API call
-    const retryPromise = page.waitForRequest((request) =>
-      request.url().includes('/api/ai/extract') &&
-      request.method() === 'POST',
+    const retryPromise = page.waitForRequest(
+      (request) =>
+        request.url().includes('/api/ai/extract') &&
+        request.method() === 'POST',
     )
 
     await capturePage.retryExtraction()

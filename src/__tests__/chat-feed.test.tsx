@@ -35,9 +35,7 @@ describe('ChatFeed', () => {
   it('zeigt leeren Zustand mit Hinweis-Text', () => {
     render(<ChatFeed events={[]} isLoading={false} />)
 
-    expect(
-      screen.getByText(/Beschreibe dein Symptom/),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Beschreibe dein Symptom/)).toBeInTheDocument()
   })
 
   it('zeigt Events als ChatBubbles', () => {
@@ -63,9 +61,7 @@ describe('ChatFeed', () => {
   })
 
   it('zeigt mehrere Events', () => {
-    render(
-      <ChatFeed events={[mockEvent, confirmedEvent]} isLoading={false} />,
-    )
+    render(<ChatFeed events={[mockEvent, confirmedEvent]} isLoading={false} />)
 
     expect(screen.getByText('Kopfschmerzen rechts')).toBeInTheDocument()
     expect(screen.getByText('Rückenschmerzen links')).toBeInTheDocument()
@@ -187,9 +183,7 @@ describe('ChatFeed', () => {
       />,
     )
 
-    expect(
-      screen.getByText('Extraktion fehlgeschlagen'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Extraktion fehlgeschlagen')).toBeInTheDocument()
     expect(screen.getByText('Erneut versuchen')).toBeInTheDocument()
   })
 })

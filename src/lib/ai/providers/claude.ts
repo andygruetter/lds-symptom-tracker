@@ -1,6 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-import type { ExtractionContext, ExtractionProvider, ExtractionResult } from '@/types/ai'
+import type {
+  ExtractionContext,
+  ExtractionProvider,
+  ExtractionResult,
+} from '@/types/ai'
 import { extractionResultSchema } from '@/types/ai'
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
@@ -77,17 +81,20 @@ function createClient(): Anthropic {
 }
 
 export const claudeProvider: ExtractionProvider = {
-  async extract(rawInput: string, context?: ExtractionContext): Promise<ExtractionResult> {
+  async extract(
+    rawInput: string,
+    context?: ExtractionContext,
+  ): Promise<ExtractionResult> {
     const client = createClient()
 
-    const contextParts = [
-      context?.corrections,
-      context?.vocabulary,
-    ].filter(Boolean)
+    const contextParts = [context?.corrections, context?.vocabulary].filter(
+      Boolean,
+    )
 
-    const fullSystemPrompt = contextParts.length > 0
-      ? `${systemPrompt}\n\n${contextParts.join('\n\n')}`
-      : systemPrompt
+    const fullSystemPrompt =
+      contextParts.length > 0
+        ? `${systemPrompt}\n\n${contextParts.join('\n\n')}`
+        : systemPrompt
 
     const response = await client.messages.create({
       model: CLAUDE_MODEL,
@@ -110,9 +117,7 @@ export const claudeProvider: ExtractionProvider = {
     const parsed = extractionResultSchema.safeParse(toolUse.input)
 
     if (!parsed.success) {
-      throw new Error(
-        `Invalid extraction result: ${parsed.error.message}`,
-      )
+      throw new Error(`Invalid extraction result: ${parsed.error.message}`)
     }
 
     return parsed.data

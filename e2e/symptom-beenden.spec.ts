@@ -45,9 +45,7 @@ test.describe('Symptom beenden', () => {
     ).toBeVisible()
   })
 
-  test('zeigt "Aktiv seit..." Badge bei aktivem Symptom', async ({
-    page,
-  }) => {
+  test('zeigt "Aktiv seit..." Badge bei aktivem Symptom', async ({ page }) => {
     const event = await createTestSymptomEvent(userId, {
       raw_input: 'Kopfschmerzen',
       status: 'confirmed',
@@ -67,9 +65,7 @@ test.describe('Symptom beenden', () => {
     await expect(page.getByText(/Aktiv seit|Seit \d/)).toBeVisible()
   })
 
-  test('Beenden setzt ended_at und zeigt Dauer-Meldung', async ({
-    page,
-  }) => {
+  test('Beenden setzt ended_at und zeigt Dauer-Meldung', async ({ page }) => {
     const event = await createTestSymptomEvent(userId, {
       raw_input: 'Rückenschmerzen',
       status: 'confirmed',
@@ -93,9 +89,7 @@ test.describe('Symptom beenden', () => {
     ).not.toBeVisible()
   })
 
-  test('zeigt Dauer-Label bei bereits beendetem Symptom', async ({
-    page,
-  }) => {
+  test('zeigt Dauer-Label bei bereits beendetem Symptom', async ({ page }) => {
     const createdAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
     const endedAt = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
 

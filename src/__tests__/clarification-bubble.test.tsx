@@ -50,21 +50,15 @@ describe('ClarificationBubble', () => {
   it('zeigt Freitext-Input nach Klick auf "Andere Antwort..."', () => {
     render(<ClarificationBubble {...defaultProps} />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /andere antwort/i }),
-    )
-    expect(
-      screen.getByPlaceholderText('Eigene Antwort...'),
-    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /andere antwort/i }))
+    expect(screen.getByPlaceholderText('Eigene Antwort...')).toBeInTheDocument()
   })
 
   it('sendet Freitext-Antwort bei OK-Klick', () => {
     const onAnswer = vi.fn()
     render(<ClarificationBubble {...defaultProps} onAnswer={onAnswer} />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /andere antwort/i }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: /andere antwort/i }))
     const input = screen.getByPlaceholderText('Eigene Antwort...')
     fireEvent.change(input, { target: { value: 'Mitte' } })
     fireEvent.click(screen.getByRole('button', { name: 'OK' }))
@@ -76,9 +70,7 @@ describe('ClarificationBubble', () => {
     const onAnswer = vi.fn()
     render(<ClarificationBubble {...defaultProps} onAnswer={onAnswer} />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /andere antwort/i }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: /andere antwort/i }))
     const input = screen.getByPlaceholderText('Eigene Antwort...')
     fireEvent.change(input, { target: { value: 'Mitte' } })
     fireEvent.keyDown(input, { key: 'Enter' })
@@ -105,10 +97,7 @@ describe('ClarificationBubble', () => {
   it('hat role="group" und aria-label', () => {
     const { container } = render(<ClarificationBubble {...defaultProps} />)
     const group = container.querySelector('[role="group"]')
-    expect(group).toHaveAttribute(
-      'aria-label',
-      'Nachfrage: Welche Seite?',
-    )
+    expect(group).toHaveAttribute('aria-label', 'Nachfrage: Welche Seite?')
   })
 
   it('hat Received-Bubble Styling', () => {

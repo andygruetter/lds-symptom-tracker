@@ -27,15 +27,10 @@ describe.skipIf(!hasApiKey || !hasFixture)(
   'Whisper Smoke Test (echte API)',
   () => {
     it('transkribiert Schweizerdeutsch-Audio zu deutschem Text', async () => {
-      const { whisperProvider } = await import(
-        '@/lib/ai/providers/whisper'
-      )
+      const { whisperProvider } = await import('@/lib/ai/providers/whisper')
 
       const audioBuffer = readFileSync(FIXTURE_PATH)
-      const result = await whisperProvider.transcribe(
-        audioBuffer,
-        'audio/webm',
-      )
+      const result = await whisperProvider.transcribe(audioBuffer, 'audio/webm')
 
       expect(result.text).toBeTruthy()
       expect(result.text.length).toBeGreaterThan(5)

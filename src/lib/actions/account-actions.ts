@@ -35,7 +35,10 @@ export async function deleteAccount(): Promise<ActionResult<null>> {
   const { error: signOutError } = await supabase.auth.signOut()
 
   if (signOutError) {
-    console.error('signOut after account deletion failed:', signOutError.message)
+    console.error(
+      'signOut after account deletion failed:',
+      signOutError.message,
+    )
   }
 
   // Redirect zu Login (throws intern — normales Verhalten)

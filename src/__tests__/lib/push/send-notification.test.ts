@@ -70,9 +70,8 @@ describe('sendPushNotification', () => {
     setupSubscriptions(subs)
     mockSendNotification.mockResolvedValue({})
 
-    const { sendPushNotification } = await import(
-      '@/lib/push/send-notification'
-    )
+    const { sendPushNotification } =
+      await import('@/lib/push/send-notification')
     await sendPushNotification(accountId, payload)
 
     expect(mockSendNotification).toHaveBeenCalledTimes(2)
@@ -88,9 +87,8 @@ describe('sendPushNotification', () => {
   it('macht nichts wenn keine Subscriptions vorhanden', async () => {
     setupSubscriptions([])
 
-    const { sendPushNotification } = await import(
-      '@/lib/push/send-notification'
-    )
+    const { sendPushNotification } =
+      await import('@/lib/push/send-notification')
     await sendPushNotification(accountId, payload)
 
     expect(mockSendNotification).not.toHaveBeenCalled()
@@ -99,9 +97,8 @@ describe('sendPushNotification', () => {
   it('macht nichts bei DB-Fehler', async () => {
     setupSubscriptions(null, { message: 'DB error' })
 
-    const { sendPushNotification } = await import(
-      '@/lib/push/send-notification'
-    )
+    const { sendPushNotification } =
+      await import('@/lib/push/send-notification')
     await sendPushNotification(accountId, payload)
 
     expect(mockSendNotification).not.toHaveBeenCalled()
@@ -140,9 +137,8 @@ describe('sendPushNotification', () => {
       return { delete: mockDelete }
     })
 
-    const { sendPushNotification } = await import(
-      '@/lib/push/send-notification'
-    )
+    const { sendPushNotification } =
+      await import('@/lib/push/send-notification')
     await sendPushNotification(accountId, payload)
 
     expect(mockDelete).toHaveBeenCalled()
@@ -164,9 +160,8 @@ describe('sendPushNotification', () => {
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const { sendPushNotification } = await import(
-      '@/lib/push/send-notification'
-    )
+    const { sendPushNotification } =
+      await import('@/lib/push/send-notification')
     await sendPushNotification(accountId, payload)
 
     expect(consoleSpy).toHaveBeenCalledWith(

@@ -46,9 +46,7 @@ describe('ChatBubble', () => {
   })
 
   it('hat role="article" und aria-label', () => {
-    render(
-      <ChatBubble variant="sent" content="Test" timestamp="10:30" />,
-    )
+    render(<ChatBubble variant="sent" content="Test" timestamp="10:30" />)
 
     const article = screen.getByRole('article')
     expect(article).toHaveAttribute('aria-label', 'Nachricht vom 10:30')
@@ -120,9 +118,7 @@ describe('ChatBubble', () => {
       />,
     )
 
-    expect(
-      screen.getByText('Extraktion fehlgeschlagen'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Extraktion fehlgeschlagen')).toBeInTheDocument()
     expect(screen.getByText('Erneut versuchen')).toBeInTheDocument()
   })
 
@@ -135,9 +131,7 @@ describe('ChatBubble', () => {
       />,
     )
 
-    expect(
-      screen.getByText('Aktiv seit 2 Std. 30 Min.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Aktiv seit 2 Std. 30 Min.')).toBeInTheDocument()
   })
 
   it('zeigt Beenden-Button bei aktivem Symptom', () => {
@@ -182,18 +176,14 @@ describe('ChatBubble', () => {
   })
 
   it('zeigt weder Aktiv-Badge noch Dauer-Badge wenn beide nicht gesetzt', () => {
-    render(
-      <ChatBubble variant="received" content="Gespeichert ✓" />,
-    )
+    render(<ChatBubble variant="received" content="Gespeichert ✓" />)
 
     expect(screen.queryByText(/Aktiv seit/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Dauer:/)).not.toBeInTheDocument()
   })
 
   it('zeigt Voice-Indikator mit Mikrofon-Icon bei isVoice ohne Content', () => {
-    render(
-      <ChatBubble variant="sent" isVoice timestamp="10:30" />,
-    )
+    render(<ChatBubble variant="sent" isVoice timestamp="10:30" />)
 
     expect(screen.getByText('Sprachaufnahme')).toBeInTheDocument()
   })
@@ -238,9 +228,7 @@ describe('ChatBubble', () => {
       />,
     )
 
-    expect(
-      screen.getByText('Transkription fehlgeschlagen'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Transkription fehlgeschlagen')).toBeInTheDocument()
     expect(screen.getByText('Erneut versuchen')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Erneut versuchen'))
@@ -248,9 +236,7 @@ describe('ChatBubble', () => {
   })
 
   it('zeigt Foto-Indikator bei isPhoto ohne Content', () => {
-    render(
-      <ChatBubble variant="sent" isPhoto timestamp="10:30" />,
-    )
+    render(<ChatBubble variant="sent" isPhoto timestamp="10:30" />)
 
     expect(screen.getByText('Foto')).toBeInTheDocument()
   })
@@ -271,8 +257,18 @@ describe('ChatBubble', () => {
 
   it('zeigt Photo-Grid mit Loading-Skeletons ohne getSignedUrl', () => {
     const photos = [
-      { id: 'p1', symptom_event_id: 'e1', storage_path: 'path/photo1.jpg', created_at: '2026-03-03T10:00:00Z' },
-      { id: 'p2', symptom_event_id: 'e1', storage_path: 'path/photo2.jpg', created_at: '2026-03-03T10:00:00Z' },
+      {
+        id: 'p1',
+        symptom_event_id: 'e1',
+        storage_path: 'path/photo1.jpg',
+        created_at: '2026-03-03T10:00:00Z',
+      },
+      {
+        id: 'p2',
+        symptom_event_id: 'e1',
+        storage_path: 'path/photo2.jpg',
+        created_at: '2026-03-03T10:00:00Z',
+      },
     ]
 
     render(

@@ -63,7 +63,8 @@ export function ChatFeed({
 
   // Update "Aktiv seit" badges every minute
   const hasActiveEvents = events.some(
-    (e) => e.status === 'confirmed' && !e.ended_at && e.event_type !== 'medication',
+    (e) =>
+      e.status === 'confirmed' && !e.ended_at && e.event_type !== 'medication',
   )
   useEffect(() => {
     if (!hasActiveEvents) return
@@ -119,7 +120,8 @@ export function ChatFeed({
               {/* Processing indicator for pending/transcribed events
                  Voice+pending: Text "Sprachaufnahme wird verarbeitet..." (Transkription läuft)
                  Voice+transcribed / Text+pending: ProcessingDots (Extraktion läuft) */}
-              {(event.status === 'pending' || event.status === 'transcribed') && (
+              {(event.status === 'pending' ||
+                event.status === 'transcribed') && (
                 <ChatBubble
                   variant="system"
                   content={
@@ -136,7 +138,9 @@ export function ChatFeed({
                 <ReviewBubble
                   extractedFields={extractedFields}
                   eventId={event.id}
-                  clarificationQuestions={generateClarificationQuestions(extractedFields)}
+                  clarificationQuestions={generateClarificationQuestions(
+                    extractedFields,
+                  )}
                   onConfirm={async (id) => {
                     setConfirmingEventId(id)
                     await onConfirmEvent?.(id)
@@ -181,12 +185,14 @@ export function ChatFeed({
               )}
 
               {/* System-Bubble: Symptom beendet */}
-              {event.status === 'confirmed' && event.ended_at && !isMedication && (
-                <ChatBubble
-                  variant="system"
-                  content={`✓ Symptom beendet — Dauer: ${formatDuration(new Date(event.created_at), new Date(event.ended_at))}`}
-                />
-              )}
+              {event.status === 'confirmed' &&
+                event.ended_at &&
+                !isMedication && (
+                  <ChatBubble
+                    variant="system"
+                    content={`✓ Symptom beendet — Dauer: ${formatDuration(new Date(event.created_at), new Date(event.ended_at))}`}
+                  />
+                )}
 
               {/* Extraction failed */}
               {event.status === 'extraction_failed' && (

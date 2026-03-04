@@ -79,8 +79,8 @@ describe('claudeProvider.extract', () => {
 
     const { claudeProvider } = await import('@/lib/ai/providers/claude')
 
-    await expect(
-      claudeProvider.extract('Test'),
-    ).rejects.toThrow('Claude returned no tool use response')
+    await expect(claudeProvider.extract('Test')).rejects.toThrow(
+      'Claude returned no tool use response',
+    )
   })
 })

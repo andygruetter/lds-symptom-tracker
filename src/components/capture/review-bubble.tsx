@@ -127,7 +127,12 @@ export function ReviewBubble({
         return clarificationQuestions.map((q) => {
           const isAnswered = q.fieldName in answers
           // Show answered questions + the first unanswered one
-          if (!isAnswered && firstUnanswered && q.fieldName !== firstUnanswered.fieldName) return null
+          if (
+            !isAnswered &&
+            firstUnanswered &&
+            q.fieldName !== firstUnanswered.fieldName
+          )
+            return null
           return (
             <ClarificationBubble
               key={q.fieldName}

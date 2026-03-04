@@ -48,9 +48,7 @@ describe('AudioWaveform', () => {
   })
 
   it('zeigt Dauer-Text in destructive-Farbe bei Warning', () => {
-    render(
-      <AudioWaveform analyserData={null} duration={55} isWarning />,
-    )
+    render(<AudioWaveform analyserData={null} duration={55} isWarning />)
 
     const durationEl = screen.getByText('00:55')
     expect(durationEl.className).toContain('text-destructive')
@@ -68,7 +66,9 @@ describe('AudioWaveform', () => {
 
     const bars = container.querySelectorAll('[style*="height"]')
     // First bar should have max height (32px for max amplitude)
-    const firstBarHeight = parseInt(bars[0]?.getAttribute('style')?.match(/height: (\d+)px/)?.[1] ?? '0')
+    const firstBarHeight = parseInt(
+      bars[0]?.getAttribute('style')?.match(/height: (\d+)px/)?.[1] ?? '0',
+    )
     expect(firstBarHeight).toBeGreaterThan(4)
   })
 

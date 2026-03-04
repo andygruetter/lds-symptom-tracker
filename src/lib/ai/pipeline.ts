@@ -4,14 +4,16 @@ import { getRecentCorrections } from '@/lib/db/corrections'
 import { getSignedAudioUrl } from '@/lib/db/media'
 import { getVocabulary } from '@/lib/db/vocabulary'
 import { sendPushNotification } from '@/lib/push/send-notification'
+import { audioMimeFromPath } from '@/lib/utils/mime'
 import type { ExtractionContext } from '@/types/ai'
 import type { Database } from '@/types/database'
 import type { SymptomEvent } from '@/types/symptom'
 
-import { audioMimeFromPath } from '@/lib/utils/mime'
-
 import { extractSymptomData } from './extract'
-import { buildCorrectionContext, buildVocabularyContext } from './prompt-enrichment'
+import {
+  buildCorrectionContext,
+  buildVocabularyContext,
+} from './prompt-enrichment'
 import { transcribeAudio } from './transcribe'
 
 const PIPELINE_TIMEOUT_MS = 30_000 // 30 Sekunden für Claude API + Retries
@@ -67,7 +69,12 @@ export async function runExtractionPipeline(
 
   const event = data as SymptomEvent
 
-  const retriableStatuses = ['pending', 'transcribed', 'extraction_failed', 'transcription_failed']
+  const retriableStatuses = [
+    'pending',
+    'transcribed',
+    'extraction_failed',
+    'transcription_failed',
+  ]
   if (!retriableStatuses.includes(event.status)) {
     return // Bereits verarbeitet oder bestätigt
   }
@@ -152,9 +159,7 @@ export async function runExtractionPipeline(
         .eq('id', symptomEventId)
 
       if (updateError) {
-        throw new Error(
-          `Failed to update event status: ${updateError.message}`,
-        )
+        throw new Error(`Failed to update event status: ${updateError.message}`)
       }
 
       // 7. Push-Notification nach erfolgreicher Extraktion (Fire-and-Forget)
@@ -211,8 +216,11 @@ async function transcribeVoiceEvent(
   const mimeType = audioMimeFromPath(event.audio_url!)
 
   // c. Transkription mit Retry und Timeout
-  const transcript = await withRetry(
-    () => withTimeout(() => transcribeAudio(audioBuffer, mimeType), TRANSCRIPTION_TIMEOUT_MS),
+  const transcript = await withRetry(() =>
+    withTimeout(
+      () => transcribeAudio(audioBuffer, mimeType),
+      TRANSCRIPTION_TIMEOUT_MS,
+    ),
   )
 
   // d. raw_input in DB speichern

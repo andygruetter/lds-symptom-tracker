@@ -10,11 +10,7 @@ const MAX_DURATION_S = 60
 const WARNING_DURATION_S = 50
 
 // MIME-Type Prioritätsliste
-const MIME_PRIORITIES = [
-  'audio/webm;codecs=opus',
-  'audio/webm',
-  'audio/mp4',
-]
+const MIME_PRIORITIES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
 
 function getSupportedMimeType(): string | undefined {
   if (typeof MediaRecorder === 'undefined') return undefined
@@ -46,7 +42,9 @@ export function useAudioRecorder(): AudioRecorderResult {
   const analyserRef = useRef<AnalyserNode | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const startTimeRef = useRef<number>(0)
-  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  )
   const animationFrameRef = useRef<number>(0)
   const resolveStopRef = useRef<((blob: Blob | null) => void) | null>(null)
 
@@ -100,14 +98,14 @@ export function useAudioRecorder(): AudioRecorderResult {
     }
   }, [cleanup])
 
-  const updateAnalyserData = useCallback(() => {
+  const updateAnalyserData = useCallback(function tick() {
     if (!analyserRef.current) return
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
     analyserRef.current.getByteTimeDomainData(dataArray)
     setAnalyserData(new Uint8Array(dataArray))
 
-    animationFrameRef.current = requestAnimationFrame(updateAnalyserData)
+    animationFrameRef.current = requestAnimationFrame(tick)
   }, [])
 
   const startRecording = useCallback(async () => {
@@ -125,7 +123,10 @@ export function useAudioRecorder(): AudioRecorderResult {
       }
 
       const supportedMime = getSupportedMimeType()
-      const recorder = new MediaRecorder(stream, supportedMime ? { mimeType: supportedMime } : undefined)
+      const recorder = new MediaRecorder(
+        stream,
+        supportedMime ? { mimeType: supportedMime } : undefined,
+      )
       mediaRecorderRef.current = recorder
       setMimeType(recorder.mimeType)
       chunksRef.current = []

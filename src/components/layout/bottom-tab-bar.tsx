@@ -25,9 +25,7 @@ export function BottomTabBar() {
       <div className="flex h-16 items-center justify-around">
         {tabs.map((tab) => {
           const isActive =
-            tab.href === '/'
-              ? pathname === '/'
-              : pathname.startsWith(tab.href)
+            tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href)
 
           return (
             <Link
@@ -36,9 +34,7 @@ export function BottomTabBar() {
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'flex min-h-11 min-w-11 flex-col items-center gap-1 py-2',
-                isActive
-                  ? 'font-medium text-primary'
-                  : 'text-muted-foreground',
+                isActive ? 'font-medium text-primary' : 'text-muted-foreground',
               )}
             >
               <tab.icon className="size-5" aria-hidden="true" />

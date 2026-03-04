@@ -88,7 +88,13 @@ describe('uploadAudio', () => {
     const blob = new Blob(['audio'], { type: 'audio/webm' })
 
     await expect(
-      uploadAudio(mockSupabase as never, 'user-1', 'event-1', blob, 'audio/webm'),
+      uploadAudio(
+        mockSupabase as never,
+        'user-1',
+        'event-1',
+        blob,
+        'audio/webm',
+      ),
     ).rejects.toThrow('Audio upload fehlgeschlagen')
   })
 
@@ -112,7 +118,10 @@ describe('uploadAudio', () => {
 describe('getSignedAudioUrl', () => {
   it('generiert Signed URL mit 15min TTL', async () => {
     mockCreateSignedUrl.mockResolvedValue({
-      data: { signedUrl: 'https://storage.supabase.co/signed/audio/user-1/event-1.webm' },
+      data: {
+        signedUrl:
+          'https://storage.supabase.co/signed/audio/user-1/event-1.webm',
+      },
       error: null,
     })
 
@@ -252,7 +261,9 @@ describe('uploadPhoto', () => {
 describe('getSignedPhotoUrl', () => {
   it('generiert Signed URL mit 15min TTL', async () => {
     mockCreateSignedUrl.mockResolvedValue({
-      data: { signedUrl: 'https://storage.supabase.co/signed/photos/user-1/photo.jpg' },
+      data: {
+        signedUrl: 'https://storage.supabase.co/signed/photos/user-1/photo.jpg',
+      },
       error: null,
     })
 
@@ -264,7 +275,10 @@ describe('getSignedPhotoUrl', () => {
 
     expect(url).toContain('signed')
     expect(mockSupabase.storage.from).toHaveBeenCalledWith('photos')
-    expect(mockCreateSignedUrl).toHaveBeenCalledWith('user-1/event-1/123-photo.jpg', 900)
+    expect(mockCreateSignedUrl).toHaveBeenCalledWith(
+      'user-1/event-1/123-photo.jpg',
+      900,
+    )
   })
 
   it('wirft Fehler bei Signed-URL-Fehler', async () => {

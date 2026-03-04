@@ -42,11 +42,23 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
   },
   Intensität: {
     question: 'Wie stark auf einer Skala von 1-10?',
-    options: ['Leicht (1-3)', 'Mittel (4-6)', 'Stark (7-9)', 'Unerträglich (10)'],
+    options: [
+      'Leicht (1-3)',
+      'Mittel (4-6)',
+      'Stark (7-9)',
+      'Unerträglich (10)',
+    ],
   },
   Symptomtyp: {
     question: 'Wie fühlt es sich an?',
-    options: ['Stechend', 'Ziehend', 'Dumpf', 'Brennend', 'Kribbelnd', 'Pochend'],
+    options: [
+      'Stechend',
+      'Ziehend',
+      'Dumpf',
+      'Brennend',
+      'Kribbelnd',
+      'Pochend',
+    ],
   },
 }
 

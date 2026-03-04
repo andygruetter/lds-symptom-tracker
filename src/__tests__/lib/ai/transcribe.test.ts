@@ -3,12 +3,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 // Mock both providers
 const mockWhisperTranscribe = vi.fn()
 vi.mock('@/lib/ai/providers/whisper', () => ({
-  whisperProvider: { transcribe: (...args: unknown[]) => mockWhisperTranscribe(...args) },
+  whisperProvider: {
+    transcribe: (...args: unknown[]) => mockWhisperTranscribe(...args),
+  },
 }))
 
 const mockMockTranscribe = vi.fn()
 vi.mock('@/lib/ai/providers/mock-whisper', () => ({
-  mockWhisperProvider: { transcribe: (...args: unknown[]) => mockMockTranscribe(...args) },
+  mockWhisperProvider: {
+    transcribe: (...args: unknown[]) => mockMockTranscribe(...args),
+  },
 }))
 
 afterEach(() => {
@@ -42,8 +46,6 @@ describe('transcribeAudio', () => {
     const result = await transcribeAudio(Buffer.from('audio'), 'audio/webm')
 
     expect(mockMockTranscribe).toHaveBeenCalled()
-    expect(result.text).toBe(
-      'Ich habe Rückenschmerzen links im Schulterblatt',
-    )
+    expect(result.text).toBe('Ich habe Rückenschmerzen links im Schulterblatt')
   })
 })

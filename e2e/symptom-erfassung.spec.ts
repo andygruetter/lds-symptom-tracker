@@ -42,9 +42,7 @@ test.describe('Symptom-Erfassung', () => {
     await capturePage.submitSymptom('Kopfschmerzen rechts stechend')
     // Wait for the sent bubble to appear (optimistic update + server roundtrip)
     await capturePage.waitForSentBubble('Kopfschmerzen rechts stechend')
-    await expect(
-      page.getByText('Kopfschmerzen rechts stechend'),
-    ).toBeVisible()
+    await expect(page.getByText('Kopfschmerzen rechts stechend')).toBeVisible()
   })
 
   test('leert Eingabefeld nach dem Senden', async () => {
@@ -53,7 +51,9 @@ test.describe('Symptom-Erfassung', () => {
     await expect(capturePage.textInput).toHaveValue('')
   })
 
-  test('zeigt Verarbeitungs-Indikator oder ReviewBubble nach dem Senden', async ({ page }) => {
+  test('zeigt Verarbeitungs-Indikator oder ReviewBubble nach dem Senden', async ({
+    page,
+  }) => {
     await capturePage.goto()
     await capturePage.submitSymptom('Starke Kopfschmerzen')
     // With mock extraction, processing may complete instantly.

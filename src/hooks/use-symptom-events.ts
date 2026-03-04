@@ -48,9 +48,7 @@ export function useSymptomEvents() {
 
       // Lade extracted_data für bereits extrahierte Events
       const extractedIds = (data as SymptomEvent[])
-        .filter(
-          (e) => e.status === 'extracted' || e.status === 'confirmed',
-        )
+        .filter((e) => e.status === 'extracted' || e.status === 'confirmed')
         .map((e) => e.id)
 
       if (extractedIds.length > 0) {

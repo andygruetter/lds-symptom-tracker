@@ -24,7 +24,9 @@ test.describe('Push-Notification Opt-In', () => {
   test('zeigt Push-Banner nicht im leeren Zustand', async ({ page }) => {
     await capturePage.goto()
     // The banner should not appear when there are no events
-    await expect(page.getByText('Benachrichtigungen aktivieren')).not.toBeVisible()
+    await expect(
+      page.getByText('Benachrichtigungen aktivieren'),
+    ).not.toBeVisible()
   })
 
   // Note: Full push notification tests require browser Push API support.
@@ -52,7 +54,9 @@ test.describe('Push-Notification Opt-In', () => {
     const isBannerVisible = await banner.isVisible().catch(() => false)
 
     if (isBannerVisible) {
-      await expect(page.getByRole('button', { name: 'Aktivieren' })).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: 'Aktivieren' }),
+      ).toBeVisible()
       await expect(page.getByText('Später')).toBeVisible()
     }
     // If banner is not visible (headless/no Push API), the test passes —

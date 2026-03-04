@@ -39,15 +39,12 @@ describe('Vokabular-Seite', () => {
     })
     mockGetVocabulary.mockResolvedValue([])
 
-    const VokabularPage = (
-      await import('@/app/(app)/more/vokabular/page')
-    ).default
+    const VokabularPage = (await import('@/app/(app)/more/vokabular/page'))
+      .default
     const page = await VokabularPage()
     render(page)
 
-    expect(
-      screen.getByText(/Noch keine Begriffe gelernt/),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Noch keine Begriffe gelernt/)).toBeInTheDocument()
   })
 
   it('zeigt Vokabular-Tabelle mit Einträgen', async () => {
@@ -69,9 +66,8 @@ describe('Vokabular-Seite', () => {
       },
     ])
 
-    const VokabularPage = (
-      await import('@/app/(app)/more/vokabular/page')
-    ).default
+    const VokabularPage = (await import('@/app/(app)/more/vokabular/page'))
+      .default
     const page = await VokabularPage()
     render(page)
 
@@ -91,9 +87,8 @@ describe('Vokabular-Seite', () => {
     })
     mockGetVocabulary.mockResolvedValue([])
 
-    const VokabularPage = (
-      await import('@/app/(app)/more/vokabular/page')
-    ).default
+    const VokabularPage = (await import('@/app/(app)/more/vokabular/page'))
+      .default
     const page = await VokabularPage()
     render(page)
 
@@ -115,9 +110,8 @@ describe('Vokabular-Seite', () => {
       },
     ])
 
-    const VokabularPage = (
-      await import('@/app/(app)/more/vokabular/page')
-    ).default
+    const VokabularPage = (await import('@/app/(app)/more/vokabular/page'))
+      .default
     const page = await VokabularPage()
     render(page)
 
@@ -131,9 +125,8 @@ describe('Vokabular-Seite', () => {
       data: { user: null },
     })
 
-    const VokabularPage = (
-      await import('@/app/(app)/more/vokabular/page')
-    ).default
+    const VokabularPage = (await import('@/app/(app)/more/vokabular/page'))
+      .default
 
     try {
       await VokabularPage()

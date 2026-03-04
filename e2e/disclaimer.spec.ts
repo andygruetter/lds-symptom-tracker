@@ -18,9 +18,7 @@ test.describe('Disclaimer-Flow', () => {
     await expect(page).toHaveURL('/')
   })
 
-  test('zeigt "Wird gespeichert..." während Verarbeitung', async ({
-    page,
-  }) => {
+  test('zeigt "Wird gespeichert..." während Verarbeitung', async ({ page }) => {
     const disclaimerPage = new DisclaimerPage(page)
     await disclaimerPage.goto()
     await disclaimerPage.acceptButton.click()

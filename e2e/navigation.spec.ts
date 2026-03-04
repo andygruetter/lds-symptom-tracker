@@ -18,9 +18,7 @@ test.describe('Tab-Navigation', () => {
     await expect(erfassenLink).toHaveAttribute('aria-current', 'page')
   })
 
-  test('Navigation zu Auswertung zeigt Auswertung-Seite', async ({
-    page,
-  }) => {
+  test('Navigation zu Auswertung zeigt Auswertung-Seite', async ({ page }) => {
     await page.goto('/')
     const nav = new NavigationBar(page)
     await nav.navigateToAuswertung()
@@ -35,9 +33,7 @@ test.describe('Tab-Navigation', () => {
     const nav = new NavigationBar(page)
     await nav.navigateToMehr()
     await expect(page).toHaveURL('/more')
-    await expect(
-      page.getByRole('heading', { name: 'Mehr' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Mehr' })).toBeVisible()
   })
 
   test('Navigation zurück zu Erfassen funktioniert', async ({ page }) => {

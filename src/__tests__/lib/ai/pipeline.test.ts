@@ -5,22 +5,19 @@ import { symptomExtraction } from '@/lib/ai/__fixtures__/extractions'
 // Mock extract
 const mockExtractSymptomData = vi.fn()
 vi.mock('@/lib/ai/extract', () => ({
-  extractSymptomData: (...args: unknown[]) =>
-    mockExtractSymptomData(...args),
+  extractSymptomData: (...args: unknown[]) => mockExtractSymptomData(...args),
 }))
 
 // Mock transcribe
 const mockTranscribeAudio = vi.fn()
 vi.mock('@/lib/ai/transcribe', () => ({
-  transcribeAudio: (...args: unknown[]) =>
-    mockTranscribeAudio(...args),
+  transcribeAudio: (...args: unknown[]) => mockTranscribeAudio(...args),
 }))
 
 // Mock media helpers
 const mockGetSignedAudioUrl = vi.fn()
 vi.mock('@/lib/db/media', () => ({
-  getSignedAudioUrl: (...args: unknown[]) =>
-    mockGetSignedAudioUrl(...args),
+  getSignedAudioUrl: (...args: unknown[]) => mockGetSignedAudioUrl(...args),
 }))
 
 // Mock corrections loader
@@ -33,8 +30,7 @@ vi.mock('@/lib/db/corrections', () => ({
 // Mock vocabulary loader
 const mockGetVocabulary = vi.fn()
 vi.mock('@/lib/db/vocabulary', () => ({
-  getVocabulary: (...args: unknown[]) =>
-    mockGetVocabulary(...args),
+  getVocabulary: (...args: unknown[]) => mockGetVocabulary(...args),
 }))
 
 // Mock push notification
@@ -110,8 +106,12 @@ beforeEach(() => {
   mockBuildCorrectionContext.mockReturnValue('')
   mockBuildVocabularyContext.mockReturnValue('')
   mockSendPushNotification.mockResolvedValue(undefined)
-  mockTranscribeAudio.mockResolvedValue({ text: 'Ich habe Kopfschmerzen rechts' })
-  mockGetSignedAudioUrl.mockResolvedValue('https://storage.example.com/signed-url')
+  mockTranscribeAudio.mockResolvedValue({
+    text: 'Ich habe Kopfschmerzen rechts',
+  })
+  mockGetSignedAudioUrl.mockResolvedValue(
+    'https://storage.example.com/signed-url',
+  )
 
   // Mock global fetch for audio download
   vi.stubGlobal(
@@ -186,9 +186,7 @@ describe('runExtractionPipeline', () => {
     vi.useFakeTimers()
 
     // Mock: extractSymptomData löst sich nie auf
-    mockExtractSymptomData.mockImplementation(
-      () => new Promise(() => {}),
-    )
+    mockExtractSymptomData.mockImplementation(() => new Promise(() => {}))
     const supabase = createMockSupabase()
 
     const { runExtractionPipeline } = await import('@/lib/ai/pipeline')

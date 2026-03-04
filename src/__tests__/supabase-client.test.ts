@@ -33,9 +33,8 @@ beforeEach(() => {
 
 describe('createBrowserClient', () => {
   it('ruft @supabase/ssr createBrowserClient mit korrekten Parametern auf', async () => {
-    const { createBrowserClient: createBrowserMock } = await import(
-      '@supabase/ssr'
-    )
+    const { createBrowserClient: createBrowserMock } =
+      await import('@supabase/ssr')
     const { createBrowserClient } = await import('@/lib/db/client')
 
     createBrowserClient()
@@ -46,9 +45,8 @@ describe('createBrowserClient', () => {
 
 describe('createServerClient', () => {
   it('ruft @supabase/ssr createServerClient mit getAll/setAll Cookie-API auf', async () => {
-    const { createServerClient: createServerMock } = await import(
-      '@supabase/ssr'
-    )
+    const { createServerClient: createServerMock } =
+      await import('@supabase/ssr')
     const { createServerClient } = await import('@/lib/db/client')
 
     await createServerClient()
@@ -75,9 +73,8 @@ describe('createServerClient', () => {
   })
 
   it('getAll delegiert an cookieStore.getAll', async () => {
-    const { createServerClient: createServerMock } = await import(
-      '@supabase/ssr'
-    )
+    const { createServerClient: createServerMock } =
+      await import('@supabase/ssr')
     const { createServerClient } = await import('@/lib/db/client')
 
     await createServerClient()
@@ -96,9 +93,8 @@ describe('createServerClient', () => {
       set: mockSet,
     })
 
-    const { createServerClient: createServerMock } = await import(
-      '@supabase/ssr'
-    )
+    const { createServerClient: createServerMock } =
+      await import('@supabase/ssr')
     const { createServerClient } = await import('@/lib/db/client')
 
     await createServerClient()
@@ -124,9 +120,8 @@ describe('createServerClient', () => {
       }),
     })
 
-    const { createServerClient: createServerMock } = await import(
-      '@supabase/ssr'
-    )
+    const { createServerClient: createServerMock } =
+      await import('@supabase/ssr')
     const { createServerClient } = await import('@/lib/db/client')
 
     await createServerClient()
@@ -135,18 +130,15 @@ describe('createServerClient', () => {
       .calls[0][2].cookies
 
     expect(() =>
-      cookiesConfig.setAll([
-        { name: 'token', value: 'abc', options: {} },
-      ]),
+      cookiesConfig.setAll([{ name: 'token', value: 'abc', options: {} }]),
     ).not.toThrow()
   })
 })
 
 describe('createServiceClient', () => {
   it('ruft @supabase/supabase-js createClient mit Service Role Key auf', async () => {
-    const { createClient: createClientMock } = await import(
-      '@supabase/supabase-js'
-    )
+    const { createClient: createClientMock } =
+      await import('@supabase/supabase-js')
     const { createServiceClient } = await import('@/lib/db/client')
 
     createServiceClient()

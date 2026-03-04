@@ -120,7 +120,10 @@ describe('PushOptIn', () => {
   it('zeigt Loading-State während Aktivierung', async () => {
     let resolveSubscribe: () => void
     mockSubscribe.mockImplementation(
-      () => new Promise<void>((resolve) => { resolveSubscribe = resolve }),
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSubscribe = resolve
+        }),
     )
 
     const { PushOptIn } = await import('@/components/capture/push-opt-in')

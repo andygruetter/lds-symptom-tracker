@@ -4,7 +4,10 @@ import { generateClarificationQuestions } from '@/lib/ai/clarification'
 import type { ExtractedData } from '@/types/ai'
 
 function makeField(
-  overrides: Partial<ExtractedData> & { field_name: string; confidence: number },
+  overrides: Partial<ExtractedData> & {
+    field_name: string
+    confidence: number
+  },
 ): ExtractedData {
   return {
     id: `field-${overrides.field_name}`,
@@ -64,9 +67,7 @@ describe('generateClarificationQuestions', () => {
   })
 
   it('gibt vordefinierte Optionen für bekannte Feldtypen', () => {
-    const fields = [
-      makeField({ field_name: 'Seite', confidence: 55 }),
-    ]
+    const fields = [makeField({ field_name: 'Seite', confidence: 55 })]
 
     const result = generateClarificationQuestions(fields)
     expect(result[0].options).toEqual(['Links', 'Rechts', 'Beidseits'])
@@ -74,9 +75,7 @@ describe('generateClarificationQuestions', () => {
   })
 
   it('gibt generische Frage für unbekannte Feldtypen', () => {
-    const fields = [
-      makeField({ field_name: 'Dauer', confidence: 50 }),
-    ]
+    const fields = [makeField({ field_name: 'Dauer', confidence: 50 })]
 
     const result = generateClarificationQuestions(fields)
     expect(result[0].question).toContain('Dauer')
@@ -84,9 +83,7 @@ describe('generateClarificationQuestions', () => {
   })
 
   it('setzt allowFreeText auf true', () => {
-    const fields = [
-      makeField({ field_name: 'Seite', confidence: 55 }),
-    ]
+    const fields = [makeField({ field_name: 'Seite', confidence: 55 })]
 
     const result = generateClarificationQuestions(fields)
     expect(result[0].allowFreeText).toBe(true)
@@ -95,7 +92,11 @@ describe('generateClarificationQuestions', () => {
   it('ignoriert bereits bestätigte Felder', () => {
     const fields = [
       makeField({ field_name: 'Seite', confidence: 55, confirmed: true }),
-      makeField({ field_name: 'Körperregion', confidence: 40, confirmed: false }),
+      makeField({
+        field_name: 'Körperregion',
+        confidence: 40,
+        confirmed: false,
+      }),
     ]
 
     const result = generateClarificationQuestions(fields)

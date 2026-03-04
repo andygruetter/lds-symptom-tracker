@@ -37,7 +37,13 @@ export function PushOptIn() {
   // - Bereits subscribed
   // - Permission denied (Browser hat blockiert)
   // - User hat "Später" gewählt
-  if (!isSupported || isLoading || isSubscribed || permission === 'denied' || dismissed) {
+  if (
+    !isSupported ||
+    isLoading ||
+    isSubscribed ||
+    permission === 'denied' ||
+    dismissed
+  ) {
     return null
   }
 

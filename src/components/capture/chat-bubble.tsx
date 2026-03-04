@@ -193,9 +193,7 @@ export function ChatBubble({
   return (
     <div
       role="article"
-      aria-label={
-        timestamp ? `Nachricht vom ${timestamp}` : 'Chat-Nachricht'
-      }
+      aria-label={timestamp ? `Nachricht vom ${timestamp}` : 'Chat-Nachricht'}
       className={cn(
         'flex',
         variant === 'sent' && 'justify-end',
@@ -262,7 +260,10 @@ export function ChatBubble({
                 </div>
               )}
               {isVoice && content && (
-                <Mic className="mt-0.5 size-3.5 shrink-0 opacity-50" aria-hidden="true" />
+                <Mic
+                  className="mt-0.5 size-3.5 shrink-0 opacity-50"
+                  aria-hidden="true"
+                />
               )}
               {isPhoto && !content && (
                 <div className="flex items-center gap-1.5">
@@ -271,7 +272,10 @@ export function ChatBubble({
                 </div>
               )}
               {isPhoto && content && (
-                <Camera className="mt-0.5 size-3.5 shrink-0 opacity-50" aria-hidden="true" />
+                <Camera
+                  className="mt-0.5 size-3.5 shrink-0 opacity-50"
+                  aria-hidden="true"
+                />
               )}
               {content && <p className="text-sm">{content}</p>}
             </div>

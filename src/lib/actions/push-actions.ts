@@ -24,7 +24,10 @@ export async function subscribePush(
   if (!parsed.success) {
     return {
       data: null,
-      error: { error: 'Ungültige Subscription-Daten', code: 'VALIDATION_ERROR' },
+      error: {
+        error: 'Ungültige Subscription-Daten',
+        code: 'VALIDATION_ERROR',
+      },
     }
   }
 
@@ -40,23 +43,24 @@ export async function subscribePush(
     }
   }
 
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert(
-      {
-        account_id: user.id,
-        endpoint: parsed.data.endpoint,
-        keys_auth: parsed.data.keys.auth,
-        keys_p256dh: parsed.data.keys.p256dh,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'account_id,endpoint' },
-    )
+  const { error } = await supabase.from('push_subscriptions').upsert(
+    {
+      account_id: user.id,
+      endpoint: parsed.data.endpoint,
+      keys_auth: parsed.data.keys.auth,
+      keys_p256dh: parsed.data.keys.p256dh,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'account_id,endpoint' },
+  )
 
   if (error) {
     return {
       data: null,
-      error: { error: 'Subscription speichern fehlgeschlagen', code: 'DB_ERROR' },
+      error: {
+        error: 'Subscription speichern fehlgeschlagen',
+        code: 'DB_ERROR',
+      },
     }
   }
 
