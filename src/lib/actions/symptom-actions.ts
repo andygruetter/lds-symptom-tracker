@@ -168,7 +168,11 @@ export async function createVoiceSymptomEvent(
 
   // 6. Fire-and-forget: Trigger extraction pipeline
   // Voice-Events werden in pipeline.ts als early-return behandelt (Transkription kommt in Story 3.2)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000')
   fetch(`${appUrl}/api/ai/extract`, {
     method: 'POST',
     headers: {
