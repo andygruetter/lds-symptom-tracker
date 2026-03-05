@@ -31,9 +31,13 @@ test.describe('Multi-Symptom Flow (End-to-End)', () => {
     const confirmButtons = page.getByRole('button', { name: /^Bestätigen$/i })
     await expect(confirmButtons).toHaveCount(2, { timeout: 45_000 })
 
-    // Beide Symptom-Namen sollten sichtbar sein
-    await expect(page.getByText('Kopfschmerzen')).toBeVisible()
-    await expect(page.getByText('Nackenschmerzen')).toBeVisible()
+    // Beide Symptom-Namen als Tags in den ReviewBubbles sichtbar
+    await expect(
+      page.locator('button', { hasText: 'Kopfschmerzen' }),
+    ).toBeVisible()
+    await expect(
+      page.locator('button', { hasText: 'Nackenschmerzen' }),
+    ).toBeVisible()
   })
 
   test('kann beide Symptome einzeln bestätigen', async ({ page }) => {
