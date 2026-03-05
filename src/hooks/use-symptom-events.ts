@@ -133,6 +133,13 @@ export function useSymptomEvents() {
             })
             // Lade Fotos für neues Event
             loadPhotos([newEvent.id])
+            // Lade extrahierte Daten falls Event bereits extrahiert ist (Multi-Symptom)
+            if (
+              newEvent.status === 'extracted' ||
+              newEvent.status === 'confirmed'
+            ) {
+              loadExtractedData([newEvent.id])
+            }
           }
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as SymptomEvent
