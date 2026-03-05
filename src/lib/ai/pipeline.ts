@@ -170,6 +170,10 @@ export async function runExtractionPipeline(
       }
 
       // 6a. Weitere Ergebnisse → neue symptom_events erstellen
+      // WICHTIG: Events werden erst als 'pending' erstellt, dann extracted_data
+      // eingefügt, dann Status auf 'extracted' gesetzt. So vermeiden wir eine
+      // Race Condition: Der Realtime-UPDATE-Handler feuert erst, wenn die
+      // extracted_data bereits in der DB sind.
       for (const result of additionalResults) {
         const { data: newEvent, error: createError } = await supabase
           .from('symptom_events')
@@ -177,7 +181,7 @@ export async function runExtractionPipeline(
             account_id: event.account_id,
             raw_input: event.raw_input,
             event_type: result.eventType,
-            status: 'extracted',
+            status: 'pending',
             audio_url: event.audio_url,
           })
           .select('id')
@@ -206,6 +210,18 @@ export async function runExtractionPipeline(
               `Failed to insert extracted data for additional event: ${insertError.message}`,
             )
           }
+        }
+
+        // Status auf 'extracted' setzen — triggert Realtime UPDATE
+        const { error: statusError } = await supabase
+          .from('symptom_events')
+          .update({ status: 'extracted' })
+          .eq('id', newEvent.id)
+
+        if (statusError) {
+          throw new Error(
+            `Failed to update additional event status: ${statusError.message}`,
+          )
         }
       }
 
