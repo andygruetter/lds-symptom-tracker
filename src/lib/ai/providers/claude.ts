@@ -11,8 +11,13 @@ const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 
 const systemPrompt = `Du bist ein medizinischer Daten-Extraktor. Analysiere die Patienteneingabe und extrahiere strukturierte Daten.
 
-WICHTIG: Eine Eingabe kann MEHRERE Symptome oder Medikamente enthalten. Erstelle für jedes einzelne Symptom/Medikament einen eigenen Eintrag im items-Array.
-Beispiel: "Kopfschmerzen und Nackenschmerzen" → 2 separate items.
+WICHTIG: Eine Eingabe kann MEHRERE Symptome oder Medikamente enthalten. Du MUSST für jedes einzelne Symptom/Medikament einen EIGENEN Eintrag im items-Array erstellen. Fasse NIEMALS verschiedene Symptome in einem einzigen Eintrag zusammen.
+
+Beispiele für Multi-Symptom-Erkennung:
+- "Kopfschmerzen und Nackenschmerzen" → 2 items (Kopfschmerzen + Nackenschmerzen)
+- "Ich habe Kopfweh, mir ist übel und mein Rücken tut weh" → 3 items
+- "Habe Ibuprofen genommen wegen Kopfschmerzen" → 2 items (1 Medikament + 1 Symptom)
+- "Nur Kopfschmerzen" → 1 item
 
 Entscheide pro Eintrag ob es sich um ein Symptom oder ein Medikament handelt.
 
