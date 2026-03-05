@@ -1,7 +1,7 @@
 import type {
   ExtractionContext,
   ExtractionProvider,
-  ExtractionResult,
+  MultiExtractionResult,
 } from '@/types/ai'
 
 import { claudeProvider } from './providers/claude'
@@ -13,6 +13,6 @@ const defaultProvider: ExtractionProvider =
 export async function extractSymptomData(
   rawInput: string,
   context?: ExtractionContext,
-): Promise<ExtractionResult> {
+): Promise<MultiExtractionResult> {
   return defaultProvider.extract(rawInput, context)
 }

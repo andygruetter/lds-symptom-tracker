@@ -1,4 +1,4 @@
-import type { ExtractionResult } from '@/types/ai'
+import type { ExtractionResult, MultiExtractionResult } from '@/types/ai'
 
 export const symptomExtraction: ExtractionResult = {
   eventType: 'symptom',
@@ -26,3 +26,30 @@ export const lowConfidenceExtraction: ExtractionResult = {
     { fieldName: 'body_region', value: 'Magen', confidence: 55 },
   ],
 }
+
+// Multi-Symptom: "Kopfschmerzen und Nackenschmerzen"
+export const multiSymptomExtraction: MultiExtractionResult = [
+  {
+    eventType: 'symptom',
+    fields: [
+      { fieldName: 'symptom_name', value: 'Kopfschmerzen', confidence: 95 },
+      { fieldName: 'body_region', value: 'Kopf', confidence: 95 },
+    ],
+  },
+  {
+    eventType: 'symptom',
+    fields: [
+      { fieldName: 'symptom_name', value: 'Nackenschmerzen', confidence: 95 },
+      { fieldName: 'body_region', value: 'Nacken', confidence: 95 },
+    ],
+  },
+]
+
+// Einzelnes Symptom als MultiExtractionResult (Normalfall)
+export const singleSymptomMultiResult: MultiExtractionResult = [
+  symptomExtraction,
+]
+
+export const singleMedicationMultiResult: MultiExtractionResult = [
+  medicationExtraction,
+]

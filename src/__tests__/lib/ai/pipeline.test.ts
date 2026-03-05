@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { symptomExtraction } from '@/lib/ai/__fixtures__/extractions'
+import {
+  multiSymptomExtraction,
+  singleSymptomMultiResult,
+} from '@/lib/ai/__fixtures__/extractions'
 
 // Mock extract
 const mockExtractSymptomData = vi.fn()
@@ -82,6 +85,18 @@ function createMockSupabase() {
       if (table === 'symptom_events') {
         return {
           select: () => ({ eq: mockEq }),
+          insert: (data: unknown) => {
+            mockInsert(data)
+            return {
+              select: () => ({
+                single: () =>
+                  Promise.resolve({
+                    data: { id: 'new-event-id' },
+                    error: null,
+                  }),
+              }),
+            }
+          },
           update: (data: unknown) => {
             mockUpdate(data)
             return { eq: vi.fn().mockResolvedValue({ error: null }) }
@@ -100,7 +115,7 @@ function createMockSupabase() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockExtractSymptomData.mockResolvedValue(symptomExtraction)
+  mockExtractSymptomData.mockResolvedValue(singleSymptomMultiResult)
   mockGetRecentCorrections.mockResolvedValue([])
   mockGetVocabulary.mockResolvedValue([])
   mockBuildCorrectionContext.mockReturnValue('')
@@ -148,6 +163,60 @@ describe('runExtractionPipeline', () => {
     expect(mockUpdate).toHaveBeenCalledWith({
       status: 'extracted',
       event_type: 'symptom',
+    })
+  })
+
+  it('erstellt separate Events bei Multi-Symptom-Extraktion', async () => {
+    mockExtractSymptomData.mockResolvedValue(multiSymptomExtraction)
+    const supabase = createMockSupabase()
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'event-1')
+
+    // Erstes Symptom → bestehendes Event aktualisieren
+    expect(mockUpdate).toHaveBeenCalledWith({
+      status: 'extracted',
+      event_type: 'symptom',
+    })
+
+    // Zweites Symptom → neues Event erstellen (insert auf symptom_events)
+    expect(supabase.from).toHaveBeenCalledWith('symptom_events')
+
+    // Extracted data für beide Events
+    // Erster insert-Call: Kopfschmerzen-Felder für event-1
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          symptom_event_id: 'event-1',
+          field_name: 'symptom_name',
+          value: 'Kopfschmerzen',
+        }),
+      ]),
+    )
+
+    // Zweiter insert-Call: Nackenschmerzen-Felder für new-event-id
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          symptom_event_id: 'new-event-id',
+          field_name: 'symptom_name',
+          value: 'Nackenschmerzen',
+        }),
+      ]),
+    )
+  })
+
+  it('sendet angepasste Push-Nachricht bei Multi-Symptom', async () => {
+    mockExtractSymptomData.mockResolvedValue(multiSymptomExtraction)
+    const supabase = createMockSupabase()
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'event-1')
+
+    expect(mockSendPushNotification).toHaveBeenCalledWith('user-1', {
+      title: 'Symptom verarbeitet',
+      body: '2 Einträge wurden verarbeitet — tippe zum Überprüfen',
+      url: '/',
     })
   })
 

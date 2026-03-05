@@ -129,12 +129,15 @@ export async function runExtractionPipeline(
               ...(vocabularyContext ? { vocabulary: vocabularyContext } : {}),
             }
           : undefined
-      const result = await withRetry(() =>
+      const results = await withRetry(() =>
         extractSymptomData(rawInput, context),
       )
 
-      // 5. Insert extracted_data rows
-      const extractedRows = result.fields.map((field) => ({
+      // 5. Erstes Ergebnis → bestehendes Event, weitere → neue Events
+      const [firstResult, ...additionalResults] = results
+
+      // 5a. Erstes Ergebnis auf bestehendes Event speichern
+      const extractedRows = firstResult.fields.map((field) => ({
         symptom_event_id: symptomEventId,
         field_name: field.fieldName,
         value: field.value,
@@ -153,12 +156,12 @@ export async function runExtractionPipeline(
         }
       }
 
-      // 6. Update symptom_event status + event_type
+      // 6. Update erstes symptom_event status + event_type
       const { error: updateError } = await supabase
         .from('symptom_events')
         .update({
           status: 'extracted',
-          event_type: result.eventType,
+          event_type: firstResult.eventType,
         })
         .eq('id', symptomEventId)
 
@@ -166,10 +169,53 @@ export async function runExtractionPipeline(
         throw new Error(`Failed to update event status: ${updateError.message}`)
       }
 
+      // 6a. Weitere Ergebnisse → neue symptom_events erstellen
+      for (const result of additionalResults) {
+        const { data: newEvent, error: createError } = await supabase
+          .from('symptom_events')
+          .insert({
+            account_id: event.account_id,
+            raw_input: event.raw_input,
+            event_type: result.eventType,
+            status: 'extracted',
+            audio_url: event.audio_url,
+          })
+          .select('id')
+          .single()
+
+        if (createError || !newEvent) {
+          throw new Error(
+            `Failed to create additional symptom event: ${createError?.message}`,
+          )
+        }
+
+        const additionalRows = result.fields.map((field) => ({
+          symptom_event_id: newEvent.id,
+          field_name: field.fieldName,
+          value: field.value,
+          confidence: field.confidence,
+        }))
+
+        if (additionalRows.length > 0) {
+          const { error: insertError } = await supabase
+            .from('extracted_data')
+            .insert(additionalRows)
+
+          if (insertError) {
+            throw new Error(
+              `Failed to insert extracted data for additional event: ${insertError.message}`,
+            )
+          }
+        }
+      }
+
       // 7. Push-Notification nach erfolgreicher Extraktion (Fire-and-Forget)
       sendPushNotification(event.account_id, {
         title: 'Symptom verarbeitet',
-        body: 'Dein Symptom wurde verarbeitet — tippe zum Überprüfen',
+        body:
+          results.length > 1
+            ? `${results.length} Einträge wurden verarbeitet — tippe zum Überprüfen`
+            : 'Dein Symptom wurde verarbeitet — tippe zum Überprüfen',
         url: '/',
       }).catch((err) => {
         console.error('[Push] Notification fehlgeschlagen:', err)
