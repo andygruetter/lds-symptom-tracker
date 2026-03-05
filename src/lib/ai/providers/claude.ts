@@ -123,7 +123,12 @@ export const claudeProvider: ExtractionProvider = {
       system: fullSystemPrompt,
       tools: [extractionTool],
       tool_choice: { type: 'tool', name: 'extract_symptom_data' },
-      messages: [{ role: 'user', content: rawInput }],
+      messages: [
+        {
+          role: 'user',
+          content: `Patienteneingabe: "${rawInput}"\n\nExtrahiere JEDEN einzelnen Symptom/Medikament-Eintrag als separates Item im items-Array. Falls mehrere Symptome oder Medikamente erwähnt werden, MUSS das items-Array mehrere Einträge enthalten.`,
+        },
+      ],
     })
 
     const toolUse = response.content.find(
