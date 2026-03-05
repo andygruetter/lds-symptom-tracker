@@ -48,18 +48,27 @@ export const extractionResultSchema = z.object({
 })
 
 export const multiExtractionResultSchema = z.object({
-  items: z.array(z.object({
-    eventType: z.enum(['symptom', 'medication']),
-    fields: z
-      .array(rawExtractionFieldSchema)
-      .min(1)
-      .transform((fields) =>
-        fields.filter(
-          (f): f is { fieldName: string; value: string; confidence: number } =>
-            f.value !== null,
-        ),
-      ),
-  })).min(1),
+  items: z
+    .array(
+      z.object({
+        eventType: z.enum(['symptom', 'medication']),
+        fields: z
+          .array(rawExtractionFieldSchema)
+          .min(1)
+          .transform((fields) =>
+            fields.filter(
+              (
+                f,
+              ): f is {
+                fieldName: string
+                value: string
+                confidence: number
+              } => f.value !== null,
+            ),
+          ),
+      }),
+    )
+    .min(1),
 })
 
 // Correction Type (für KI-Lernen aus Korrekturen)

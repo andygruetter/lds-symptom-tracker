@@ -17,7 +17,11 @@ export const mockProvider: ExtractionProvider = {
         {
           eventType: 'medication',
           fields: [
-            { fieldName: 'medication_name', value: 'Ibuprofen', confidence: 95 },
+            {
+              fieldName: 'medication_name',
+              value: 'Ibuprofen',
+              confidence: 95,
+            },
             { fieldName: 'action', value: 'eingenommen', confidence: 90 },
             { fieldName: 'dosage', value: '400mg', confidence: 80 },
           ],

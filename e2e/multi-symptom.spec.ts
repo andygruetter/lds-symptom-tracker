@@ -56,10 +56,14 @@ test.describe('Multi-Symptom Extraktion', () => {
 
     // Beide Symptom-Namen als SymptomTag-Buttons sichtbar
     await expect(
-      page.getByRole('button', { name: 'symptom_name ändern' }).filter({ hasText: 'Kopfschmerzen' }),
+      page
+        .getByRole('button', { name: 'symptom_name ändern' })
+        .filter({ hasText: 'Kopfschmerzen' }),
     ).toBeVisible()
     await expect(
-      page.getByRole('button', { name: 'symptom_name ändern' }).filter({ hasText: 'Nackenschmerzen' }),
+      page
+        .getByRole('button', { name: 'symptom_name ändern' })
+        .filter({ hasText: 'Nackenschmerzen' }),
     ).toBeVisible()
   })
 

@@ -58,15 +58,12 @@ describe('extractSymptomData', () => {
   })
 
   it('gibt mehrere Ergebnisse bei Multi-Symptom zurück', async () => {
-    const { multiSymptomExtraction } = await import(
-      '@/lib/ai/__fixtures__/extractions'
-    )
+    const { multiSymptomExtraction } =
+      await import('@/lib/ai/__fixtures__/extractions')
     mockExtract.mockResolvedValue(multiSymptomExtraction)
 
     const { extractSymptomData } = await import('@/lib/ai/extract')
-    const result = await extractSymptomData(
-      'Kopfschmerzen und Nackenschmerzen',
-    )
+    const result = await extractSymptomData('Kopfschmerzen und Nackenschmerzen')
 
     expect(result).toHaveLength(2)
     expect(result[0].fields[0].value).toBe('Kopfschmerzen')
