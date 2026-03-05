@@ -91,7 +91,7 @@ Das Produkt wird als Pilot mit einer 17-jährigen LDS-Patientin entwickelt und v
 ### MVP — Minimum Viable Product
 
 1. **Symptom-Erfassung:** Web-App (mobilfähig), Sprache (Schweizerdeutsch + Hochdeutsch) + Text + Foto-Dokumentation (Kamera-Aufnahme direkt aus der App), Event-basiert, Symptom-Ende markieren
-2. **KI-Verarbeitung:** Asynchrone Transkription (Dialekt → Hochdeutsch), Symptom-Extraktion, Sofort-Feedback, Nachfrage bei niedriger Konfidenz, Patienten-Korrektur mit Lerneffekt, Push-Benachrichtigung
+2. **KI-Verarbeitung:** Asynchrone Transkription (Dialekt → Hochdeutsch), Symptom-Extraktion (Multi-Symptom: eine Eingabe kann mehrere Symptome/Medikamente enthalten, die separat extrahiert werden), Sofort-Feedback, Nachfrage bei niedriger Konfidenz, Patienten-Korrektur mit Lerneffekt, Push-Benachrichtigung
 3. **Patienten-Ansicht:** Chronologischer Feed, Symptom-Häufigkeits-Ranking, Timeline über Monate
 4. **Arzt-Export:** Sharing-Link (read-only, zeitbegrenzt, kein Download), PDF-Export, KI-Zusammenfassung, Timeline + Drill-Down, Original-Audio (Stream), Fotos im Drill-Down sichtbar, Handy + iPad + Desktop
 5. **Onboarding:** Apple ID Login, Zero-Formular, sofort nutzbar
@@ -422,7 +422,7 @@ Beweisen, dass event-basierte Spracherfassung mit KI-Extraktion für eine LDS-Pa
 - **FR4:** Patient kann ein Medikamenten-Event per Sprache oder Text erfassen (Einnahme, vergessene Einnahme, Dosis, Grund)
 - **FR5:** Patient kann ein aktives Symptom als beendet markieren (Dauer wird berechnet)
 - **FR6:** System transkribiert Schweizerdeutsch-Spracheingabe ins Hochdeutsche
-- **FR7:** System extrahiert automatisch strukturierte Daten aus der Eingabe (Symptombezeichnung, Körperregion, Seite, Art, Intensität)
+- **FR7:** System extrahiert automatisch strukturierte Daten aus der Eingabe (Symptombezeichnung, Körperregion, Seite, Art, Intensität). Bei mehreren Symptomen/Medikamenten in einer Eingabe wird pro Eintrag ein separates Event erstellt.
 - **FR8:** System unterscheidet zwischen Symptom-Events und Medikamenten-Events
 - **FR9:** System zeigt nach Erfassung sofort eine Verarbeitungs-Bestätigung an
 - **FR10:** System sendet Push-Benachrichtigung wenn die KI-Extraktion abgeschlossen ist

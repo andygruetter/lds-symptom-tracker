@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { symptomExtraction } from '@/lib/ai/__fixtures__/extractions'
+import {
+  multiSymptomExtraction,
+  symptomExtraction,
+} from '@/lib/ai/__fixtures__/extractions'
 
 const mockCreate = vi.fn()
 
@@ -20,23 +23,40 @@ beforeEach(() => {
         type: 'tool_use',
         id: 'tool-1',
         name: 'extract_symptom_data',
-        input: symptomExtraction,
+        input: { items: [symptomExtraction] },
       },
     ],
   })
 })
 
 describe('claudeProvider.extract', () => {
-  it('extrahiert Daten ohne Context (abwärtskompatibel)', async () => {
+  it('extrahiert Daten und gibt Array zurück', async () => {
     const { claudeProvider } = await import('@/lib/ai/providers/claude')
     const result = await claudeProvider.extract('Kopfschmerzen rechts')
 
-    expect(result).toEqual(symptomExtraction)
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        system: expect.not.stringContaining('Frühere Korrekturen'),
-      }),
+    expect(result).toEqual([symptomExtraction])
+  })
+
+  it('extrahiert mehrere Symptome aus einer Eingabe', async () => {
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: 'tool_use',
+          id: 'tool-1',
+          name: 'extract_symptom_data',
+          input: { items: multiSymptomExtraction },
+        },
+      ],
+    })
+
+    const { claudeProvider } = await import('@/lib/ai/providers/claude')
+    const result = await claudeProvider.extract(
+      'Kopfschmerzen und Nackenschmerzen',
     )
+
+    expect(result).toHaveLength(2)
+    expect(result[0].fields[0].value).toBe('Kopfschmerzen')
+    expect(result[1].fields[0].value).toBe('Nackenschmerzen')
   })
 
   it('hängt Corrections-Context an System-Prompt an', async () => {
@@ -60,7 +80,6 @@ describe('claudeProvider.extract', () => {
     await claudeProvider.extract('Kopfschmerzen', { corrections: '' })
 
     const callArgs = mockCreate.mock.calls[0][0]
-    // System prompt should not end with correction block
     expect(callArgs.system).not.toContain('Frühere Korrekturen')
   })
 

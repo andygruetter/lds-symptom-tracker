@@ -117,7 +117,7 @@ This document provides the complete epic and story breakdown for lds-symptome-tr
 - Starter Template: `create-next-app` + `shadcn/ui init` als Projektbasis (Epic 1, Story 1)
 - Drei Supabase-Client-Factories: `createBrowserClient()`, `createServerClient()`, `createServiceClient()`
 - Supabase Schema mit RLS-Policies: account_id-basiert + Sharing-Token-Policy
-- KI-Pipeline: Whisper API (STT) + Claude Sonnet (Extraktion + Zusammenfassung) mit Provider-Abstraktion in `src/lib/ai/`
+- KI-Pipeline: Whisper API (STT) + Claude Sonnet (Multi-Symptom-Extraktion + Zusammenfassung) mit Provider-Abstraktion in `src/lib/ai/`. Eine Eingabe kann mehrere Symptome/Medikamente enthalten — pro Eintrag wird ein separates `symptom_event` erstellt.
 - E-Mail-Versand: Native Mail-App des Patienten via mailto:-Link (kein Backend-E-Mail-Service)
 - Summary-Cache: `sharing_summaries` Tabelle für KI-Zusammenfassung im Arzt-Dashboard (Invalidierung bei neuen Symptomen)
 - Soft-Delete + Cron: `deleted_at` auf accounts, wöchentlicher Hard-Delete nach 30 Tagen
@@ -350,7 +350,7 @@ So that die Erfassung sich natürlich und schnell anfühlt wie eine Messenger-Ap
 
 ### Story 2.2: KI-Extraktion und Klassifikation mit Provider-Abstraktion
 As a System,
-I want strukturierte Daten aus Freitext-Eingaben extrahieren und automatisch zwischen Symptom- und Medikamenten-Events unterscheiden,
+I want strukturierte Daten aus Freitext-Eingaben extrahieren, automatisch zwischen Symptom- und Medikamenten-Events unterscheiden, und mehrere Symptome/Medikamente aus einer Eingabe separat erkennen,
 So that die unstrukturierte Eingabe in medizinisch verwertbare, korrekt klassifizierte Daten umgewandelt wird (FR7, FR8).
 
 **Acceptance Criteria:**
@@ -358,8 +358,10 @@ So that die unstrukturierte Eingabe in medizinisch verwertbare, korrekt klassifi
 **Given** ein `symptom_event` mit `status: 'pending'` existiert
 **When** die KI-Extraktion ausgelöst wird
 **Then** wird die Provider-Abstraktion in `src/lib/ai/` genutzt (Claude Sonnet als Standard-Provider)
-**And** die `extracted_data`-Tabelle wird erstellt mit `symptom_event_id`, `field_name`, `value`, `confidence`, `confirmed`
-**And** das `event_type`-Feld wird im selben KI-Call korrekt auf `'symptom'` oder `'medication'` gesetzt (FR8)
+**And** die Extraktion gibt ein `MultiExtractionResult` (Array) zurück — ein Eintrag pro erkanntes Symptom/Medikament
+**And** das erste Ergebnis aktualisiert das bestehende `symptom_event`, weitere Ergebnisse erzeugen neue `symptom_events`
+**And** die `extracted_data`-Tabelle wird pro Event befüllt mit `symptom_event_id`, `field_name`, `value`, `confidence`, `confirmed`
+**And** das `event_type`-Feld wird pro Event korrekt auf `'symptom'` oder `'medication'` gesetzt (FR8)
 **And** bei Symptom-Events: extrahierte Felder umfassen Symptombezeichnung, Körperregion, Seite (links/rechts/beidseits), Art, Intensität (1-10)
 **And** bei Medikamenten-Events: extrahierte Felder umfassen Medikamentenname, Einnahme/vergessen, Dosis, Grund (FR4)
 **And** jedes extrahierte Feld hat einen Konfidenz-Score (0-100%)
@@ -368,6 +370,7 @@ So that die unstrukturierte Eingabe in medizinisch verwertbare, korrekt klassifi
 **And** bei API-Ausfall wird der Event-Status auf `'extraction_failed'` gesetzt und kann nachgeholt werden (NFR19)
 **And** Server Action folgt dem Zod→Auth→DB Pattern mit `ActionResult<T>`
 **And** die ChatBubble zeigt visuell unterschiedliche Styles für Symptom- vs. Medikamenten-Events
+**And** bei Multi-Symptom-Eingaben (z.B. "Kopfschmerzen und Nackenschmerzen") werden separate ReviewBubbles pro Symptom angezeigt
 
 ### Story 2.3: Review-Ansicht mit Konfidenz-Indikatoren
 As a Patient,

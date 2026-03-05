@@ -3,15 +3,23 @@ import Anthropic from '@anthropic-ai/sdk'
 import type {
   ExtractionContext,
   ExtractionProvider,
-  ExtractionResult,
+  MultiExtractionResult,
 } from '@/types/ai'
-import { extractionResultSchema } from '@/types/ai'
+import { multiExtractionResultSchema } from '@/types/ai'
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 
 const systemPrompt = `Du bist ein medizinischer Daten-Extraktor. Analysiere die Patienteneingabe und extrahiere strukturierte Daten.
 
-Entscheide zuerst ob es sich um ein Symptom oder ein Medikament handelt.
+WICHTIG: Eine Eingabe kann MEHRERE Symptome oder Medikamente enthalten. Du MUSST für jedes einzelne Symptom/Medikament einen EIGENEN Eintrag im items-Array erstellen. Fasse NIEMALS verschiedene Symptome in einem einzigen Eintrag zusammen.
+
+Beispiele für Multi-Symptom-Erkennung:
+- "Kopfschmerzen und Nackenschmerzen" → 2 items (Kopfschmerzen + Nackenschmerzen)
+- "Ich habe Kopfweh, mir ist übel und mein Rücken tut weh" → 3 items
+- "Habe Ibuprofen genommen wegen Kopfschmerzen" → 2 items (1 Medikament + 1 Symptom)
+- "Nur Kopfschmerzen" → 1 item
+
+Entscheide pro Eintrag ob es sich um ein Symptom oder ein Medikament handelt.
 
 Bei Symptomen extrahiere:
 - symptom_name: Bezeichnung des Symptoms (z.B. "Rückenschmerzen")
@@ -36,41 +44,54 @@ Sprache: Der Patient schreibt auf Deutsch (möglicherweise Schweizerdeutsch).
 
 const extractionTool: Anthropic.Messages.Tool = {
   name: 'extract_symptom_data',
-  description: 'Extrahiert strukturierte medizinische Daten aus Freitext',
+  description:
+    'Extrahiert strukturierte medizinische Daten aus Freitext. Gibt ein Array von Einträgen zurück — einen pro erkanntes Symptom/Medikament.',
   input_schema: {
     type: 'object' as const,
     properties: {
-      eventType: {
-        type: 'string',
-        enum: ['symptom', 'medication'],
-        description: 'Art des Events: Symptom oder Medikament',
-      },
-      fields: {
+      items: {
         type: 'array',
+        minItems: 1,
         items: {
           type: 'object',
           properties: {
-            fieldName: {
+            eventType: {
               type: 'string',
-              description: 'Name des extrahierten Feldes',
+              enum: ['symptom', 'medication'],
+              description: 'Art des Events: Symptom oder Medikament',
             },
-            value: {
-              type: 'string',
-              description: 'Extrahierter Wert',
-            },
-            confidence: {
-              type: 'number',
-              minimum: 0,
-              maximum: 100,
-              description: 'Konfidenz-Score 0-100',
+            fields: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  fieldName: {
+                    type: 'string',
+                    description: 'Name des extrahierten Feldes',
+                  },
+                  value: {
+                    type: 'string',
+                    description: 'Extrahierter Wert',
+                  },
+                  confidence: {
+                    type: 'number',
+                    minimum: 0,
+                    maximum: 100,
+                    description: 'Konfidenz-Score 0-100',
+                  },
+                },
+                required: ['fieldName', 'value', 'confidence'],
+              },
+              description: 'Array der extrahierten Felder',
             },
           },
-          required: ['fieldName', 'value', 'confidence'],
+          required: ['eventType', 'fields'],
         },
-        description: 'Array der extrahierten Felder',
+        description:
+          'Array der extrahierten Einträge — ein Eintrag pro Symptom/Medikament',
       },
     },
-    required: ['eventType', 'fields'],
+    required: ['items'],
   },
 }
 
@@ -84,7 +105,7 @@ export const claudeProvider: ExtractionProvider = {
   async extract(
     rawInput: string,
     context?: ExtractionContext,
-  ): Promise<ExtractionResult> {
+  ): Promise<MultiExtractionResult> {
     const client = createClient()
 
     const contextParts = [context?.corrections, context?.vocabulary].filter(
@@ -102,7 +123,12 @@ export const claudeProvider: ExtractionProvider = {
       system: fullSystemPrompt,
       tools: [extractionTool],
       tool_choice: { type: 'tool', name: 'extract_symptom_data' },
-      messages: [{ role: 'user', content: rawInput }],
+      messages: [
+        {
+          role: 'user',
+          content: `Patienteneingabe: "${rawInput}"\n\nExtrahiere JEDEN einzelnen Symptom/Medikament-Eintrag als separates Item im items-Array. Falls mehrere Symptome oder Medikamente erwähnt werden, MUSS das items-Array mehrere Einträge enthalten.`,
+        },
+      ],
     })
 
     const toolUse = response.content.find(
@@ -114,12 +140,12 @@ export const claudeProvider: ExtractionProvider = {
       throw new Error('Claude returned no tool use response')
     }
 
-    const parsed = extractionResultSchema.safeParse(toolUse.input)
+    const parsed = multiExtractionResultSchema.safeParse(toolUse.input)
 
     if (!parsed.success) {
       throw new Error(`Invalid extraction result: ${parsed.error.message}`)
     }
 
-    return parsed.data
+    return parsed.data.items
   },
 }

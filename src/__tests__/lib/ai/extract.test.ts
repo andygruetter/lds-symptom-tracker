@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  medicationExtraction,
-  symptomExtraction,
+  singleMedicationMultiResult,
+  singleSymptomMultiResult,
 } from '@/lib/ai/__fixtures__/extractions'
 
 // Mock the Claude provider
@@ -19,15 +19,16 @@ beforeEach(() => {
 
 describe('extractSymptomData', () => {
   it('extrahiert Symptom-Daten via Provider', async () => {
-    mockExtract.mockResolvedValue(symptomExtraction)
+    mockExtract.mockResolvedValue(singleSymptomMultiResult)
 
     const { extractSymptomData } = await import('@/lib/ai/extract')
     const result = await extractSymptomData('Kopfschmerzen rechts stechend')
 
-    expect(result.eventType).toBe('symptom')
-    expect(result.fields).toHaveLength(4)
-    expect(result.fields[0].fieldName).toBe('symptom_name')
-    expect(result.fields[0].value).toBe('Kopfschmerzen')
+    expect(result).toHaveLength(1)
+    expect(result[0].eventType).toBe('symptom')
+    expect(result[0].fields).toHaveLength(4)
+    expect(result[0].fields[0].fieldName).toBe('symptom_name')
+    expect(result[0].fields[0].value).toBe('Kopfschmerzen')
     expect(mockExtract).toHaveBeenCalledWith(
       'Kopfschmerzen rechts stechend',
       undefined,
@@ -35,7 +36,7 @@ describe('extractSymptomData', () => {
   })
 
   it('leitet ExtractionContext an Provider weiter', async () => {
-    mockExtract.mockResolvedValue(symptomExtraction)
+    mockExtract.mockResolvedValue(singleSymptomMultiResult)
 
     const { extractSymptomData } = await import('@/lib/ai/extract')
     const context = { corrections: 'Korrekturen...' }
@@ -45,14 +46,28 @@ describe('extractSymptomData', () => {
   })
 
   it('extrahiert Medikamenten-Daten via Provider', async () => {
-    mockExtract.mockResolvedValue(medicationExtraction)
+    mockExtract.mockResolvedValue(singleMedicationMultiResult)
 
     const { extractSymptomData } = await import('@/lib/ai/extract')
     const result = await extractSymptomData('Habe Ibuprofen 400mg genommen')
 
-    expect(result.eventType).toBe('medication')
-    expect(result.fields).toHaveLength(3)
-    expect(result.fields[0].fieldName).toBe('medication_name')
+    expect(result).toHaveLength(1)
+    expect(result[0].eventType).toBe('medication')
+    expect(result[0].fields).toHaveLength(3)
+    expect(result[0].fields[0].fieldName).toBe('medication_name')
+  })
+
+  it('gibt mehrere Ergebnisse bei Multi-Symptom zurück', async () => {
+    const { multiSymptomExtraction } =
+      await import('@/lib/ai/__fixtures__/extractions')
+    mockExtract.mockResolvedValue(multiSymptomExtraction)
+
+    const { extractSymptomData } = await import('@/lib/ai/extract')
+    const result = await extractSymptomData('Kopfschmerzen und Nackenschmerzen')
+
+    expect(result).toHaveLength(2)
+    expect(result[0].fields[0].value).toBe('Kopfschmerzen')
+    expect(result[1].fields[0].value).toBe('Nackenschmerzen')
   })
 
   it('propagiert Provider-Fehler', async () => {

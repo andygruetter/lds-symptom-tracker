@@ -222,7 +222,7 @@ KI-Pipeline schreibt Ergebnis in DB → Supabase Realtime pusht Update via WebSo
 |--------|--------|
 | **Service** | Anthropic Claude Sonnet (aktuelles Modell) |
 | **Stärke** | Tool Use für garantiert valides JSON-Schema. Exzellent im Befolgen von System-Prompt-Instruktionen (persönliches Vokabular-Lernen). |
-| **Output** | Symptombezeichnung, Körperregion, Seite, Art, Intensität, Konfidenz-Score, Event-Typ (Symptom/Medikament) |
+| **Output** | Array von Extraktionen — pro erkanntes Symptom/Medikament ein Eintrag mit: Bezeichnung, Körperregion, Seite, Art, Intensität, Konfidenz-Score, Event-Typ. Multi-Symptom-Eingaben (z.B. "Kopfschmerzen und Nackenschmerzen") erzeugen separate Events. |
 | **Kosten** | ~$0.003/Event, Pay-per-Use |
 | **Latenz** | ~1-3 Sekunden |
 | **Persönliches Lernen** | Korrektur-History als Few-Shot-Beispiele im System Prompt |
@@ -232,10 +232,10 @@ KI-Pipeline schreibt Ergebnis in DB → Supabase Realtime pusht Update via WebSo
 ```
 src/lib/ai/
   ├── transcribe.ts      → Interface: audio → transcript
-  ├── extract.ts         → Interface: text + patientCorrections → structuredSymptoms
+  ├── extract.ts         → Interface: text + patientCorrections → MultiExtractionResult (Array von Symptomen/Medikamenten)
   └── providers/
       ├── whisper.ts     → OpenAI Whisper Implementation
-      └── claude.ts      → Anthropic Claude Sonnet Implementation
+      └── claude.ts      → Anthropic Claude Sonnet Implementation (Multi-Symptom via items-Array)
 ```
 
 Provider-Wechsel = ein File tauschen. Kein App-Umbau nötig.
@@ -250,8 +250,8 @@ Serverless Function triggered
 Whisper API: Audio → Transcript (2-5s)
        ↓
 Claude Sonnet: Transcript + Korrekturen → Strukturierte Daten (1-3s)
-       ↓
-Ergebnis in Supabase DB gespeichert
+       ↓ (Multi-Symptom: ein Event pro erkanntes Symptom/Medikament)
+Ergebnisse in Supabase DB gespeichert (erstes Ergebnis → bestehendes Event, weitere → neue Events)
        ↓
 Supabase Realtime → Client Update (WebSocket)
        ↓
@@ -995,7 +995,7 @@ lds-symptom-tracker/
 │   │   ├── database.ts                     → AUTO-GENERIERT via supabase gen types (NIE editieren!)
 │   │   ├── symptom.ts                      → Zod-Schemas + Types (SymptomInput, Symptom, etc.)
 │   │   ├── sharing.ts                      → Zod-Schemas + Types (SharingLink, SharingSession)
-│   │   ├── ai.ts                           → TranscriptResult, ExtractionResult, PipelineResult
+│   │   ├── ai.ts                           → TranscriptResult, ExtractionResult, MultiExtractionResult, PipelineResult
 │   │   └── common.ts                       → ActionResult<T>, AppError, LoadingStates
 │   │
 │   ├── middleware.ts                        → Routing-basierte Auth (siehe Details unten)
@@ -1134,7 +1134,7 @@ export const config = {
 |--------|-------|-------------|
 | `components/` → `lib/` | Komponenten importieren NIE direkt aus `lib/db/` oder `lib/ai/` | Server Actions oder Hooks als Vermittler |
 | `app/` → `components/` | Route-Dateien nur Layout + Composition, keine Logik | Business-Logik in `components/` oder `lib/` |
-| `lib/ai/` → `lib/ai/providers/` | `pipeline.ts` nutzt nur Interfaces aus `transcribe.ts`/`extract.ts` | Provider-Dateien nie direkt importieren |
+| `lib/ai/` → `lib/ai/providers/` | `pipeline.ts` nutzt nur Interfaces aus `transcribe.ts`/`extract.ts`. Extraktion gibt `MultiExtractionResult` zurück — Pipeline erstellt pro Eintrag ein eigenes `symptom_event`. | Provider-Dateien nie direkt importieren |
 | `lib/db/` → Supabase | Einziger Ort für Supabase-Client-Calls | Kein `supabase.from()` ausserhalb von `lib/db/` |
 | `types/` → überall | Types werden überall importiert, importieren aber NIE aus `lib/` oder `components/` | Keine zirkulären Dependencies |
 | `api/` → `createServiceClient()` | Einziger Ort für Service Role Key | Server Actions nutzen `createServerClient()` |
@@ -1173,8 +1173,9 @@ lib/ai/pipeline.ts
   │       ▼ Transcript
   ├── extract.ts → providers/claude.ts → Anthropic API
   │       │       (+ Korrekturen aus lib/db/corrections.ts)
-  │       ▼ Strukturierte Symptome
-  └── lib/db/symptoms.ts → INSERT in Supabase (Service Client)
+  │       ▼ MultiExtractionResult (Array: 1..n Symptome/Medikamente)
+  └── Pro Eintrag: symptom_event + extracted_data → INSERT in Supabase
+      (Erstes Ergebnis aktualisiert bestehendes Event, weitere erzeugen neue Events)
               │
               ▼
 Supabase Realtime → Channel symptoms:{account_id}

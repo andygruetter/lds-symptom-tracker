@@ -18,6 +18,8 @@ export interface ExtractionResult {
   fields: ExtractionField[]
 }
 
+export type MultiExtractionResult = ExtractionResult[]
+
 // Zod Schema für Claude Tool-Output Validation
 // value kann null sein wenn Claude unsicher ist — diese Felder werden rausgefiltert
 const rawExtractionFieldSchema = z.object({
@@ -43,6 +45,30 @@ export const extractionResultSchema = z.object({
           f.value !== null,
       ),
     ),
+})
+
+export const multiExtractionResultSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        eventType: z.enum(['symptom', 'medication']),
+        fields: z
+          .array(rawExtractionFieldSchema)
+          .min(1)
+          .transform((fields) =>
+            fields.filter(
+              (
+                f,
+              ): f is {
+                fieldName: string
+                value: string
+                confidence: number
+              } => f.value !== null,
+            ),
+          ),
+      }),
+    )
+    .min(1),
 })
 
 // Correction Type (für KI-Lernen aus Korrekturen)
@@ -71,7 +97,7 @@ export interface ExtractionProvider {
   extract(
     rawInput: string,
     context?: ExtractionContext,
-  ): Promise<ExtractionResult>
+  ): Promise<MultiExtractionResult>
 }
 
 // Transkription Types (Voice → Text via Whisper/GPT-4o-mini-transcribe)
