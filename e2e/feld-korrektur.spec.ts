@@ -49,6 +49,11 @@ test.describe('Feld-Korrektur', () => {
     await createTestExtractedData(event.id, [
       { field_name: 'symptom_name', value: 'Armschmerzen', confidence: 80 },
       { field_name: 'Körperregion', value: 'Arm', confidence: 90 },
+      {
+        field_name: 'aktivitaet_kategorie',
+        value: 'Sport / Bewegung',
+        confidence: 75,
+      },
     ])
 
     await capturePage.goto()

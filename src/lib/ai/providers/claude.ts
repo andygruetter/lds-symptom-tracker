@@ -27,6 +27,18 @@ Bei Symptomen extrahiere:
 - side: "links", "rechts", "beidseits" oder null
 - symptom_type: Art des Symptoms (z.B. "stechend", "ziehend", "dumpf")
 - intensity: Intensität 1-10 (falls erwähnt, sonst null)
+- aktivitaet_kategorie: Eine der folgenden Kategorien oder null: "Sport / Bewegung", "Arbeit", "Essen / Trinken", "Schlaf / Ruhe", "Hausarbeit", "Freizeit", "Sonstiges"
+- aktivitaet_zeitbezug: "waehrend", "nach", "vor" oder null
+- bemerkungen: Freitext für spezifische Aktivität und sonstige Infos. Bei einem einzelnen Eintrag KEINEN Bullet-Prefix verwenden. Nur bei mehreren Einträgen "- " Prefix pro Zeile (z.B. "- Hiphop tanzen\n- Draussen bei Kälte"). Wenn kein Wert erkennbar, null zurückgeben — KEINEN leeren String.
+
+WICHTIG für aktivitaet_kategorie, aktivitaet_zeitbezug, bemerkungen:
+- Diese 3 Felder sind optional und NUR für Symptome, NICHT für Medikamente.
+- Wenn kein Wert erkennbar ist, null zurückgeben — KEINEN leeren String.
+
+Beispiele für Aktivitäts-Extraktion:
+- "Nach dem Hiphop tanzen Brustschmerzen, war draussen bei Kälte" → aktivitaet_kategorie: "Sport / Bewegung", aktivitaet_zeitbezug: "nach", bemerkungen: "- Hiphop tanzen\n- Draussen bei Kälte"
+- "Kopfschmerzen während der Arbeit am Bildschirm" → aktivitaet_kategorie: "Arbeit", aktivitaet_zeitbezug: "waehrend", bemerkungen: "Bildschirmarbeit"
+- "Bauchschmerzen" → alle 3 Felder null (keine Aktivität erkennbar)
 
 Bei Medikamenten extrahiere:
 - medication_name: Name des Medikaments
@@ -119,7 +131,7 @@ export const claudeProvider: ExtractionProvider = {
 
     const response = await client.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 1024,
+      max_tokens: 1536,
       system: fullSystemPrompt,
       tools: [extractionTool],
       tool_choice: { type: 'tool', name: 'extract_symptom_data' },

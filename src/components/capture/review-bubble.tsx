@@ -1,11 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { ClarificationBubble } from '@/components/capture/clarification-bubble'
 import { ConfidenceIndicator } from '@/components/capture/confidence-indicator'
 import { SymptomTag } from '@/components/capture/symptom-tag'
 import type { ClarificationQuestion, ExtractedData } from '@/types/ai'
+
+const ACTIVITY_FIELDS = new Set([
+  'aktivitaet_kategorie',
+  'aktivitaet_zeitbezug',
+  'bemerkungen',
+])
+
+const FIELD_OPTIONS: Record<string, string[]> = {
+  aktivitaet_kategorie: [
+    'Sport / Bewegung',
+    'Arbeit',
+    'Essen / Trinken',
+    'Schlaf / Ruhe',
+    'Hausarbeit',
+    'Freizeit',
+    'Sonstiges',
+  ],
+  aktivitaet_zeitbezug: ['waehrend', 'nach', 'vor'],
+}
 
 interface ReviewBubbleProps {
   extractedFields: ExtractedData[]
@@ -27,6 +46,33 @@ function getAverageConfidence(fields: ExtractedData[]): number {
   return Math.round(sum / fields.length)
 }
 
+function serializeRemarks(text: string): string {
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+  if (lines.length <= 1) {
+    // Single line: strip any bullet prefix
+    return lines.length === 1 ? lines[0].replace(/^- /, '') : ''
+  }
+  // Multiple lines: ensure bullet prefix
+  return lines.map((l) => (l.startsWith('- ') ? l : `- ${l}`)).join('\n')
+}
+
+function renderRemarks(value: string): React.ReactNode {
+  if (!value.includes('\n')) {
+    return <span>{value}</span>
+  }
+  const items = value.split('\n').filter(Boolean)
+  return (
+    <ul className="list-inside list-disc text-xs">
+      {items.map((item) => (
+        <li key={item}>{item.replace(/^- /, '')}</li>
+      ))}
+    </ul>
+  )
+}
+
 export function ReviewBubble({
   extractedFields,
   eventId,
@@ -37,7 +83,23 @@ export function ReviewBubble({
   isConfirming = false,
 }: ReviewBubbleProps) {
   const [editingField, setEditingField] = useState<string | null>(null)
+  const [editingRemarks, setEditingRemarks] = useState(false)
+  const [remarksValue, setRemarksValue] = useState('')
+  const remarksRef = useRef<HTMLTextAreaElement>(null)
   const [answers, setAnswers] = useState<Record<string, string>>({})
+
+  const medicalFields = extractedFields.filter(
+    (f) => !ACTIVITY_FIELDS.has(f.field_name),
+  )
+  const activityFields = extractedFields.filter((f) =>
+    ACTIVITY_FIELDS.has(f.field_name),
+  )
+  const remarksField = activityFields.find(
+    (f) => f.field_name === 'bemerkungen',
+  )
+  const tagActivityFields = activityFields.filter(
+    (f) => f.field_name !== 'bemerkungen',
+  )
 
   const avgConfidence = getAverageConfidence(extractedFields)
   const hasClarifications = clarificationQuestions.length > 0
@@ -45,9 +107,36 @@ export function ReviewBubble({
     !hasClarifications ||
     clarificationQuestions.every((q) => q.fieldName in answers)
 
+  useEffect(() => {
+    if (editingRemarks && remarksRef.current) {
+      remarksRef.current.focus()
+    }
+  }, [editingRemarks])
+
   function handleEdit(fieldName: string, newValue: string) {
     onCorrect(eventId, fieldName, newValue)
     setEditingField(null)
+  }
+
+  function handleStartEditRemarks() {
+    setRemarksValue(remarksField!.value)
+    setEditingRemarks(true)
+  }
+
+  function handleSaveRemarks() {
+    const serialized = serializeRemarks(remarksValue)
+    if (serialized !== remarksField?.value) {
+      if (serialized) {
+        onCorrect(eventId, 'bemerkungen', serialized)
+      }
+    }
+    setEditingRemarks(false)
+  }
+
+  function handleRemarksKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') {
+      setEditingRemarks(false)
+    }
   }
 
   async function handleClarificationAnswer(fieldName: string, answer: string) {
@@ -69,8 +158,9 @@ export function ReviewBubble({
       {/* Tags + ConfidenceIndicator Bubble */}
       <div className="flex justify-start">
         <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-card px-4 py-2.5 text-card-foreground shadow-sm">
+          {/* Medical fields */}
           <div className="flex flex-wrap gap-1.5">
-            {extractedFields.map((field) => (
+            {medicalFields.map((field) => (
               <SymptomTag
                 key={field.id}
                 label={field.field_name}
@@ -78,12 +168,67 @@ export function ReviewBubble({
                 confidence={field.confidence}
                 editable={!field.confirmed}
                 isEditing={editingField === field.id}
+                options={FIELD_OPTIONS[field.field_name]}
                 onStartEdit={() => setEditingField(field.id)}
                 onEdit={(newValue) => handleEdit(field.field_name, newValue)}
                 onCancelEdit={() => setEditingField(null)}
               />
             ))}
           </div>
+
+          {/* Activity fields section */}
+          {activityFields.length > 0 && (
+            <div className="mt-2 border-t border-border pt-2">
+              <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Aktivität
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {tagActivityFields.map((field) => (
+                  <SymptomTag
+                    key={field.id}
+                    label={field.field_name}
+                    value={field.value}
+                    confidence={field.confidence}
+                    editable={!field.confirmed}
+                    isEditing={editingField === field.id}
+                    options={FIELD_OPTIONS[field.field_name]}
+                    onStartEdit={() => setEditingField(field.id)}
+                    onEdit={(newValue) =>
+                      handleEdit(field.field_name, newValue)
+                    }
+                    onCancelEdit={() => setEditingField(null)}
+                  />
+                ))}
+              </div>
+
+              {/* Remarks */}
+              {remarksField && (
+                <div className="mt-1.5">
+                  {editingRemarks ? (
+                    <textarea
+                      ref={remarksRef}
+                      value={remarksValue}
+                      onChange={(e) => setRemarksValue(e.target.value)}
+                      onBlur={handleSaveRemarks}
+                      onKeyDown={handleRemarksKeyDown}
+                      className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                      rows={3}
+                      aria-label="Bemerkungen bearbeiten"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleStartEditRemarks}
+                      className="w-full rounded bg-muted px-2 py-1 text-left text-xs text-foreground"
+                      aria-label="bemerkungen ändern"
+                    >
+                      {renderRemarks(remarksField.value)}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="mt-2">
             <ConfidenceIndicator score={avgConfidence} />

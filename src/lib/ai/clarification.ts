@@ -10,10 +10,13 @@ const FIELD_PRIORITY: Record<string, number> = {
   Seite: 2,
   Symptomtyp: 3,
   Intensität: 4,
+  aktivitaet_kategorie: 5,
+  aktivitaet_zeitbezug: 6,
+  bemerkungen: 7,
 }
 
 function getFieldPriority(fieldName: string): number {
-  return FIELD_PRIORITY[fieldName] ?? 5
+  return FIELD_PRIORITY[fieldName] ?? 99
 }
 
 interface ClarificationTemplate {
@@ -59,6 +62,22 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       'Kribbelnd',
       'Pochend',
     ],
+  },
+  aktivitaet_kategorie: {
+    question: 'Bei welcher Aktivität?',
+    options: [
+      'Sport / Bewegung',
+      'Arbeit',
+      'Essen / Trinken',
+      'Schlaf / Ruhe',
+      'Hausarbeit',
+      'Freizeit',
+      'Sonstiges',
+    ],
+  },
+  aktivitaet_zeitbezug: {
+    question: 'Wann im Bezug zur Aktivität?',
+    options: ['waehrend', 'nach', 'vor'],
   },
 }
 

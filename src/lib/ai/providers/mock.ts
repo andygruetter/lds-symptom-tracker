@@ -17,6 +17,13 @@ const KNOWN_SYMPTOMS: Record<
     fields: [
       { fieldName: 'symptom_name', value: 'Kopfschmerzen', confidence: 95 },
       { fieldName: 'body_region', value: 'Kopf', confidence: 90 },
+      { fieldName: 'aktivitaet_kategorie', value: 'Arbeit', confidence: 75 },
+      { fieldName: 'aktivitaet_zeitbezug', value: 'waehrend', confidence: 80 },
+      {
+        fieldName: 'bemerkungen',
+        value: 'Bildschirmarbeit',
+        confidence: 70,
+      },
     ],
   },
   kopfweh: {
@@ -121,6 +128,16 @@ export const mockProvider: ExtractionProvider = {
           { fieldName: 'body_region', value: 'Kopf', confidence: 90 },
           { fieldName: 'Seite', value: 'rechts', confidence: 75 },
           { fieldName: 'Symptomtyp', value: 'stechend', confidence: 60 },
+          {
+            fieldName: 'aktivitaet_kategorie',
+            value: 'Sonstiges',
+            confidence: 75,
+          },
+          {
+            fieldName: 'aktivitaet_zeitbezug',
+            value: 'waehrend',
+            confidence: 70,
+          },
         ],
       },
     ]

@@ -26,7 +26,7 @@ describe('extractSymptomData', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].eventType).toBe('symptom')
-    expect(result[0].fields).toHaveLength(4)
+    expect(result[0].fields).toHaveLength(7)
     expect(result[0].fields[0].fieldName).toBe('symptom_name')
     expect(result[0].fields[0].value).toBe('Kopfschmerzen')
     expect(mockExtract).toHaveBeenCalledWith(

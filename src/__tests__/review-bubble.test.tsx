@@ -34,6 +34,37 @@ const mockFields: ExtractedData[] = [
   },
 ]
 
+const mockFieldsWithActivity: ExtractedData[] = [
+  ...mockFields,
+  {
+    id: 'field-4',
+    symptom_event_id: 'event-1',
+    field_name: 'aktivitaet_kategorie',
+    value: 'Sport / Bewegung',
+    confidence: 85,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+  },
+  {
+    id: 'field-5',
+    symptom_event_id: 'event-1',
+    field_name: 'aktivitaet_zeitbezug',
+    value: 'nach',
+    confidence: 90,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+  },
+  {
+    id: 'field-6',
+    symptom_event_id: 'event-1',
+    field_name: 'bemerkungen',
+    value: '- Hiphop tanzen\n- Draussen bei Kaelte',
+    confidence: 80,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+  },
+]
+
 describe('ReviewBubble', () => {
   const defaultProps = {
     extractedFields: mockFields,
@@ -104,5 +135,72 @@ describe('ReviewBubble', () => {
     render(<ReviewBubble {...defaultProps} />)
     const btn = screen.getByRole('button', { name: /^bestätigen$/i })
     expect(btn).toHaveClass('min-h-[48px]', 'min-w-[48px]')
+  })
+
+  it('zeigt Aktivitäts-Sektion mit Gruppenüberschrift', () => {
+    render(
+      <ReviewBubble
+        {...defaultProps}
+        extractedFields={mockFieldsWithActivity}
+      />,
+    )
+
+    expect(screen.getByText('Aktivität')).toBeInTheDocument()
+    expect(screen.getByText('Sport / Bewegung')).toBeInTheDocument()
+    expect(screen.getByText('nach')).toBeInTheDocument()
+  })
+
+  it('zeigt Bemerkungen als Bullet-Liste bei mehreren Einträgen', () => {
+    render(
+      <ReviewBubble
+        {...defaultProps}
+        extractedFields={mockFieldsWithActivity}
+      />,
+    )
+
+    expect(screen.getByText('Hiphop tanzen')).toBeInTheDocument()
+    expect(screen.getByText('Draussen bei Kaelte')).toBeInTheDocument()
+  })
+
+  it('zeigt keine Aktivitäts-Sektion wenn keine Aktivitäts-Felder vorhanden', () => {
+    render(<ReviewBubble {...defaultProps} />)
+
+    expect(screen.queryByText('Aktivität')).not.toBeInTheDocument()
+  })
+
+  it('zeigt Bemerkungen als Textarea im Edit-Modus', () => {
+    render(
+      <ReviewBubble
+        {...defaultProps}
+        extractedFields={mockFieldsWithActivity}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'bemerkungen ändern' }))
+    expect(screen.getByLabelText('Bemerkungen bearbeiten')).toBeInTheDocument()
+  })
+
+  it('zeigt einzelne Bemerkung ohne Bullet-Prefix', () => {
+    const fieldsWithSingleRemark: ExtractedData[] = [
+      ...mockFields,
+      {
+        id: 'field-remark',
+        symptom_event_id: 'event-1',
+        field_name: 'bemerkungen',
+        value: 'Hiphop tanzen',
+        confidence: 80,
+        confirmed: false,
+        created_at: '2026-03-02T10:00:00Z',
+      },
+    ]
+    render(
+      <ReviewBubble
+        {...defaultProps}
+        extractedFields={fieldsWithSingleRemark}
+      />,
+    )
+
+    expect(screen.getByText('Hiphop tanzen')).toBeInTheDocument()
+    expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })
 })

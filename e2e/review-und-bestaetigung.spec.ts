@@ -32,6 +32,16 @@ test.describe('Review und Bestätigung', () => {
       { field_name: 'symptom_name', value: 'Kopfschmerzen', confidence: 95 },
       { field_name: 'Körperregion', value: 'Kopf', confidence: 90 },
       { field_name: 'Seite', value: 'rechts', confidence: 85 },
+      {
+        field_name: 'aktivitaet_kategorie',
+        value: 'Arbeit',
+        confidence: 80,
+      },
+      {
+        field_name: 'aktivitaet_zeitbezug',
+        value: 'waehrend',
+        confidence: 85,
+      },
     ])
 
     await capturePage.goto()

@@ -108,4 +108,55 @@ describe('generateClarificationQuestions', () => {
     const result = generateClarificationQuestions([])
     expect(result).toEqual([])
   })
+
+  it('gibt Aktivitäts-Kategorien als Optionen für aktivitaet_kategorie', () => {
+    const fields = [
+      makeField({ field_name: 'aktivitaet_kategorie', confidence: 55 }),
+    ]
+
+    const result = generateClarificationQuestions(fields)
+    expect(result).toHaveLength(1)
+    expect(result[0].question).toBe('Bei welcher Aktivität?')
+    expect(result[0].options).toEqual([
+      'Sport / Bewegung',
+      'Arbeit',
+      'Essen / Trinken',
+      'Schlaf / Ruhe',
+      'Hausarbeit',
+      'Freizeit',
+      'Sonstiges',
+    ])
+  })
+
+  it('gibt Zeitbezug-Optionen für aktivitaet_zeitbezug', () => {
+    const fields = [
+      makeField({ field_name: 'aktivitaet_zeitbezug', confidence: 50 }),
+    ]
+
+    const result = generateClarificationQuestions(fields)
+    expect(result).toHaveLength(1)
+    expect(result[0].question).toBe('Wann im Bezug zur Aktivität?')
+    expect(result[0].options).toEqual(['waehrend', 'nach', 'vor'])
+  })
+
+  it('sortiert Aktivitäts-Felder nach Priorität (nach medizinischen Feldern)', () => {
+    const fields = [
+      makeField({ field_name: 'aktivitaet_kategorie', confidence: 40 }),
+      makeField({ field_name: 'Körperregion', confidence: 50 }),
+      makeField({ field_name: 'aktivitaet_zeitbezug', confidence: 30 }),
+    ]
+
+    const result = generateClarificationQuestions(fields)
+    // Max 2: Körperregion (prio 1) and aktivitaet_kategorie (prio 5)
+    expect(result[0].fieldName).toBe('Körperregion')
+    expect(result[1].fieldName).toBe('aktivitaet_kategorie')
+  })
+
+  it('fällt auf generische Frage für bemerkungen zurück', () => {
+    const fields = [makeField({ field_name: 'bemerkungen', confidence: 50 })]
+
+    const result = generateClarificationQuestions(fields)
+    expect(result[0].question).toContain('bemerkungen')
+    expect(result[0].options).toEqual([])
+  })
 })
