@@ -50,7 +50,7 @@ async function main() {
   }
 
   if (!events || events.length === 0) {
-    console.log('Keine Events gefunden.')
+    console.info('Keine Events gefunden.')
     return
   }
 
@@ -63,10 +63,10 @@ async function main() {
   }
 
   for (const event of events) {
-    console.log(`\nVerarbeite Event ${event.id}...`)
+    console.info(`\nVerarbeite Event ${event.id}...`)
 
     if (!event.raw_input) {
-      console.log(`  → Übersprungen: kein raw_input`)
+      console.info(`  → Übersprungen: kein raw_input`)
       summary.skipped++
       continue
     }
@@ -92,7 +92,7 @@ async function main() {
     const missingFields = NEW_FIELDS.filter((f) => !existingFieldNames.has(f))
 
     if (missingFields.length === 0) {
-      console.log(`  → Übersprungen: alle neuen Felder bereits vorhanden`)
+      console.info(`  → Übersprungen: alle neuen Felder bereits vorhanden`)
       summary.skipped++
       continue
     }
@@ -126,7 +126,7 @@ async function main() {
       }
 
       if (!symptomResult) {
-        console.log(`  → Übersprungen: kein Symptom-Ergebnis`)
+        console.info(`  → Übersprungen: kein Symptom-Ergebnis`)
         summary.skipped++
         await sleep(1000)
         continue
@@ -159,13 +159,13 @@ async function main() {
           summary.failed++
           summary.failedIds.push(event.id)
         } else {
-          console.log(
+          console.info(
             `  → ${newRows.length} neue Felder eingefügt: ${newRows.map((r) => r.field_name).join(', ')}`,
           )
           summary.success++
         }
       } else {
-        console.log(
+        console.info(
           `  → Keine neuen Felder extrahiert (Claude hat null zurückgegeben)`,
         )
         summary.success++
@@ -181,13 +181,13 @@ async function main() {
     await sleep(1000)
   }
 
-  console.log('\n=== Summary ===')
-  console.log(`Total:    ${summary.total}`)
-  console.log(`Success:  ${summary.success}`)
-  console.log(`Skipped:  ${summary.skipped}`)
-  console.log(`Failed:   ${summary.failed}`)
+  console.info('\n=== Summary ===')
+  console.info(`Total:    ${summary.total}`)
+  console.info(`Success:  ${summary.success}`)
+  console.info(`Skipped:  ${summary.skipped}`)
+  console.info(`Failed:   ${summary.failed}`)
   if (summary.failedIds.length > 0) {
-    console.log(`Failed IDs: ${summary.failedIds.join(', ')}`)
+    console.info(`Failed IDs: ${summary.failedIds.join(', ')}`)
   }
 }
 
