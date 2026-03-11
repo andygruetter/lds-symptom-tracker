@@ -100,9 +100,13 @@ test.describe('Aktivitäts- und Bemerkungsfelder', () => {
 
     const options = select.locator('option')
     await expect(options).toHaveCount(7)
-    await expect(options.filter({ hasText: /^Sport \/ Bewegung$/ })).toHaveCount(1)
+    await expect(
+      options.filter({ hasText: /^Sport \/ Bewegung$/ }),
+    ).toHaveCount(1)
     await expect(options.filter({ hasText: /^Arbeit$/ })).toHaveCount(1)
-    await expect(options.filter({ hasText: /^Essen \/ Trinken$/ })).toHaveCount(1)
+    await expect(options.filter({ hasText: /^Essen \/ Trinken$/ })).toHaveCount(
+      1,
+    )
     await expect(options.filter({ hasText: /^Schlaf \/ Ruhe$/ })).toHaveCount(1)
     await expect(options.filter({ hasText: /^Hausarbeit$/ })).toHaveCount(1)
     await expect(options.filter({ hasText: /^Freizeit$/ })).toHaveCount(1)
