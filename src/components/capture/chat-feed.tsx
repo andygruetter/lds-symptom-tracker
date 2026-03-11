@@ -95,7 +95,7 @@ export function ChatFeed({
     <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 py-4">
       <div ref={bottomRef} />
       <div className="flex flex-col gap-3">
-        {[...events].reverse().map((event) => {
+        {[...events].reverse().map((event, index, sortedEvents) => {
           const isMedication = event.event_type === 'medication'
           const extractedFields = extractedDataMap[event.id]
           const eventPhotos = photosMap[event.id]
@@ -103,19 +103,34 @@ export function ChatFeed({
           const isVoice = event.event_type === 'voice'
           const hasPhotos = eventPhotos && eventPhotos.length > 0
 
+          // Multi-Symptom: Sent-Bubble nur beim ersten Event einer Gruppe anzeigen.
+          // Zusätzliche Events aus derselben Meldung haben denselben raw_input
+          // und wurden innerhalb von 5 Sekunden erstellt.
+          const prevEvent = index > 0 ? sortedEvents[index - 1] : null
+          const isDuplicate =
+            prevEvent &&
+            event.raw_input &&
+            prevEvent.raw_input === event.raw_input &&
+            Math.abs(
+              new Date(event.created_at).getTime() -
+                new Date(prevEvent.created_at).getTime(),
+            ) < 60_000
+
           return (
             <div key={event.id} className="flex flex-col gap-1.5">
-              {/* Patient Message (Sent) */}
-              <ChatBubble
-                variant="sent"
-                content={event.raw_input ?? undefined}
-                timestamp={formatTimestamp(event.created_at)}
-                isMedication={isMedication}
-                isVoice={isVoice}
-                isPhoto={!!hasPhotos}
-                photos={eventPhotos}
-                getSignedUrl={getSignedPhotoUrl}
-              />
+              {/* Patient Message (Sent) — nur einmal pro Meldung */}
+              {!isDuplicate && (
+                <ChatBubble
+                  variant="sent"
+                  content={event.raw_input ?? undefined}
+                  timestamp={formatTimestamp(event.created_at)}
+                  isMedication={isMedication}
+                  isVoice={isVoice}
+                  isPhoto={!!hasPhotos}
+                  photos={eventPhotos}
+                  getSignedUrl={getSignedPhotoUrl}
+                />
+              )}
 
               {/* Processing indicator for pending/transcribed events
                  Voice+pending: Text "Sprachaufnahme wird verarbeitet..." (Transkription läuft)

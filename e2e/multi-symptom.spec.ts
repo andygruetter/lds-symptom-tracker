@@ -54,6 +54,10 @@ test.describe('Multi-Symptom Extraktion', () => {
     const confirmButtons = page.getByRole('button', { name: /^Bestätigen$/i })
     await expect(confirmButtons).toHaveCount(2, { timeout: 15_000 })
 
+    // User-Message darf nur einmal angezeigt werden (nicht dupliziert)
+    const sentBubbles = page.getByText(rawInput, { exact: true })
+    await expect(sentBubbles).toHaveCount(1)
+
     // Beide Symptom-Namen als SymptomTag-Buttons sichtbar
     await expect(
       page

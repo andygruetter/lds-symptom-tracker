@@ -27,10 +27,21 @@ interface ExtractedField {
 }
 
 export async function getTestUserId(): Promise<string> {
-  const { data } = await supabase.auth.admin.listUsers()
-  const user = data.users.find((u) => u.email === TEST_EMAIL)
-  if (!user) throw new Error(`Test-User ${TEST_EMAIL} nicht gefunden`)
-  return user.id
+  const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'e2e-test-password-123'
+  // Separater Client für Login, damit der Service-Role-Client nicht überschrieben wird
+  const authClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+  const { data, error } = await authClient.auth.signInWithPassword({
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
+  })
+  if (error || !data.user) {
+    throw new Error(`Test-User ${TEST_EMAIL} nicht gefunden: ${error?.message}`)
+  }
+  return data.user.id
 }
 
 export async function createTestSymptomEvent(

@@ -168,6 +168,65 @@ describe('ChatFeed', () => {
     expect(screen.getByRole('button', { name: 'Links' })).toBeInTheDocument()
   })
 
+  it('zeigt Sent-Bubble nur einmal bei Multi-Symptom-Extraktion', () => {
+    // Realistisches Szenario: Pipeline erstellt zusätzliche Events ~6s nach dem Original
+    const event1: SymptomEvent = {
+      ...mockEvent,
+      id: 'multi-1',
+      raw_input: 'Kopf- und Nackenschmerzen',
+      status: 'extracted',
+      created_at: '2026-03-02T10:30:00Z',
+    }
+    const event2: SymptomEvent = {
+      ...mockEvent,
+      id: 'multi-2',
+      raw_input: 'Kopf- und Nackenschmerzen',
+      status: 'extracted',
+      created_at: '2026-03-02T10:30:06Z', // 6 Sekunden später (realistisch)
+    }
+    const extractedDataMap: Record<string, ExtractedData[]> = {
+      'multi-1': [
+        {
+          id: 'f1',
+          symptom_event_id: 'multi-1',
+          field_name: 'symptom_name',
+          value: 'Kopfschmerzen',
+          confidence: 95,
+          confirmed: false,
+          created_at: '2026-03-02T10:30:00Z',
+        },
+      ],
+      'multi-2': [
+        {
+          id: 'f2',
+          symptom_event_id: 'multi-2',
+          field_name: 'symptom_name',
+          value: 'Nackenschmerzen',
+          confidence: 95,
+          confirmed: false,
+          created_at: '2026-03-02T10:30:00Z',
+        },
+      ],
+    }
+
+    // Events kommen DESC sortiert vom Hook (neueste zuerst)
+    render(
+      <ChatFeed
+        events={[event2, event1]}
+        extractedDataMap={extractedDataMap}
+        isLoading={false}
+      />,
+    )
+
+    // User-Message darf nur einmal angezeigt werden
+    const sentBubbles = screen.getAllByText('Kopf- und Nackenschmerzen')
+    expect(sentBubbles).toHaveLength(1)
+
+    // Beide Symptome als Review-Bubbles
+    expect(screen.getByText('Kopfschmerzen')).toBeInTheDocument()
+    expect(screen.getByText('Nackenschmerzen')).toBeInTheDocument()
+  })
+
   it('zeigt Extraction-Failed-Status mit Retry', () => {
     const failedEvent: SymptomEvent = {
       ...mockEvent,

@@ -13,26 +13,43 @@ export default async function globalSetup() {
     { auth: { autoRefreshToken: false, persistSession: false } },
   )
 
-  const { data: existingUsers } = await supabase.auth.admin.listUsers()
-  const testUser = existingUsers.users.find((u) => u.email === TEST_EMAIL)
-
-  if (!testUser) {
-    const { data, error } = await supabase.auth.admin.createUser({
+  // Versuche Login — wenn erfolgreich, existiert der User bereits
+  const { data: signInData, error: signInError } =
+    await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
-      email_confirm: true,
-      user_metadata: { disclaimer_accepted: true },
     })
-    if (error)
-      throw new Error(`Test-User erstellen fehlgeschlagen: ${error.message}`)
 
-    await supabase.from('accounts').insert({
-      id: data.user.id,
-      disclaimer_accepted_at: new Date().toISOString(),
+  if (signInData?.user) {
+    // User existiert — disclaimer_accepted sicherstellen
+    await supabase.auth.updateUser({
+      data: { disclaimer_accepted: true },
     })
-  } else {
-    await supabase.auth.admin.updateUserById(testUser.id, {
-      user_metadata: { disclaimer_accepted: true },
-    })
+    return
+  }
+
+  // User existiert nicht — neu anlegen via signUp
+  if (signInError) {
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+      {
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
+        options: { data: { disclaimer_accepted: true } },
+      },
+    )
+
+    if (signUpError) {
+      throw new Error(
+        `Test-User erstellen fehlgeschlagen: ${signUpError.message}`,
+      )
+    }
+
+    if (signUpData.user) {
+      // accounts-Zeile anlegen (falls kein DB-Trigger vorhanden)
+      await supabase.from('accounts').upsert({
+        id: signUpData.user.id,
+        disclaimer_accepted_at: new Date().toISOString(),
+      })
+    }
   }
 }
