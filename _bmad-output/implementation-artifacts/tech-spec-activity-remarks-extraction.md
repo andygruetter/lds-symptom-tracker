@@ -300,19 +300,19 @@ Es gibt eine bestehende Inkonsistenz bei Feldnamen im Codebase:
 
 ### Acceptance Criteria
 
-- [ ] AC 1: Given ein gemockter Claude-Response mit aktivitaet_kategorie="Sport / Bewegung", aktivitaet_zeitbezug="nach", bemerkungen="- Hiphop tanzen\n- Draussen bei Kaelte", when der Zod-Parser das Ergebnis verarbeitet, then werden alle 3 neuen Felder korrekt in das ExtractionResult aufgenommen (Unit-Test mit Mock, NICHT gegen echte Claude API)
-- [ ] AC 2: Given eine Eingabe "Kopfschmerzen" ohne Aktivitaetskontext, when die Extraktion durchgefuehrt wird, then sind aktivitaet_kategorie, aktivitaet_zeitbezug und bemerkungen null/nicht vorhanden
-- [ ] AC 3: Given ein extrahiertes Symptom mit Aktivitaets-Feldern, when die Review-Bubble angezeigt wird, then sind die medizinischen Felder und Aktivitaets-Felder in getrennten Sektionen gruppiert
-- [ ] AC 4: Given ein extrahiertes Symptom ohne Aktivitaets-Felder, when die Review-Bubble angezeigt wird, then wird die Aktivitaets-Sektion nicht angezeigt
-- [ ] AC 5: Given ein aktivitaet_kategorie-Feld im Edit-Modus, when der Nutzer den Dropdown oeffnet, then werden die 7 Kategorien angezeigt (Sport / Bewegung, Arbeit, Essen / Trinken, Schlaf / Ruhe, Hausarbeit, Freizeit, Sonstiges)
-- [ ] AC 6: Given ein bemerkungen-Feld im Edit-Modus, when der Nutzer editiert, then wird ein mehrzeiliges Textarea angezeigt. Beim Speichern gilt: bei >1 nicht-leerer Zeile wird jede Zeile mit "- " Prefix gespeichert, bei genau 1 Zeile wird der Text ohne Prefix gespeichert (siehe Serialisierungs-Contract)
-- [ ] AC 7: Given eine Eingabe mit eventType 'medication', when die Extraktion durchgefuehrt wird, then werden KEINE Aktivitaets-Felder extrahiert
-- [ ] AC 8: Given ~10 bestehende Symptom-Events in der DB, when `npx tsx scripts/re-extract.ts` ausgefuehrt wird, then werden fuer alle Events die 3 neuen Felder nachtraeglich extrahiert und in extracted_data gespeichert
-- [ ] AC 9: Given bestehende Events die bereits die neuen Felder haben, when das Re-Extraktions-Script erneut ausgefuehrt wird, then werden diese Events uebersprungen (Idempotenz)
-- [ ] AC 10: Given das Re-Extraktions-Script laeuft, when es abgeschlossen ist, then wird eine Summary mit total/success/skipped/failed ausgegeben
-- [ ] AC 11: Given ein unsicheres aktivitaet_kategorie-Feld (confidence < 70), when Clarification-Fragen generiert werden, then wird die Frage "Bei welcher Aktivitaet?" mit den 7 Kategorien als Optionen angezeigt
-- [ ] AC 12: Given ein Symptom mit nur einer Bemerkung (z.B. "Hiphop tanzen"), when die Review-Bubble angezeigt wird, then wird der Text ohne Bullet-Prefix angezeigt
-- [ ] AC 13: Given alle bestehenden Unit-Tests und E2E-Tests, when die Tests ausgefuehrt werden, then bestehen alle Tests (keine Regressionen)
+- [x] AC 1: Given ein gemockter Claude-Response mit aktivitaet_kategorie="Sport / Bewegung", aktivitaet_zeitbezug="nach", bemerkungen="- Hiphop tanzen\n- Draussen bei Kaelte", when der Zod-Parser das Ergebnis verarbeitet, then werden alle 3 neuen Felder korrekt in das ExtractionResult aufgenommen (Unit-Test mit Mock, NICHT gegen echte Claude API)
+- [x] AC 2: Given eine Eingabe "Kopfschmerzen" ohne Aktivitaetskontext, when die Extraktion durchgefuehrt wird, then sind aktivitaet_kategorie, aktivitaet_zeitbezug und bemerkungen null/nicht vorhanden
+- [x] AC 3: Given ein extrahiertes Symptom mit Aktivitaets-Feldern, when die Review-Bubble angezeigt wird, then sind die medizinischen Felder und Aktivitaets-Felder in getrennten Sektionen gruppiert
+- [x] AC 4: Given ein extrahiertes Symptom ohne Aktivitaets-Felder, when die Review-Bubble angezeigt wird, then wird die Aktivitaets-Sektion nicht angezeigt
+- [x] AC 5: Given ein aktivitaet_kategorie-Feld im Edit-Modus, when der Nutzer den Dropdown oeffnet, then werden die 7 Kategorien angezeigt (Sport / Bewegung, Arbeit, Essen / Trinken, Schlaf / Ruhe, Hausarbeit, Freizeit, Sonstiges)
+- [x] AC 6: Given ein bemerkungen-Feld im Edit-Modus, when der Nutzer editiert, then wird ein mehrzeiliges Textarea angezeigt. Beim Speichern gilt: bei >1 nicht-leerer Zeile wird jede Zeile mit "- " Prefix gespeichert, bei genau 1 Zeile wird der Text ohne Prefix gespeichert (siehe Serialisierungs-Contract)
+- [x] AC 7: Given eine Eingabe mit eventType 'medication', when die Extraktion durchgefuehrt wird, then werden KEINE Aktivitaets-Felder extrahiert
+- [x] AC 8: Given ~10 bestehende Symptom-Events in der DB, when `npx tsx scripts/re-extract.ts` ausgefuehrt wird, then werden fuer alle Events die 3 neuen Felder nachtraeglich extrahiert und in extracted_data gespeichert
+- [x] AC 9: Given bestehende Events die bereits die neuen Felder haben, when das Re-Extraktions-Script erneut ausgefuehrt wird, then werden diese Events uebersprungen (Idempotenz)
+- [x] AC 10: Given das Re-Extraktions-Script laeuft, when es abgeschlossen ist, then wird eine Summary mit total/success/skipped/failed ausgegeben
+- [x] AC 11: Given ein unsicheres aktivitaet_kategorie-Feld (confidence < 70), when Clarification-Fragen generiert werden, then wird die Frage "Bei welcher Aktivitaet?" mit den 7 Kategorien als Optionen angezeigt
+- [x] AC 12: Given ein Symptom mit nur einer Bemerkung (z.B. "Hiphop tanzen"), when die Review-Bubble angezeigt wird, then wird der Text ohne Bullet-Prefix angezeigt
+- [x] AC 13: Given alle bestehenden Unit-Tests und E2E-Tests, when die Tests ausgefuehrt werden, then bestehen alle Tests (keine Regressionen)
 
 ## Additional Context
 
