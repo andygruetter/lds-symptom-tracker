@@ -122,6 +122,9 @@ export async function runExtractionPipeline(
       const vocabularyContext = buildVocabularyContext(vocabulary)
 
       // 4. Claude Extract mit Retry und Enrichment-Context
+      // Referenzzeitpunkt als Kontext-Prefix für relative Zeitangaben ("gestern morgen")
+      const rawInputWithContext = `Referenzzeitpunkt der Meldung: ${event.created_at}\n\n${rawInput}`
+
       const context: ExtractionContext | undefined =
         correctionContext || vocabularyContext
           ? {
@@ -130,7 +133,7 @@ export async function runExtractionPipeline(
             }
           : undefined
       const result = await withRetry(() =>
-        extractSymptomData(rawInput, context),
+        extractSymptomData(rawInputWithContext, context),
       )
 
       // 5. Insert extracted_data rows
@@ -151,6 +154,45 @@ export async function runExtractionPipeline(
             `Failed to insert extracted data: ${insertError.message}`,
           )
         }
+      }
+
+      // 5b. occurred_at-Sync: Entweder aus extrahiertem symptom_time oder Fallback auf created_at
+      const symptomTimeField = result.fields.find(
+        (f) => f.fieldName === 'symptom_time',
+      )
+      if (symptomTimeField?.value) {
+        // F13-Fix: ISO-8601 Validierung vor Sync
+        const parsedDate = new Date(symptomTimeField.value)
+        const isValidDate = !isNaN(parsedDate.getTime())
+
+        if (isValidDate) {
+          // F6-Fix: Immer über Supabase Client .update() — keine String-Interpolation
+          const { error: occurredAtError } = await supabase
+            .from('symptom_events')
+            .update({ occurred_at: symptomTimeField.value })
+            .eq('id', symptomEventId)
+
+          if (occurredAtError) {
+            console.error(
+              '[Pipeline] occurred_at-Sync fehlgeschlagen:',
+              occurredAtError.message,
+            )
+          }
+        } else {
+          console.warn(
+            `[Pipeline] Ungültiger symptom_time Wert: ${symptomTimeField.value} — Fallback auf created_at`,
+          )
+          await supabase
+            .from('symptom_events')
+            .update({ occurred_at: event.created_at })
+            .eq('id', symptomEventId)
+        }
+      } else {
+        // Kein symptom_time extrahiert → expliziter Fallback auf created_at
+        await supabase
+          .from('symptom_events')
+          .update({ occurred_at: event.created_at })
+          .eq('id', symptomEventId)
       }
 
       // 6. Update symptom_event status + event_type

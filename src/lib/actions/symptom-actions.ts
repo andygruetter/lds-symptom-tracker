@@ -206,7 +206,22 @@ export async function confirmSymptomEvent(
     }
   }
 
-  // 2. Update all extracted_data: confirmed = true
+  // 2. Ownership-Check: Sicherstellen dass Event dem User gehört
+  const { data: ownedEvent } = await supabase
+    .from('symptom_events')
+    .select('id')
+    .eq('id', eventId)
+    .eq('account_id', user.id)
+    .single()
+
+  if (!ownedEvent) {
+    return {
+      data: null,
+      error: { error: 'Nicht autorisiert', code: 'UNAUTHORIZED' },
+    }
+  }
+
+  // 3. Update all extracted_data: confirmed = true
   const { error: extractedError } = await supabase
     .from('extracted_data')
     .update({ confirmed: true })
@@ -219,7 +234,7 @@ export async function confirmSymptomEvent(
     }
   }
 
-  // 3. Update symptom_event: status = 'confirmed'
+  // 4. Update symptom_event: status = 'confirmed'
   const { data, error } = await supabase
     .from('symptom_events')
     .update({ status: 'confirmed' })
@@ -235,6 +250,7 @@ export async function confirmSymptomEvent(
   }
 
   revalidatePath('/')
+  revalidatePath(`/event/${eventId}`)
 
   return { data: data as SymptomEvent, error: null }
 }
@@ -333,70 +349,163 @@ export async function correctExtractedField(
 
   const { eventId, fieldName, newValue } = parsed.data
 
-  // 3. Load current extracted_data row
-  const { data: currentField, error: fetchError } = await supabase
+  // 3. Ownership-Check (F5-Fix): Sicherstellen dass Event dem User gehört
+  const { data: ownedEvent } = await supabase
+    .from('symptom_events')
+    .select('id')
+    .eq('id', eventId)
+    .eq('account_id', user.id)
+    .single()
+
+  if (!ownedEvent) {
+    return {
+      data: null,
+      error: { error: 'Nicht autorisiert', code: 'UNAUTHORIZED' },
+    }
+  }
+
+  // 4. Load current extracted_data row (falls vorhanden)
+  const { data: currentField } = await supabase
     .from('extracted_data')
     .select()
     .eq('symptom_event_id', eventId)
     .eq('field_name', fieldName)
     .single()
 
-  if (fetchError || !currentField) {
-    return {
-      data: null,
-      error: { error: 'Feld nicht gefunden', code: 'NOT_FOUND' },
+  let resultField: ExtractedData
+
+  if (!currentField) {
+    // Task 6b: INSERT-Pfad für Nacherfassung (neues Feld das bisher nicht existiert)
+    const { data: insertedField, error: insertError } = await supabase
+      .from('extracted_data')
+      .insert({
+        symptom_event_id: eventId,
+        field_name: fieldName,
+        value: newValue,
+        confidence: 100,
+        confirmed: true,
+      })
+      .select()
+      .single()
+
+    if (insertError || !insertedField) {
+      return {
+        data: null,
+        error: { error: 'Feld erstellen fehlgeschlagen', code: 'DB_ERROR' },
+      }
+    }
+
+    // Correction mit original_value: null (dank F1-Migration nullable)
+    const { error: correctionError } = await supabase
+      .from('corrections')
+      .insert({
+        account_id: user.id,
+        symptom_event_id: eventId,
+        field_name: fieldName,
+        original_value: null,
+        corrected_value: newValue,
+      })
+
+    if (correctionError) {
+      return {
+        data: null,
+        error: {
+          error: 'Korrektur-Protokollierung fehlgeschlagen',
+          code: 'DB_ERROR',
+        },
+      }
+    }
+
+    // Vokabular-Update für Nacherfassung (Fire-and-Forget)
+    updateVocabularyFromCorrection(supabase, user.id, {
+      fieldName,
+      originalValue: null,
+      correctedValue: newValue,
+    }).catch((err) => {
+      console.error('[Vocabulary] Update fehlgeschlagen:', err)
+    })
+
+    resultField = insertedField as ExtractedData
+  } else {
+    // Bestehender UPDATE-Pfad
+    const originalValue = (currentField as ExtractedData).value
+
+    const { data: updatedField, error: updateError } = await supabase
+      .from('extracted_data')
+      .update({ value: newValue, confirmed: true })
+      .eq('symptom_event_id', eventId)
+      .eq('field_name', fieldName)
+      .select()
+      .single()
+
+    if (updateError || !updatedField) {
+      return {
+        data: null,
+        error: { error: 'Korrektur fehlgeschlagen', code: 'DB_ERROR' },
+      }
+    }
+
+    const { error: correctionError } = await supabase
+      .from('corrections')
+      .insert({
+        account_id: user.id,
+        symptom_event_id: eventId,
+        field_name: fieldName,
+        original_value: originalValue,
+        corrected_value: newValue,
+      })
+
+    if (correctionError) {
+      return {
+        data: null,
+        error: {
+          error: 'Korrektur-Protokollierung fehlgeschlagen',
+          code: 'DB_ERROR',
+        },
+      }
+    }
+
+    // Vokabular-Update (Fire-and-Forget)
+    updateVocabularyFromCorrection(supabase, user.id, {
+      fieldName,
+      originalValue,
+      correctedValue: newValue,
+    }).catch((err) => {
+      console.error('[Vocabulary] Update fehlgeschlagen:', err)
+    })
+
+    resultField = updatedField as ExtractedData
+  }
+
+  // Task 6c: occurred_at-Sync bei symptom_time-Änderung
+  if (fieldName === 'symptom_time') {
+    // F13-Fix: ISO-8601 Validierung vor Sync
+    const parsedDate = new Date(newValue)
+    if (!isNaN(parsedDate.getTime())) {
+      // F6-Fix: Immer über Supabase Client .update() — keine String-Interpolation
+      const { error: syncError } = await supabase
+        .from('symptom_events')
+        .update({ occurred_at: newValue })
+        .eq('id', eventId)
+
+      if (syncError) {
+        console.warn(
+          '[correctExtractedField] occurred_at-Sync fehlgeschlagen:',
+          syncError.message,
+        )
+      }
+    } else {
+      console.warn(
+        `[correctExtractedField] Ungültiger symptom_time Wert: ${newValue} — occurred_at nicht synchronisiert`,
+      )
     }
   }
 
-  const originalValue = (currentField as ExtractedData).value
-
-  // 4. Update extracted_data: value = newValue, confirmed = true
-  const { data: updatedField, error: updateError } = await supabase
-    .from('extracted_data')
-    .update({ value: newValue, confirmed: true })
-    .eq('symptom_event_id', eventId)
-    .eq('field_name', fieldName)
-    .select()
-    .single()
-
-  if (updateError) {
-    return {
-      data: null,
-      error: { error: 'Korrektur fehlgeschlagen', code: 'DB_ERROR' },
-    }
-  }
-
-  // 5. Insert corrections: original_value, corrected_value
-  const { error: correctionError } = await supabase.from('corrections').insert({
-    account_id: user.id,
-    symptom_event_id: eventId,
-    field_name: fieldName,
-    original_value: originalValue,
-    corrected_value: newValue,
-  })
-
-  if (correctionError) {
-    return {
-      data: null,
-      error: {
-        error: 'Korrektur-Protokollierung fehlgeschlagen',
-        code: 'DB_ERROR',
-      },
-    }
-  }
-
-  // 6. Vokabular-Update (Fire-and-Forget)
-  updateVocabularyFromCorrection(supabase, user.id, {
-    fieldName,
-    originalValue,
-    correctedValue: newValue,
-  }).catch((err) => {
-    console.error('[Vocabulary] Update fehlgeschlagen:', err)
-  })
-
+  // Task 6d: revalidatePath für Edit-Screen (F14-Fix)
   revalidatePath('/')
+  revalidatePath(`/event/${eventId}`)
 
-  return { data: updatedField as ExtractedData, error: null }
+  return { data: resultField, error: null }
 }
 
 export async function answerClarification(
@@ -502,6 +611,24 @@ export async function answerClarification(
     console.error('[Vocabulary] Update fehlgeschlagen:', err)
   })
 
+  // 6c. occurred_at-Sync bei symptom_time-Antwort
+  if (fieldName === 'symptom_time') {
+    const parsedDate = new Date(answer)
+    if (!isNaN(parsedDate.getTime())) {
+      const { error: syncError } = await supabase
+        .from('symptom_events')
+        .update({ occurred_at: answer })
+        .eq('id', eventId)
+
+      if (syncError) {
+        console.warn(
+          '[answerClarification] occurred_at-Sync fehlgeschlagen:',
+          syncError.message,
+        )
+      }
+    }
+  }
+
   // 7. Check if all uncertain fields are now confirmed → auto-confirm event
   const { data: remainingFields } = await supabase
     .from('extracted_data')
@@ -517,6 +644,7 @@ export async function answerClarification(
   }
 
   revalidatePath('/')
+  revalidatePath(`/event/${eventId}`)
 
   return { data: updatedField as ExtractedData, error: null }
 }

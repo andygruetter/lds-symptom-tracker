@@ -4,10 +4,19 @@ import { createClient } from '@supabase/supabase-js'
 dotenv.config({ path: '.env.local' })
 
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'e2e-test@test.com'
+const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'e2e-test-password-123'
 
+// Service role key (HS256) works for REST/DB API (bypasses RLS)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } },
+)
+
+// Auth client (anon key) for sign-in operations
+const authClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
@@ -27,10 +36,14 @@ interface ExtractedField {
 }
 
 export async function getTestUserId(): Promise<string> {
-  const { data } = await supabase.auth.admin.listUsers()
-  const user = data.users.find((u) => u.email === TEST_EMAIL)
-  if (!user) throw new Error(`Test-User ${TEST_EMAIL} nicht gefunden`)
-  return user.id
+  // Sign in to get user ID without needing admin API
+  const { data, error } = await authClient.auth.signInWithPassword({
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
+  })
+  if (error || !data.user)
+    throw new Error(`Test-User ${TEST_EMAIL} nicht gefunden: ${error?.message}`)
+  return data.user.id
 }
 
 export async function createTestSymptomEvent(
@@ -73,6 +86,17 @@ export async function createTestExtractedData(
 
   if (error)
     throw new Error(`Extracted Data erstellen fehlgeschlagen: ${error.message}`)
+  return data
+}
+
+export async function getSymptomEvent(eventId: string) {
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select('*')
+    .eq('id', eventId)
+    .single()
+
+  if (error) throw new Error(`Event laden fehlgeschlagen: ${error.message}`)
   return data
 }
 

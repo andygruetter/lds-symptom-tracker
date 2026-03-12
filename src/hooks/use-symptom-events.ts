@@ -87,6 +87,7 @@ export function useSymptomEvents() {
   const addOptimisticEvent = useCallback(
     (rawInput: string | null, eventType: string = 'symptom'): string => {
       const id = `optimistic-${Date.now()}`
+      const now = new Date().toISOString()
       const optimistic: SymptomEvent = {
         id,
         account_id: '',
@@ -94,9 +95,10 @@ export function useSymptomEvents() {
         raw_input: rawInput,
         audio_url: null,
         status: 'pending',
-        created_at: new Date().toISOString(),
+        created_at: now,
         ended_at: null,
         deleted_at: null,
+        occurred_at: now,
       }
       setEvents((prev) => [optimistic, ...prev])
       return id

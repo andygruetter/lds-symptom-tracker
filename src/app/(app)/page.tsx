@@ -2,6 +2,8 @@
 
 import { useCallback, useRef } from 'react'
 
+import { useRouter } from 'next/navigation'
+
 import { ChatFeed } from '@/components/capture/chat-feed'
 import { InputBar } from '@/components/capture/input-bar'
 import { PushOptIn } from '@/components/capture/push-opt-in'
@@ -20,6 +22,7 @@ import { getSignedPhotoUrl } from '@/lib/db/media'
 import { convertToWav } from '@/lib/utils/audio-convert'
 
 export default function CapturePage() {
+  const router = useRouter()
   const supabaseRef = useRef(createBrowserClient())
 
   const handleGetSignedPhotoUrl = useCallback(async (storagePath: string) => {
@@ -135,6 +138,10 @@ export default function CapturePage() {
     }
   }
 
+  const handleNavigateToEvent = (eventId: string) => {
+    router.push(`/event/${eventId}`)
+  }
+
   const handleRetryExtraction = async (eventId: string) => {
     try {
       const response = await fetch('/api/ai/extract', {
@@ -164,6 +171,7 @@ export default function CapturePage() {
         onCorrectField={handleCorrectField}
         onEndSymptom={handleEndSymptom}
         onAnswerClarification={handleAnswerClarification}
+        onNavigateToEvent={handleNavigateToEvent}
       />
       <InputBar
         onSendText={handleSendText}

@@ -216,7 +216,18 @@ describe('confirmSymptomEvent', () => {
   function setupConfirmMocks(
     extractedUpdateResult: { error: unknown },
     eventUpdateResult?: { data: unknown; error: unknown },
+    ownershipResult: { data: unknown; error: unknown } = {
+      data: { id: validEventId },
+      error: null,
+    },
   ) {
+    // Ownership-Check: select('id').eq('id').eq('account_id').single()
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue(ownershipResult),
+      }),
+    })
+
     let updateCallCount = 0
     mockUpdate.mockImplementation(() => {
       updateCallCount++
@@ -248,6 +259,23 @@ describe('confirmSymptomEvent', () => {
     const result = await confirmSymptomEvent({ eventId: validEventId })
 
     expect(result.error?.code).toBe('AUTH_REQUIRED')
+    expect(result.data).toBeNull()
+  })
+
+  it('gibt UNAUTHORIZED zurück wenn Event nicht dem User gehört', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+    })
+    setupConfirmMocks({ error: null }, undefined, {
+      data: null,
+      error: { message: 'Not found' },
+    })
+
+    const { confirmSymptomEvent } =
+      await import('@/lib/actions/symptom-actions')
+    const result = await confirmSymptomEvent({ eventId: validEventId })
+
+    expect(result.error?.code).toBe('UNAUTHORIZED')
     expect(result.data).toBeNull()
   })
 
@@ -335,12 +363,12 @@ describe('correctExtractedField', () => {
     expect(result.data).toBeNull()
   })
 
-  it('gibt NOT_FOUND zurück wenn Feld nicht existiert', async () => {
+  it('gibt UNAUTHORIZED zurück wenn Event nicht dem User gehört', async () => {
     mockGetUser.mockResolvedValueOnce({
       data: { user: { id: 'user-1' } },
     })
 
-    // Mock: select().eq().eq().single() returns not found
+    // Mock: Ownership-Check gibt null zurück (Event gehört nicht diesem User)
     mockEq.mockReturnValue({
       eq: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({
@@ -354,11 +382,11 @@ describe('correctExtractedField', () => {
       await import('@/lib/actions/symptom-actions')
     const result = await correctExtractedField({
       eventId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
-      fieldName: 'Körperteil',
+      fieldName: 'body_region',
       newValue: 'Oberer Rücken',
     })
 
-    expect(result.error?.code).toBe('NOT_FOUND')
+    expect(result.error?.code).toBe('UNAUTHORIZED')
     expect(result.data).toBeNull()
   })
 
@@ -487,6 +515,188 @@ describe('correctExtractedField', () => {
         correctedValue: 'Oberer Rücken',
       },
     )
+  })
+
+  it('erstellt neue extracted_data Row via INSERT wenn kein Feld existiert (Nacherfassung)', async () => {
+    const eventId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'user-1' } },
+    })
+
+    // Ownership-Check: Event gehört dem User
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        single: vi
+          .fn()
+          .mockResolvedValue({ data: { id: eventId }, error: null }),
+      }),
+    })
+
+    // Field-Lookup: Kein vorhandenes Feld → INSERT-Pfad
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }),
+    })
+
+    // INSERT extracted_data → gibt neues Feld zurück
+    const insertedField = {
+      id: 'new-field-id',
+      symptom_event_id: eventId,
+      field_name: 'body_region',
+      value: 'Kopf',
+      confidence: 100,
+      confirmed: true,
+      created_at: '2026-03-11T10:00:00Z',
+    }
+    mockInsert.mockReturnValueOnce({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: insertedField, error: null }),
+      }),
+    })
+    // INSERT corrections → kein Fehler
+    mockInsert.mockResolvedValueOnce({ error: null })
+
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
+    const result = await correctExtractedField({
+      eventId,
+      fieldName: 'body_region',
+      newValue: 'Kopf',
+    })
+
+    expect(result.error).toBeNull()
+    expect(result.data).not.toBeNull()
+    expect(result.data?.value).toBe('Kopf')
+    expect(result.data?.confidence).toBe(100)
+    expect(result.data?.confirmed).toBe(true)
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/')
+    expect(mockRevalidatePath).toHaveBeenCalledWith(`/event/${eventId}`)
+  })
+
+  it('synchronisiert occurred_at wenn fieldName === symptom_time und gültiger ISO-8601 Wert', async () => {
+    const eventId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+    const validSymptomTime = '2026-03-09T08:00:00.000Z'
+
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'user-1' } },
+    })
+
+    // Ownership-Check
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        single: vi
+          .fn()
+          .mockResolvedValue({ data: { id: eventId }, error: null }),
+      }),
+    })
+
+    // Field-Lookup: bestehendes symptom_time Feld
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: 'f-time',
+            symptom_event_id: eventId,
+            field_name: 'symptom_time',
+            value: '2026-03-09T06:00:00.000Z',
+            confidence: 75,
+            confirmed: false,
+            created_at: '2026-03-11T10:00:00Z',
+          },
+          error: null,
+        }),
+      }),
+    })
+
+    // UPDATE extracted_data + occurred_at Sync (zwei Update-Calls)
+    let updateCallCount = 0
+    const updateSingle = vi.fn().mockResolvedValue({
+      data: { id: 'f-time', value: validSymptomTime, confirmed: true },
+      error: null,
+    })
+    const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
+    const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
+    const syncEq = vi.fn().mockResolvedValue({ error: null })
+
+    mockUpdate.mockImplementation(() => {
+      updateCallCount++
+      if (updateCallCount === 1) {
+        return { eq: vi.fn().mockReturnValue({ eq: updateEqInner }) }
+      }
+      return { eq: syncEq }
+    })
+
+    mockInsert.mockResolvedValue({ error: null })
+
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
+    const result = await correctExtractedField({
+      eventId,
+      fieldName: 'symptom_time',
+      newValue: validSymptomTime,
+    })
+
+    expect(result.error).toBeNull()
+    expect(updateCallCount).toBe(2) // field update + occurred_at sync
+    expect(syncEq).toHaveBeenCalledWith('id', eventId)
+  })
+
+  it('synchronisiert occurred_at NICHT bei ungültigem ISO-8601 Wert', async () => {
+    const eventId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'user-1' } },
+    })
+
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        single: vi
+          .fn()
+          .mockResolvedValue({ data: { id: eventId }, error: null }),
+      }),
+    })
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: 'f-time',
+            symptom_event_id: eventId,
+            field_name: 'symptom_time',
+            value: '2026-03-09T06:00:00.000Z',
+            confidence: 75,
+            confirmed: false,
+            created_at: '2026-03-11T10:00:00Z',
+          },
+          error: null,
+        }),
+      }),
+    })
+
+    let updateCallCount = 0
+    const updateSingle = vi.fn().mockResolvedValue({
+      data: { id: 'f-time', value: 'kein-datum', confirmed: true },
+      error: null,
+    })
+    const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
+    const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
+    mockUpdate.mockImplementation(() => {
+      updateCallCount++
+      return { eq: vi.fn().mockReturnValue({ eq: updateEqInner }) }
+    })
+
+    mockInsert.mockResolvedValue({ error: null })
+
+    const { correctExtractedField } =
+      await import('@/lib/actions/symptom-actions')
+    const result = await correctExtractedField({
+      eventId,
+      fieldName: 'symptom_time',
+      newValue: 'kein-datum',
+    })
+
+    expect(result.error).toBeNull()
+    expect(updateCallCount).toBe(1) // nur field update, KEIN occurred_at sync
   })
 })
 

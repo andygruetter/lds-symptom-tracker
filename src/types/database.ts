@@ -40,7 +40,7 @@ export interface Database {
           account_id: string
           symptom_event_id: string
           field_name: string
-          original_value: string
+          original_value: string | null
           corrected_value: string
           created_at: string
         }
@@ -49,7 +49,7 @@ export interface Database {
           account_id: string
           symptom_event_id: string
           field_name: string
-          original_value: string
+          original_value: string | null
           corrected_value: string
           created_at?: string
         }
@@ -58,7 +58,7 @@ export interface Database {
           account_id?: string
           symptom_event_id?: string
           field_name?: string
-          original_value?: string
+          original_value?: string | null
           corrected_value?: string
           created_at?: string
         }
@@ -189,6 +189,7 @@ export interface Database {
           created_at: string
           ended_at: string | null
           deleted_at: string | null
+          occurred_at: string
         }
         Insert: {
           id?: string
@@ -200,6 +201,7 @@ export interface Database {
           created_at?: string
           ended_at?: string | null
           deleted_at?: string | null
+          occurred_at?: string
         }
         Update: {
           id?: string
@@ -211,6 +213,7 @@ export interface Database {
           created_at?: string
           ended_at?: string | null
           deleted_at?: string | null
+          occurred_at?: string
         }
         Relationships: []
       }

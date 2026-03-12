@@ -303,4 +303,56 @@ describe('ChatBubble', () => {
 
     expect(screen.getByText('+2')).toBeInTheDocument()
   })
+
+  it('ruft onNavigate auf beim Klick wenn eventId und nicht-pending Status', () => {
+    const onNavigate = vi.fn()
+    render(
+      <ChatBubble
+        variant="received"
+        content="Gespeichert ✓"
+        eventId="event-1"
+        eventStatus="confirmed"
+        onNavigate={onNavigate}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('article'))
+    expect(onNavigate).toHaveBeenCalledWith('event-1')
+  })
+
+  it('ruft onNavigate NICHT auf wenn Status "pending"', () => {
+    const onNavigate = vi.fn()
+    render(
+      <ChatBubble
+        variant="sent"
+        content="Symptom..."
+        eventId="event-1"
+        eventStatus="pending"
+        onNavigate={onNavigate}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('article'))
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+
+  it('stopPropagation auf Symptom-beendet-Button verhindert Navigation', () => {
+    const onNavigate = vi.fn()
+    const onEndSymptom = vi.fn()
+    render(
+      <ChatBubble
+        variant="received"
+        content="Gespeichert ✓"
+        activeSinceLabel="Aktiv seit 10 Min."
+        onEndSymptom={onEndSymptom}
+        eventId="event-1"
+        eventStatus="confirmed"
+        onNavigate={onNavigate}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Symptom beendet'))
+    expect(onEndSymptom).toHaveBeenCalledTimes(1)
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
 })

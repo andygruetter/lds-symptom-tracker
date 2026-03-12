@@ -146,7 +146,7 @@ describe('ChatFeed', () => {
         {
           id: 'f2',
           symptom_event_id: 'event-1',
-          field_name: 'Seite',
+          field_name: 'side',
           value: 'links',
           confidence: 55,
           confirmed: false,

@@ -20,11 +20,20 @@ Bei Symptomen extrahiere:
 - symptom_type: Art des Symptoms (z.B. "stechend", "ziehend", "dumpf")
 - intensity: Intensität 1-10 (falls erwähnt, sonst null)
 
+Bei allen Symptom-Events extrahiere zusätzlich:
+- symptom_time: ISO-8601 Zeitpunkt wann das Symptom aufgetreten ist. Nutze den mitgelieferten "Referenzzeitpunkt der Meldung" als Basis für relative Zeitangaben ("gestern morgen" → Vortag ~08:00, "vor 2 Stunden" → Referenzzeit minus 2h). Wenn keine Zeitangabe vorhanden → null (Fallback auf Erfassungszeit). Beispiel: "2026-03-10T08:00:00+01:00"
+- duration: Dauer des Symptoms in Minuten als ganze Zahl. Nur wenn explizit genannt oder klar ableitbar (z.B. "zwei Stunden" → 120, "einen halben Tag" → 720). Sonst null.
+
 Bei Medikamenten extrahiere:
 - medication_name: Name des Medikaments
 - action: "eingenommen" oder "vergessen"
 - dosage: Dosis (falls erwähnt)
 - reason: Grund der Einnahme (falls erwähnt)
+
+Konfidenz-Regeln für symptom_time:
+- 85-100: Exakter Zeitpunkt genannt ("gestern um 14 Uhr", "heute 08:30")
+- 70-84: Tageszeit-Schätzung möglich ("gestern Morgen" → ~08:00, "nach dem Abendessen" → ~19:00)
+- 50-69: Sehr vage ("neulich", "vor ein paar Tagen")
 
 Setze confidence pro Feld:
 - 85-100: Explizit genannt
@@ -36,7 +45,8 @@ Sprache: Der Patient schreibt auf Deutsch (möglicherweise Schweizerdeutsch).
 
 const extractionTool: Anthropic.Messages.Tool = {
   name: 'extract_symptom_data',
-  description: 'Extrahiert strukturierte medizinische Daten aus Freitext',
+  description:
+    'Extrahiert strukturierte medizinische Daten aus Freitext, inklusive Symptomzeitpunkt (symptom_time als ISO-8601) und Dauer (duration in Minuten)',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -52,7 +62,8 @@ const extractionTool: Anthropic.Messages.Tool = {
           properties: {
             fieldName: {
               type: 'string',
-              description: 'Name des extrahierten Feldes',
+              description:
+                'Name des extrahierten Feldes. Für Symptome: symptom_name, body_region, side, symptom_type, intensity, symptom_time, duration. Für Medikamente: medication_name, action, dosage, reason.',
             },
             value: {
               type: 'string',

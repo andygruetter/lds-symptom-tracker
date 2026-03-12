@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-import { Camera, Mic, Pill, X } from 'lucide-react'
+import { Camera, ChevronRight, Mic, Pill, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { ExtractedData } from '@/types/ai'
@@ -25,6 +25,9 @@ interface ChatBubbleProps {
   activeSinceLabel?: string
   durationLabel?: string
   onEndSymptom?: () => void
+  eventId?: string
+  eventStatus?: string
+  onNavigate?: (eventId: string) => void
 }
 
 function ProcessingDots() {
@@ -189,7 +192,13 @@ export function ChatBubble({
   activeSinceLabel,
   durationLabel,
   onEndSymptom,
+  eventId,
+  eventStatus,
+  onNavigate,
 }: ChatBubbleProps) {
+  const isNavigable =
+    onNavigate && eventId && eventStatus && eventStatus !== 'pending'
+
   return (
     <div
       role="article"
@@ -200,10 +209,23 @@ export function ChatBubble({
         variant === 'received' && 'justify-start',
         variant === 'system' && 'justify-center',
       )}
+      onClick={isNavigable ? () => onNavigate(eventId) : undefined}
+      onKeyDown={
+        isNavigable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                if (onNavigate && eventId) onNavigate(eventId)
+              }
+            }
+          : undefined
+      }
+      tabIndex={isNavigable ? 0 : undefined}
+      style={isNavigable ? { cursor: 'pointer' } : undefined}
     >
       <div
         className={cn(
-          'max-w-[80%] px-4 py-2.5',
+          'relative max-w-[80%] px-4 py-2.5',
           variant === 'sent' &&
             !isMedication &&
             'rounded-2xl rounded-br-sm bg-primary text-primary-foreground',
@@ -213,6 +235,7 @@ export function ChatBubble({
           variant === 'received' &&
             'rounded-2xl rounded-bl-sm bg-card text-card-foreground shadow-sm',
           variant === 'system' && 'rounded-xl bg-muted text-foreground',
+          isNavigable && 'pr-8',
         )}
       >
         {isProcessing ? (
@@ -225,7 +248,10 @@ export function ChatBubble({
             {onRetryExtraction && (
               <button
                 type="button"
-                onClick={onRetryExtraction}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRetryExtraction()
+                }}
                 className="text-xs underline"
               >
                 Erneut versuchen
@@ -240,7 +266,10 @@ export function ChatBubble({
             {onRetryExtraction && (
               <button
                 type="button"
-                onClick={onRetryExtraction}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRetryExtraction()
+                }}
                 className="text-xs underline"
               >
                 Erneut versuchen
@@ -293,7 +322,10 @@ export function ChatBubble({
                 {onEndSymptom && (
                   <button
                     type="button"
-                    onClick={onEndSymptom}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEndSymptom()
+                    }}
                     className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/80"
                   >
                     Symptom beendet
@@ -321,6 +353,14 @@ export function ChatBubble({
               >
                 {timestamp}
               </p>
+            )}
+            {isNavigable && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <ChevronRight
+                  className="size-4 text-muted-foreground/50"
+                  aria-hidden="true"
+                />
+              </div>
             )}
           </>
         )}

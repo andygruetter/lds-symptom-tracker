@@ -26,6 +26,10 @@ vi.mock('@/lib/db/media', () => ({
   getSignedPhotoUrl: vi.fn(),
 }))
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+}))
+
 vi.mock('@/lib/actions/symptom-actions', () => ({
   createSymptomEvent: vi.fn(),
   createVoiceSymptomEvent: vi.fn(),
