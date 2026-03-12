@@ -15,6 +15,7 @@ const mockEvent: SymptomEvent = {
   created_at: '2026-03-02T10:30:00Z',
   ended_at: null,
   deleted_at: null,
+  occurred_at: '2026-03-02T10:30:00Z',
 }
 
 const confirmedEvent: SymptomEvent = {

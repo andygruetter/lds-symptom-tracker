@@ -419,7 +419,7 @@ export async function correctExtractedField(
     // Vokabular-Update für Nacherfassung (Fire-and-Forget)
     updateVocabularyFromCorrection(supabase, user.id, {
       fieldName,
-      originalValue: null,
+      originalValue: '',
       correctedValue: newValue,
     }).catch((err) => {
       console.error('[Vocabulary] Update fehlgeschlagen:', err)
