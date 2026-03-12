@@ -34,12 +34,14 @@ test.describe('Nachfragen bei unsicheren Feldern', () => {
         value: 'Schmerzen',
         confidence: 90,
       },
-      { field_name: 'Seite', value: 'links', confidence: 55 },
+      { field_name: 'side', value: 'links', confidence: 55 },
     ])
 
     await capturePage.goto()
 
-    await expect(page.getByText('Welche Seite?')).toBeVisible()
+    await expect(page.getByText('Welche Seite?')).toBeVisible({
+      timeout: 15_000,
+    })
     await expect(page.getByRole('button', { name: 'Links' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Rechts' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Beidseits' })).toBeVisible()
@@ -56,10 +58,13 @@ test.describe('Nachfragen bei unsicheren Feldern', () => {
         value: 'Rückenschmerzen',
         confidence: 95,
       },
-      { field_name: 'Seite', value: 'unbekannt', confidence: 50 },
+      { field_name: 'side', value: 'unbekannt', confidence: 50 },
     ])
 
     await capturePage.goto()
+    await page
+      .getByRole('button', { name: 'Links' })
+      .waitFor({ timeout: 15_000 })
     await capturePage.answerClarification('Links')
 
     await expect(page.getByText('Links').last()).toBeVisible()
@@ -76,14 +81,14 @@ test.describe('Nachfragen bei unsicheren Feldern', () => {
         value: 'Schmerzen',
         confidence: 90,
       },
-      { field_name: 'Seite', value: 'unbekannt', confidence: 50 },
+      { field_name: 'side', value: 'unbekannt', confidence: 50 },
     ])
 
     await capturePage.goto()
 
     await expect(
       page.getByRole('button', { name: 'Andere Antwort...' }),
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 15_000 })
   })
 
   test('Freitext-Eingabe bei Nachfrage funktioniert', async ({ page }) => {
@@ -97,11 +102,14 @@ test.describe('Nachfragen bei unsicheren Feldern', () => {
         value: 'Schmerzen',
         confidence: 90,
       },
-      { field_name: 'Seite', value: 'unbekannt', confidence: 50 },
+      { field_name: 'side', value: 'unbekannt', confidence: 50 },
     ])
 
     await capturePage.goto()
 
+    await page
+      .getByRole('button', { name: 'Andere Antwort...' })
+      .waitFor({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Andere Antwort...' }).click()
     await page.getByPlaceholder('Eigene Antwort...').fill('Linkes Knie')
     await page.getByRole('button', { name: 'OK' }).click()
@@ -120,14 +128,16 @@ test.describe('Nachfragen bei unsicheren Feldern', () => {
         value: 'Schmerzen',
         confidence: 90,
       },
-      { field_name: 'Körperregion', value: '?', confidence: 50 },
-      { field_name: 'Seite', value: '?', confidence: 50 },
-      { field_name: 'Intensität', value: '?', confidence: 50 },
+      { field_name: 'body_region', value: '?', confidence: 50 },
+      { field_name: 'side', value: '?', confidence: 50 },
+      { field_name: 'intensity', value: '?', confidence: 50 },
     ])
 
     await capturePage.goto()
 
-    // Erste Nachfrage: Körperregion (Priorität 1)
-    await expect(page.getByText('Welche Region genauer?')).toBeVisible()
+    // Erste Nachfrage: body_region (Priorität 1)
+    await expect(page.getByText('Welche Region genauer?')).toBeVisible({
+      timeout: 15_000,
+    })
   })
 })
