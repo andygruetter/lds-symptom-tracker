@@ -8,6 +8,7 @@ import { BookOpen, ChevronRight, FileText, LogOut, Trash2 } from 'lucide-react'
 
 import { DeleteAccountDialog } from '@/components/account/delete-account-dialog'
 import { DisclaimerContent } from '@/components/disclaimer/disclaimer-content'
+import { DeleteAllDataDialog } from '@/components/event/delete-all-data-dialog'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,7 @@ import { DISCLAIMER_TITLE } from '@/lib/constants/disclaimer'
 
 export default function MorePage() {
   const [disclaimerOpen, setDisclaimerOpen] = useState(false)
+  const [deleteDataOpen, setDeleteDataOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   return (
@@ -64,6 +66,27 @@ export default function MorePage() {
         </div>
       </section>
 
+      {/* Daten */}
+      <section className="mb-6">
+        <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          Daten
+        </h2>
+        <div className="divide-y divide-border rounded-xl bg-card">
+          <button
+            onClick={() => setDeleteDataOpen(true)}
+            className="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left"
+          >
+            <span className="flex items-center gap-3">
+              <Trash2 className="size-5 text-destructive" />
+              <span className="text-sm text-destructive">
+                Alle Daten löschen
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
+        </div>
+      </section>
+
       {/* Account */}
       <section>
         <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
@@ -105,6 +128,12 @@ export default function MorePage() {
           <DisclaimerContent />
         </DialogContent>
       </Dialog>
+
+      {/* Delete All Data Dialog */}
+      <DeleteAllDataDialog
+        open={deleteDataOpen}
+        onOpenChange={setDeleteDataOpen}
+      />
 
       {/* Delete Account Dialog */}
       <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />

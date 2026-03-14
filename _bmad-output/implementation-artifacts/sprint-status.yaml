@@ -75,8 +75,8 @@ development_status:
   4-1-chronologischer-feed: done
   4-2-timeline-ansicht: done
   4-3-symptom-ranking-trendlinien: review
-  4-4-event-detail-ansicht: in-progress
-  4-5-events-daten-loeschen: backlog
+  4-4-event-detail-ansicht: done
+  4-5-events-daten-loeschen: in-progress
   epic-4-retrospective: optional
 
   # Epic 5: Sharing-System & Daten-Souveränität

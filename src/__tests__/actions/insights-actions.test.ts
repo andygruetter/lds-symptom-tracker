@@ -6,11 +6,19 @@ const mockGetMonthlyTimeline = vi.fn()
 const mockGetDayEvents = vi.fn()
 const mockGetSymptomRanking = vi.fn()
 const mockGetSymptomEvents = vi.fn()
+const mockGetEventDetail = vi.fn()
+const mockSoftDeleteEvent = vi.fn()
+const mockSoftDeleteAllEvents = vi.fn()
+const mockRevalidatePath = vi.fn()
 
 vi.mock('@/lib/db/client', () => ({
   createServerClient: vi.fn(() => ({
     auth: { getUser: mockGetUser },
   })),
+}))
+
+vi.mock('next/cache', () => ({
+  revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }))
 
 vi.mock('@/lib/db/insights', () => ({
@@ -19,6 +27,9 @@ vi.mock('@/lib/db/insights', () => ({
   getDayEvents: mockGetDayEvents,
   getSymptomRanking: mockGetSymptomRanking,
   getSymptomEvents: mockGetSymptomEvents,
+  getEventDetail: mockGetEventDetail,
+  softDeleteEvent: mockSoftDeleteEvent,
+  softDeleteAllEvents: mockSoftDeleteAllEvents,
   calculateTrend: vi.fn(() => 'stable'),
 }))
 
@@ -248,5 +259,147 @@ describe('loadSymptomEvents', () => {
 
     expect(result.data).toBeNull()
     expect(result.error?.code).toBe('VALIDATION_ERROR')
+  })
+})
+
+describe('loadEventDetail', () => {
+  it('gibt Fehler zurück bei ungültiger Event-ID', async () => {
+    const { loadEventDetail } = await import('@/lib/actions/insights-actions')
+    const result = await loadEventDetail('keine-uuid')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('gibt Fehler zurück wenn nicht authentifiziert', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const { loadEventDetail } = await import('@/lib/actions/insights-actions')
+    const result = await loadEventDetail('550e8400-e29b-41d4-a716-446655440000')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('AUTH_REQUIRED')
+  })
+
+  it('gibt NOT_FOUND zurück wenn Event nicht existiert', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockGetEventDetail.mockResolvedValue(null)
+
+    const { loadEventDetail } = await import('@/lib/actions/insights-actions')
+    const result = await loadEventDetail('550e8400-e29b-41d4-a716-446655440000')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('NOT_FOUND')
+  })
+
+  it('gibt EventDetail zurück bei gültiger ID und Auth', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    const detailResult = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      eventType: 'symptom',
+      occurredAt: '2026-03-14T09:30:00Z',
+      createdAt: '2026-03-14T09:30:00Z',
+      endedAt: null,
+      rawInput: 'Test',
+      audioUrl: null,
+      extractedFields: [],
+      photos: [],
+      symptomName: null,
+      medication: null,
+    }
+    mockGetEventDetail.mockResolvedValue(detailResult)
+
+    const { loadEventDetail } = await import('@/lib/actions/insights-actions')
+    const result = await loadEventDetail('550e8400-e29b-41d4-a716-446655440000')
+
+    expect(result.data).toEqual(detailResult)
+    expect(result.error).toBeNull()
+    expect(mockGetEventDetail).toHaveBeenCalledWith(
+      expect.anything(),
+      '550e8400-e29b-41d4-a716-446655440000',
+      'user-1',
+    )
+  })
+})
+
+describe('deleteEvent', () => {
+  it('gibt VALIDATION_ERROR zurück bei ungültiger Event-ID', async () => {
+    const { deleteEvent } = await import('@/lib/actions/insights-actions')
+    const result = await deleteEvent('keine-uuid')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('gibt AUTH_REQUIRED zurück wenn nicht authentifiziert', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const { deleteEvent } = await import('@/lib/actions/insights-actions')
+    const result = await deleteEvent('550e8400-e29b-41d4-a716-446655440000')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('AUTH_REQUIRED')
+  })
+
+  it('löscht Event erfolgreich und ruft revalidatePath auf', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockSoftDeleteEvent.mockResolvedValue({ error: null })
+
+    const { deleteEvent } = await import('@/lib/actions/insights-actions')
+    const result = await deleteEvent('550e8400-e29b-41d4-a716-446655440000')
+
+    expect(result.data).toBeNull()
+    expect(result.error).toBeNull()
+    expect(mockSoftDeleteEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      '550e8400-e29b-41d4-a716-446655440000',
+      'user-1',
+    )
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/')
+  })
+
+  it('gibt Fehler weiter wenn Event nicht gefunden', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockSoftDeleteEvent.mockResolvedValue({
+      error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' },
+    })
+
+    const { deleteEvent } = await import('@/lib/actions/insights-actions')
+    const result = await deleteEvent('550e8400-e29b-41d4-a716-446655440000')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('NOT_FOUND')
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+})
+
+describe('deleteAllEvents', () => {
+  it('gibt AUTH_REQUIRED zurück wenn nicht authentifiziert', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const { deleteAllEvents } = await import('@/lib/actions/insights-actions')
+    const result = await deleteAllEvents()
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('AUTH_REQUIRED')
+  })
+
+  it('löscht alle Events erfolgreich und ruft revalidatePath auf', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockSoftDeleteAllEvents.mockResolvedValue({
+      deletedCount: 5,
+      error: null,
+    })
+
+    const { deleteAllEvents } = await import('@/lib/actions/insights-actions')
+    const result = await deleteAllEvents()
+
+    expect(result.data).toEqual({ deletedCount: 5 })
+    expect(result.error).toBeNull()
+    expect(mockSoftDeleteAllEvents).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+    )
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/')
   })
 })

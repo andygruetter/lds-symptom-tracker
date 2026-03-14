@@ -16,6 +16,7 @@ import type {
   SymptomRankingEntry,
   TimeRange,
 } from '@/types/analytics'
+import type { AppError } from '@/types/common'
 import type { Database } from '@/types/database'
 
 type ExtractedDataRow = { field_name: string; value: string }
@@ -485,6 +486,7 @@ export async function getEventDetail(
     .select('*')
     .eq('id', eventId)
     .eq('account_id', accountId)
+    .eq('status', 'confirmed')
     .is('deleted_at', null)
     .single()
 
@@ -492,16 +494,17 @@ export async function getEventDetail(
     return null
   }
 
-  const { data: extractedRows } = await supabase
-    .from('extracted_data')
-    .select('field_name, value, confidence, confirmed')
-    .eq('symptom_event_id', eventId)
-
-  const { data: photoRows } = await supabase
-    .from('event_photos')
-    .select('id, storage_path')
-    .eq('symptom_event_id', eventId)
-    .order('created_at', { ascending: true })
+  const [{ data: extractedRows }, { data: photoRows }] = await Promise.all([
+    supabase
+      .from('extracted_data')
+      .select('field_name, value, confidence, confirmed')
+      .eq('symptom_event_id', eventId),
+    supabase
+      .from('event_photos')
+      .select('id, storage_path')
+      .eq('symptom_event_id', eventId)
+      .order('created_at', { ascending: true }),
+  ])
 
   // Generate signed URL for audio (serverseitig)
   let audioUrl: string | null = null
@@ -608,4 +611,56 @@ export async function getDayEvents(
   return rows
     .filter((row) => toLocalDateKey(new Date(row.occurred_at)) === dateKey)
     .map(mapRowToFeedEvent)
+}
+
+export async function softDeleteEvent(
+  supabase: SupabaseClient<Database>,
+  eventId: string,
+  accountId: string,
+): Promise<{ error: AppError | null }> {
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', eventId)
+    .eq('account_id', accountId)
+    .is('deleted_at', null)
+    .select('id')
+
+  if (error) {
+    console.error('[Insights] Event soft-delete fehlgeschlagen:', error.message)
+    return {
+      error: { error: 'Löschung fehlgeschlagen', code: 'DELETE_FAILED' },
+    }
+  }
+
+  if (!data || data.length === 0) {
+    return { error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' } }
+  }
+
+  return { error: null }
+}
+
+export async function softDeleteAllEvents(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+): Promise<{ deletedCount: number; error: AppError | null }> {
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('account_id', accountId)
+    .is('deleted_at', null)
+    .select('id')
+
+  if (error) {
+    console.error(
+      '[Insights] Alle Events soft-delete fehlgeschlagen:',
+      error.message,
+    )
+    return {
+      deletedCount: 0,
+      error: { error: 'Löschung fehlgeschlagen', code: 'DELETE_FAILED' },
+    }
+  }
+
+  return { deletedCount: data?.length ?? 0, error: null }
 }

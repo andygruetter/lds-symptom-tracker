@@ -1,5 +1,7 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
+
 import { z } from 'zod'
 
 import { createServerClient } from '@/lib/db/client'
@@ -10,6 +12,8 @@ import {
   getMonthlyTimeline,
   getSymptomEvents,
   getSymptomRanking,
+  softDeleteAllEvents,
+  softDeleteEvent,
 } from '@/lib/db/insights'
 import type {
   EventDetail,
@@ -239,4 +243,68 @@ export async function loadEventDetail(
   }
 
   return { data: detail, error: null }
+}
+
+const deleteEventSchema = z.object({
+  eventId: z.string().uuid(),
+})
+
+export async function deleteEvent(
+  eventId: string,
+): Promise<ActionResult<null>> {
+  const parsed = deleteEventSchema.safeParse({ eventId })
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { error: 'Ungültige Event-ID', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      data: null,
+      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
+    }
+  }
+
+  const result = await softDeleteEvent(supabase, parsed.data.eventId, user.id)
+
+  if (result.error) {
+    return { data: null, error: result.error }
+  }
+
+  revalidatePath('/')
+
+  return { data: null, error: null }
+}
+
+export async function deleteAllEvents(): Promise<
+  ActionResult<{ deletedCount: number }>
+> {
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      data: null,
+      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
+    }
+  }
+
+  const result = await softDeleteAllEvents(supabase, user.id)
+
+  if (result.error) {
+    return { data: null, error: result.error }
+  }
+
+  revalidatePath('/')
+
+  return { data: { deletedCount: result.deletedCount }, error: null }
 }
