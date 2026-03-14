@@ -40,17 +40,165 @@ function ProcessingDots() {
   )
 }
 
-function ExtractedFieldTags({ fields }: { fields: ExtractedData[] }) {
+function getFieldValue(
+  fields: ExtractedData[],
+  name: string,
+): string | undefined {
+  return fields.find((f) => f.field_name === name)?.value
+}
+
+function formatSymptomTimestamp(isoString: string): string {
+  const date = new Date(isoString)
+  if (isNaN(date.getTime())) return isoString
+  const weekday = date.toLocaleDateString('de-CH', { weekday: 'short' })
+  const day = date.getDate()
+  const month = date.toLocaleDateString('de-CH', { month: 'short' })
+  const time = date.toLocaleTimeString('de-CH', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return `${weekday} ${day}. ${month}, ${time}`
+}
+
+function formatDurationMinutes(minutesStr: string): string | null {
+  const minutes = parseInt(minutesStr, 10)
+  if (isNaN(minutes) || minutes <= 0) return null
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0 && mins > 0) return `${hours} Std. ${mins} Min.`
+  if (hours > 0) return `${hours} Std.`
+  return `${minutes} Min.`
+}
+
+function getSeverityInfo(value: string): {
+  label: string
+  colorClass: string
+} {
+  const num = parseInt(value, 10)
+  if (!isNaN(num)) {
+    if (num >= 7) return { label: `stark (${num})`, colorClass: 'bg-red-500' }
+    if (num >= 4)
+      return { label: `mittel (${num})`, colorClass: 'bg-yellow-500' }
+    return { label: `leicht (${num})`, colorClass: 'bg-green-500' }
+  }
+  const lower = value.toLowerCase()
+  if (['stark', 'sehr stark', 'unerträglich'].some((s) => lower.includes(s)))
+    return { label: value, colorClass: 'bg-red-500' }
+  if (['mittel', 'mässig', 'moderat'].some((s) => lower.includes(s)))
+    return { label: value, colorClass: 'bg-yellow-500' }
+  if (['leicht', 'schwach', 'gering'].some((s) => lower.includes(s)))
+    return { label: value, colorClass: 'bg-green-500' }
+  return { label: value, colorClass: 'bg-yellow-500' }
+}
+
+const KNOWN_SYMPTOM_FIELDS = new Set([
+  'symptom_name',
+  'body_region',
+  'side',
+  'symptom_type',
+  'intensity',
+  'symptom_time',
+  'duration',
+])
+
+const KNOWN_MEDICATION_FIELDS = new Set([
+  'medication_name',
+  'action',
+  'dosage',
+  'reason',
+])
+
+function ConfirmedFieldsSummary({
+  fields,
+  isMedication,
+}: {
+  fields: ExtractedData[]
+  isMedication: boolean
+}) {
+  const get = (name: string) => getFieldValue(fields, name)
+
+  if (isMedication) {
+    const medName = get('medication_name')
+    const action = get('action')
+    const dosage = get('dosage')
+    const reason = get('reason')
+    const unknownFields = fields.filter(
+      (f) => !KNOWN_MEDICATION_FIELDS.has(f.field_name),
+    )
+
+    return (
+      <div className="mt-1.5">
+        {medName && <p className="text-sm font-semibold">{medName}</p>}
+        <div className="mt-1 space-y-0.5">
+          {(action || dosage) && (
+            <p className="text-xs text-muted-foreground">
+              {[action, dosage].filter(Boolean).join(' · ')}
+            </p>
+          )}
+          {reason && <p className="text-xs text-muted-foreground">{reason}</p>}
+          {unknownFields.map((f) => (
+            <p key={f.id} className="text-xs text-muted-foreground">
+              {f.value}
+            </p>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const symptomName = get('symptom_name')
+  const bodyRegion = get('body_region')
+  const side = get('side')
+  const symptomType = get('symptom_type')
+  const intensity = get('intensity')
+  const symptomTime = get('symptom_time')
+  const duration = get('duration')
+
+  const locationParts = [bodyRegion, side].filter(Boolean)
+  const line1Parts = [...locationParts]
+  if (symptomType) line1Parts.push(symptomType)
+
+  const severityInfo = intensity ? getSeverityInfo(intensity) : null
+
+  const formattedTime = symptomTime ? formatSymptomTimestamp(symptomTime) : null
+  const formattedDuration = duration ? formatDurationMinutes(duration) : null
+
+  const unknownFields = fields.filter(
+    (f) => !KNOWN_SYMPTOM_FIELDS.has(f.field_name),
+  )
+
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {fields.map((field) => (
-        <span
-          key={field.id}
-          className="inline-flex items-center rounded-full bg-muted/80 px-2.5 py-0.5 text-xs text-foreground"
-        >
-          <span className="font-medium">{field.value}</span>
-        </span>
-      ))}
+    <div className="mt-1.5">
+      {symptomName && <p className="text-sm font-semibold">{symptomName}</p>}
+      <div className="mt-1 space-y-0.5">
+        {(line1Parts.length > 0 || severityInfo) && (
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            {line1Parts.length > 0 && <span>{line1Parts.join(' · ')}</span>}
+            {line1Parts.length > 0 && severityInfo && <span>·</span>}
+            {severityInfo && (
+              <span className="inline-flex items-center gap-1">
+                <span
+                  className={cn(
+                    'inline-block size-1.5 rounded-full',
+                    severityInfo.colorClass,
+                  )}
+                />
+                {severityInfo.label}
+              </span>
+            )}
+          </p>
+        )}
+        {(formattedTime || formattedDuration) && (
+          <p className="text-xs text-muted-foreground">
+            {[formattedTime, formattedDuration].filter(Boolean).join(' · ')}
+          </p>
+        )}
+        {unknownFields.map((f) => (
+          <p key={f.id} className="text-xs text-muted-foreground">
+            {f.value}
+          </p>
+        ))}
+      </div>
     </div>
   )
 }
@@ -312,7 +460,10 @@ export function ChatBubble({
               <PhotoGrid photos={photos} getSignedUrl={getSignedUrl} />
             )}
             {extractedFields && extractedFields.length > 0 && (
-              <ExtractedFieldTags fields={extractedFields} />
+              <ConfirmedFieldsSummary
+                fields={extractedFields}
+                isMedication={isMedication}
+              />
             )}
             {activeSinceLabel && (
               <div className="mt-2 flex items-center gap-2">
