@@ -3,17 +3,20 @@ import type { ClarificationQuestion, ExtractedData } from '@/types/ai'
 const CONFIDENCE_THRESHOLD = 70
 const MAX_QUESTIONS = 2
 
-// Priorität: body_region > side > symptom_type > intensity > other
+// Priorität: symptom_time > body_region > side > symptom_type > intensity > duration > other
+// Keys matchen Claude-Output (englische field_name Werte)
 const FIELD_PRIORITY: Record<string, number> = {
-  Körperregion: 1,
-  Körperteil: 1,
-  Seite: 2,
-  Symptomtyp: 3,
-  Intensität: 4,
+  symptom_time: 0,
+  body_region: 1,
+  side: 2,
+  symptom_type: 3,
+  intensity: 4,
+  symptom_name: 5,
+  duration: 6,
 }
 
 function getFieldPriority(fieldName: string): number {
-  return FIELD_PRIORITY[fieldName] ?? 5
+  return FIELD_PRIORITY[fieldName] ?? 7
 }
 
 interface ClarificationTemplate {
@@ -22,7 +25,11 @@ interface ClarificationTemplate {
 }
 
 const clarificationTemplates: Record<string, ClarificationTemplate> = {
-  Körperregion: {
+  symptom_time: {
+    question: 'Wann genau ist das Symptom aufgetreten?',
+    options: ['Gerade eben', 'Vor 1 Stunde', 'Heute Morgen', 'Gestern'],
+  },
+  body_region: {
     question: 'Welche Region genauer?',
     options: [
       'Oberer Rücken',
@@ -32,15 +39,11 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       'Nacken',
     ],
   },
-  Körperteil: {
-    question: 'Welcher Körperteil genauer?',
-    options: ['Kopf', 'Rücken', 'Bein', 'Arm', 'Bauch', 'Brust'],
-  },
-  Seite: {
+  side: {
     question: 'Welche Seite?',
     options: ['Links', 'Rechts', 'Beidseits'],
   },
-  Intensität: {
+  intensity: {
     question: 'Wie stark auf einer Skala von 1-10?',
     options: [
       'Leicht (1-3)',
@@ -49,7 +52,7 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       'Unerträglich (10)',
     ],
   },
-  Symptomtyp: {
+  symptom_type: {
     question: 'Wie fühlt es sich an?',
     options: [
       'Stechend',
@@ -58,6 +61,16 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       'Brennend',
       'Kribbelnd',
       'Pochend',
+    ],
+  },
+  duration: {
+    question: 'Wie lange hat das Symptom angedauert?',
+    options: [
+      'Wenige Minuten',
+      '30 Minuten',
+      '1 Stunde',
+      'Mehrere Stunden',
+      'Mehrere Tage',
     ],
   },
 }

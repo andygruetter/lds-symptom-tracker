@@ -15,6 +15,7 @@ const mockEvent: SymptomEvent = {
   created_at: '2026-03-02T10:30:00Z',
   ended_at: null,
   deleted_at: null,
+  occurred_at: '2026-03-02T10:30:00Z',
 }
 
 const confirmedEvent: SymptomEvent = {
@@ -146,7 +147,7 @@ describe('ChatFeed', () => {
         {
           id: 'f2',
           symptom_event_id: 'event-1',
-          field_name: 'Seite',
+          field_name: 'side',
           value: 'links',
           confidence: 55,
           confirmed: false,

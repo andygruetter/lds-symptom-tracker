@@ -48,7 +48,7 @@ export const extractionResultSchema = z.object({
 // Correction Type (für KI-Lernen aus Korrekturen)
 export interface Correction {
   fieldName: string
-  originalValue: string
+  originalValue: string | null
   correctedValue: string
 }
 

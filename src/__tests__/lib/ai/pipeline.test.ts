@@ -132,7 +132,7 @@ describe('runExtractionPipeline', () => {
     await runExtractionPipeline(supabase as never, 'event-1')
 
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Kopfschmerzen rechts',
+      expect.stringContaining('Kopfschmerzen rechts'),
       undefined,
     )
     expect(mockInsert).toHaveBeenCalledWith(
@@ -231,7 +231,7 @@ describe('runExtractionPipeline', () => {
     )
     expect(mockBuildCorrectionContext).toHaveBeenCalledWith(corrections)
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Kopfschmerzen rechts',
+      expect.stringContaining('Kopfschmerzen rechts'),
       { corrections: correctionContext },
     )
   })
@@ -246,7 +246,7 @@ describe('runExtractionPipeline', () => {
     await runExtractionPipeline(supabase as never, 'event-1')
 
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Kopfschmerzen rechts',
+      expect.stringContaining('Kopfschmerzen rechts'),
       undefined,
     )
   })
@@ -302,7 +302,7 @@ describe('runExtractionPipeline', () => {
 
     // Extraktion sollte mit transkribiertem Text aufgerufen worden sein
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Ich habe Kopfschmerzen rechts',
+      expect.stringContaining('Ich habe Kopfschmerzen rechts'),
       undefined,
     )
   })
@@ -378,7 +378,7 @@ describe('runExtractionPipeline', () => {
     expect(mockTranscribeAudio).not.toHaveBeenCalled()
     // Sollte normal extrahieren
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Kopfschmerzen rechts',
+      expect.stringContaining('Kopfschmerzen rechts'),
       undefined,
     )
   })
@@ -422,7 +422,7 @@ describe('runExtractionPipeline', () => {
     expect(mockTranscribeAudio).not.toHaveBeenCalled()
     // Extraktion sollte mit bestehendem raw_input starten
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Ich habe Kopfschmerzen rechts',
+      expect.stringContaining('Ich habe Kopfschmerzen rechts'),
       undefined,
     )
   })
@@ -471,7 +471,7 @@ describe('runExtractionPipeline', () => {
     expect(mockGetVocabulary).toHaveBeenCalledWith(supabase, 'user-1')
     expect(mockBuildVocabularyContext).toHaveBeenCalledWith(vocabulary)
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Kopfschmerzen rechts',
+      expect.stringContaining('Kopfschmerzen rechts'),
       { vocabulary: vocabularyContext },
     )
   })
@@ -505,7 +505,7 @@ describe('runExtractionPipeline', () => {
     await runExtractionPipeline(supabase as never, 'event-1')
 
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Kopfschmerzen rechts',
+      expect.stringContaining('Kopfschmerzen rechts'),
       { corrections: correctionContext, vocabulary: vocabularyContext },
     )
   })
@@ -522,7 +522,7 @@ describe('runExtractionPipeline', () => {
     await runExtractionPipeline(supabase as never, 'event-1')
 
     expect(mockExtractSymptomData).toHaveBeenCalledWith(
-      'Kopfschmerzen rechts',
+      expect.stringContaining('Kopfschmerzen rechts'),
       undefined,
     )
   })

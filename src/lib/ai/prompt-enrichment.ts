@@ -2,7 +2,7 @@ import type { Correction, VocabularyEntry } from '@/types/ai'
 
 interface CorrectionGroup {
   fieldName: string
-  originalValue: string
+  originalValue: string | null
   correctedValue: string
   count: number
 }
@@ -35,7 +35,7 @@ export function buildCorrectionContext(corrections: Correction[]): string {
 
   const lines = sorted.map(
     (g) =>
-      `- "${g.originalValue}" wurde korrigiert zu "${g.correctedValue}" (Feld: ${g.fieldName}, ${g.count}x)`,
+      `- "${g.originalValue ?? 'neu erfasst'}" wurde korrigiert zu "${g.correctedValue}" (Feld: ${g.fieldName}, ${g.count}x)`,
   )
 
   return `Frühere Korrekturen dieses Patienten:\n${lines.join('\n')}\n\nWenn der Patient ähnliche Begriffe verwendet, setze Konfidenz höher (85+) und verwende den korrigierten Wert.`
