@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { ArrowLeft } from 'lucide-react'
+import { X } from 'lucide-react'
 
 import { CorrectionHistory } from '@/components/event/correction-history'
 import { correctExtractedField } from '@/lib/actions/symptom-actions'
@@ -235,6 +235,7 @@ export function EventEditForm({
     const extractedField = fieldMap[fieldName]
     const hasValue = !!fieldState.value
     const confidence = extractedField?.confidence ?? null
+    const isLowConfidence = confidence !== null && confidence < 70
 
     return (
       <div key={fieldName} className="flex flex-col gap-1.5">
@@ -257,6 +258,12 @@ export function EventEditForm({
           )}
         </div>
 
+        {isLowConfidence && (
+          <p className="text-xs text-yellow-600 dark:text-yellow-400">
+            Bitte prüfen — KI unsicher ({Math.round(confidence!)}%)
+          </p>
+        )}
+
         {fieldState.error && (
           <p className="text-xs text-destructive">{fieldState.error}</p>
         )}
@@ -278,19 +285,19 @@ export function EventEditForm({
               onChange={(e) => setDurationDisplay(e.target.value)}
               onBlur={handleDurationBlur}
               placeholder={hasValue ? undefined : 'Nicht erfasst'}
-              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-14 flex-1 rounded-xl border border-border bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            <div className="flex rounded-lg border border-border overflow-hidden">
+            <div className="flex overflow-hidden rounded-xl border border-border">
               {(['min', 'std', 'tage'] as DurationUnit[]).map((unit) => (
                 <button
                   key={unit}
                   type="button"
                   onClick={() => handleDurationUnitChange(unit)}
                   className={cn(
-                    'px-3 py-2 text-xs transition-colors',
+                    'h-14 min-w-[56px] px-4 text-sm font-medium transition-colors',
                     durationUnit === unit
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-background text-muted-foreground hover:bg-muted',
+                      : 'bg-background text-muted-foreground active:bg-muted',
                   )}
                 >
                   {unit === 'min' ? 'Min' : unit === 'std' ? 'Std' : 'Tage'}
@@ -304,44 +311,73 @@ export function EventEditForm({
             value={formatForDatetimeLocal(fieldState.value)}
             onChange={(e) => handleSymptomTimeChange(e.target.value)}
             onBlur={handleSymptomTimeBlur}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-14 rounded-xl border border-border bg-background px-4 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         ) : fieldName === 'side' ? (
-          <select
-            value={fieldState.value}
-            onChange={(e) => {
-              const val = e.target.value
-              setFields((prev) => ({
-                ...prev,
-                [fieldName]: { ...prev[fieldName], value: val },
-              }))
-            }}
-            onBlur={() => handleBlur(fieldName)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Nicht erfasst</option>
-            {SIDE_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt.charAt(0).toUpperCase() + opt.slice(1)}
-              </option>
+          <div className="flex overflow-hidden rounded-xl border border-border">
+            {[
+              { value: 'links', label: 'Links' },
+              { value: 'beidseits', label: 'Beidseits' },
+              { value: 'rechts', label: 'Rechts' },
+            ].map(({ value, label }, i, arr) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  const next = fieldState.value === value ? '' : value
+                  setFields((prev) => ({
+                    ...prev,
+                    [fieldName]: { ...prev[fieldName], value: next },
+                  }))
+                  saveField(fieldName, next)
+                }}
+                className={cn(
+                  'h-14 flex-1 text-sm font-medium transition-colors',
+                  i < arr.length - 1 && 'border-r border-border',
+                  fieldState.value === value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-foreground active:bg-muted',
+                )}
+              >
+                {label}
+              </button>
             ))}
-          </select>
+          </div>
         ) : fieldName === 'intensity' ? (
-          <input
-            type="number"
-            min={1}
-            max={10}
-            value={fieldState.value}
-            onChange={(e) =>
-              setFields((prev) => ({
-                ...prev,
-                [fieldName]: { ...prev[fieldName], value: e.target.value },
-              }))
-            }
-            onBlur={() => handleBlur(fieldName)}
-            placeholder="Nicht erfasst"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <div className="flex flex-col gap-2 rounded-xl border border-border bg-background px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                Kaum spürbar
+              </span>
+              <span className="text-xl font-semibold text-foreground">
+                {fieldState.value || '–'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Unerträglich
+              </span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={10}
+              step={1}
+              value={fieldState.value ? parseInt(fieldState.value) : 5}
+              onChange={(e) =>
+                setFields((prev) => ({
+                  ...prev,
+                  [fieldName]: { ...prev[fieldName], value: e.target.value },
+                }))
+              }
+              onPointerUp={() => handleBlur(fieldName)}
+              onTouchEnd={() => handleBlur(fieldName)}
+              className="h-2 w-full cursor-pointer accent-primary"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>1</span>
+              <span>5</span>
+              <span>10</span>
+            </div>
+          </div>
         ) : (
           <input
             type="text"
@@ -354,7 +390,7 @@ export function EventEditForm({
             }
             onBlur={() => handleBlur(fieldName)}
             placeholder="Nicht erfasst"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-14 rounded-xl border border-border bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         )}
       </div>
@@ -362,18 +398,22 @@ export function EventEditForm({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-dvh flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex shrink-0 items-center border-b border-border px-4 py-3">
         <button
           type="button"
           onClick={handleBack}
-          className="flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/80"
-          aria-label="Zurück"
+          className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors active:bg-muted/80"
+          aria-label="Schliessen"
         >
-          <ArrowLeft className="size-5" aria-hidden="true" />
+          <X className="size-5" aria-hidden="true" />
         </button>
-        <h1 className="text-base font-semibold">Symptom bearbeiten</h1>
+        <h1 className="flex-1 text-center text-base font-semibold">
+          Symptom bearbeiten
+        </h1>
+        {/* Spacer to center title */}
+        <div className="size-11" aria-hidden="true" />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -416,6 +456,20 @@ export function EventEditForm({
 
         {/* Änderungshistorie */}
         <CorrectionHistory corrections={corrections} />
+
+        {/* Scroll-Puffer für fixierten Footer */}
+        <div className="h-4" aria-hidden="true" />
+      </div>
+
+      {/* Fixierter Footer */}
+      <div className="shrink-0 border-t border-border bg-background px-4 pb-[env(safe-area-inset-bottom)] pt-3">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-semibold text-primary-foreground transition-opacity active:opacity-80"
+        >
+          Fertig
+        </button>
       </div>
     </div>
   )

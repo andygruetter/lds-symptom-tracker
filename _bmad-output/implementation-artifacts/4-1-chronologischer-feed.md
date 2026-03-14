@@ -1,6 +1,6 @@
 # Story 4.1: Chronologischer Symptom-Feed
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,80 +22,80 @@ So that ich einen schnellen Überblick über meine Gesundheitshistorie bekomme (
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: DB-Abfrage-Layer für chronologischen Feed (AC: #1, #6, #7)
-  - [ ] `src/lib/db/insights.ts` erstellen
-  - [ ] `getChronologicalFeed(supabase: SupabaseClient, accountId: string, options?: { cursor?: string, limit?: number }): Promise<PaginatedFeed>`
-  - [ ] Query: `symptom_events` LEFT JOIN `extracted_data` LEFT JOIN `event_photos` (GROUP BY für photo_count) WHERE `status = 'confirmed'` AND `deleted_at IS NULL` ORDER BY `occurred_at DESC`
-  - [ ] **Cursor-based Pagination** via `occurred_at`: `WHERE occurred_at < :cursor` (kein OFFSET/LIMIT — performanter bei grossen Datasets, konsistent bei neuen Einträgen)
-  - [ ] Bei erstem Load: kein Cursor → neueste Events zuerst
-  - [ ] Return: `PaginatedFeed` mit `nextCursor` (= `occurred_at` des letzten Events) und `hasMore`
-  - [ ] Photo-Count via `LEFT JOIN event_photos` + `COUNT(ep.id)` + `GROUP BY` (KEIN Subquery-per-Row — vermeidet N+1-ähnliches Anti-Pattern)
-  - [ ] Performance: Index auf `(account_id, status, deleted_at, occurred_at DESC)` falls nötig — prüfen ob bestehende Indizes ausreichen
+- [x] Task 1: DB-Abfrage-Layer für chronologischen Feed (AC: #1, #6, #7)
+  - [x] `src/lib/db/insights.ts` erstellen
+  - [x] `getChronologicalFeed(supabase: SupabaseClient, accountId: string, options?: { cursor?: string, limit?: number }): Promise<PaginatedFeed>`
+  - [x] Query: `symptom_events` LEFT JOIN `extracted_data` LEFT JOIN `event_photos` (GROUP BY für photo_count) WHERE `status = 'confirmed'` AND `deleted_at IS NULL` ORDER BY `occurred_at DESC`
+  - [x] **Cursor-based Pagination** via `occurred_at`: `WHERE occurred_at < :cursor` (kein OFFSET/LIMIT — performanter bei grossen Datasets, konsistent bei neuen Einträgen)
+  - [x] Bei erstem Load: kein Cursor → neueste Events zuerst
+  - [x] Return: `PaginatedFeed` mit `nextCursor` (= `occurred_at` des letzten Events) und `hasMore`
+  - [x] Photo-Count via `LEFT JOIN event_photos` + `COUNT(ep.id)` + `GROUP BY` (KEIN Subquery-per-Row — vermeidet N+1-ähnliches Anti-Pattern)
+  - [x] Performance: Index auf `(account_id, status, deleted_at, occurred_at DESC)` falls nötig — prüfen ob bestehende Indizes ausreichen
 
-- [ ] Task 2: TypeScript-Typen für Analytics (AC: #1, #2)
-  - [ ] `src/types/analytics.ts` erstellen
-  - [ ] `FeedEvent` Typ: `{ id: string, eventType: 'symptom' | 'medication', occurredAt: string, createdAt: string, endedAt: string | null, rawInput: string, symptomName: string | null, bodyRegion: string | null, side: string | null, symptomType: string | null, intensity: number | null, medication?: string | null, dosage?: string | null, photoCount: number, hasAudio: boolean }`
-  - [ ] `FeedFilter` Typ: `{ eventType?: 'symptom' | 'medication' | 'all', timeRange?: '30d' | '3m' | '6m' | 'all' }`
-  - [ ] `PaginatedFeed` Typ: `{ events: FeedEvent[], nextCursor: string | null, hasMore: boolean }`
+- [x] Task 2: TypeScript-Typen für Analytics (AC: #1, #2)
+  - [x] `src/types/analytics.ts` erstellen
+  - [x] `FeedEvent` Typ: `{ id: string, eventType: 'symptom' | 'medication', occurredAt: string, createdAt: string, endedAt: string | null, rawInput: string, symptomName: string | null, bodyRegion: string | null, side: string | null, symptomType: string | null, intensity: number | null, medication?: string | null, dosage?: string | null, photoCount: number, hasAudio: boolean }`
+  - [x] `FeedFilter` Typ: `{ eventType?: 'symptom' | 'medication' | 'all', timeRange?: '30d' | '3m' | '6m' | 'all' }`
+  - [x] `PaginatedFeed` Typ: `{ events: FeedEvent[], nextCursor: string | null, hasMore: boolean }`
 
-- [ ] Task 3: Auswertung-Seite (Server Component) (AC: #1, #4, #5)
-  - [ ] `src/app/(app)/insights/page.tsx` umschreiben (aktuell Platzhalter)
-  - [ ] Server Component: Auth-Check via `createServerClient()` + `getUser()`
-  - [ ] Initial-Load: Erste 20 Events via `getChronologicalFeed()`
-  - [ ] Daten an Client Component `<SymptomFeed>` weitergeben
-  - [ ] `src/app/(app)/insights/loading.tsx` erstellen mit Skeleton-Screens
+- [x] Task 3: Auswertung-Seite (Server Component) (AC: #1, #4, #5)
+  - [x] `src/app/(app)/insights/page.tsx` umschreiben (aktuell Platzhalter)
+  - [x] Server Component: Auth-Check via `createServerClient()` + `getUser()`
+  - [x] Initial-Load: Erste 20 Events via `getChronologicalFeed()`
+  - [x] Daten an Client Component `<SymptomFeed>` weitergeben
+  - [x] `src/app/(app)/insights/loading.tsx` erstellen mit Skeleton-Screens
 
-- [ ] Task 4: SymptomFeed Client Component (AC: #1, #2, #3, #7)
-  - [ ] `src/components/insights/symptom-feed.tsx` erstellen (`'use client'`)
-  - [ ] Props: `initialEvents: FeedEvent[]`, `initialCursor: string | null`, `hasMore: boolean`
-  - [ ] **Datum-Gruppierung**: Events nach Tagen gruppieren mit Tages-Headern ("Heute", "Gestern", "14. März 2026")
-  - [ ] `groupEventsByDay(events: FeedEvent[]): Map<string, FeedEvent[]>` Hilfsfunktion
-  - [ ] Tages-Header: `text-sm font-medium text-muted-foreground` mit Sticky-Verhalten optional
-  - [ ] Feed-Karten rendern mit `<FeedEventCard>` pro Event innerhalb der Tagesgruppen
-  - [ ] "Mehr laden"-Button am Ende: zentriert, `text-muted-foreground`, mit Lade-Animation beim Klick
-  - [ ] Server Action `loadMoreFeedEvents(cursor)` für weitere Events (cursor-basiert)
-  - [ ] Neue Events an lokalen State appenden, Cursor aktualisieren
+- [x] Task 4: SymptomFeed Client Component (AC: #1, #2, #3, #7)
+  - [x] `src/components/insights/symptom-feed.tsx` erstellen (`'use client'`)
+  - [x] Props: `initialEvents: FeedEvent[]`, `initialCursor: string | null`, `hasMore: boolean`
+  - [x] **Datum-Gruppierung**: Events nach Tagen gruppieren mit Tages-Headern ("Heute", "Gestern", "14. März 2026")
+  - [x] `groupEventsByDay(events: FeedEvent[]): Map<string, FeedEvent[]>` Hilfsfunktion
+  - [x] Tages-Header: `text-sm font-medium text-muted-foreground` mit Sticky-Verhalten optional
+  - [x] Feed-Karten rendern mit `<FeedEventCard>` pro Event innerhalb der Tagesgruppen
+  - [x] "Mehr laden"-Button am Ende: zentriert, `text-muted-foreground`, mit Lade-Animation beim Klick
+  - [x] Server Action `loadMoreFeedEvents(cursor)` für weitere Events (cursor-basiert)
+  - [x] Neue Events an lokalen State appenden, Cursor aktualisieren
 
-- [ ] Task 5: FeedEventCard Component (AC: #2, #3)
-  - [ ] `src/components/insights/feed-event-card.tsx` erstellen
-  - [ ] Symptom-Events: Terracotta-Akzent (linke Borderlinie `#C06A3C`), Symptomname, Körperregion, Intensität (1-10 Skala)
-  - [ ] Medikamenten-Events: Stahlblau-Akzent (linke Borderlinie `#4A7FA5`), Medikamentname, Dosis
-  - [ ] **Typ-Badge** oben rechts: "Symptom" in Terracotta-Muted-Hintergrund, "Medikament" in Stahlblau-Muted-Hintergrund (zusätzlich zur Borderlinie für schnelles Scannen)
-  - [ ] Uhrzeit formatiert (deutsch: "09:30") — Datum kommt vom Tages-Header (Task 4)
-  - [ ] Dauer anzeigen wenn `endedAt` vorhanden
-  - [ ] Foto-Indikator (Kamera-Icon + Anzahl) wenn Fotos vorhanden
-  - [ ] Audio-Indikator (Mikrofon-Icon) wenn Audio vorhanden
-  - [ ] **Chevron-Right** (→) am rechten Rand als Tap-Affordance (erlerntes iOS-Pattern)
-  - [ ] Tap → Navigation zu `/event/[id]` (bestehende Detail-Seite)
-  - [ ] Touch-Target: Gesamte Karte tippbar (min 44px Höhe)
+- [x] Task 5: FeedEventCard Component (AC: #2, #3)
+  - [x] `src/components/insights/feed-event-card.tsx` erstellen
+  - [x] Symptom-Events: Terracotta-Akzent (linke Borderlinie `#C06A3C`), Symptomname, Körperregion, Intensität (1-10 Skala)
+  - [x] Medikamenten-Events: Stahlblau-Akzent (linke Borderlinie `#4A7FA5`), Medikamentname, Dosis
+  - [x] **Typ-Badge** oben rechts: "Symptom" in Terracotta-Muted-Hintergrund, "Medikament" in Stahlblau-Muted-Hintergrund (zusätzlich zur Borderlinie für schnelles Scannen)
+  - [x] Uhrzeit formatiert (deutsch: "09:30") — Datum kommt vom Tages-Header (Task 4)
+  - [x] Dauer anzeigen wenn `endedAt` vorhanden
+  - [x] Foto-Indikator (Kamera-Icon + Anzahl) wenn Fotos vorhanden
+  - [x] Audio-Indikator (Mikrofon-Icon) wenn Audio vorhanden
+  - [x] **Chevron-Right** (→) am rechten Rand als Tap-Affordance (erlerntes iOS-Pattern)
+  - [x] Tap → Navigation zu `/event/[id]` (bestehende Detail-Seite)
+  - [x] Touch-Target: Gesamte Karte tippbar (min 44px Höhe)
 
-- [ ] Task 6: Empty State (AC: #5)
-  - [ ] `src/components/insights/empty-feed.tsx` erstellen
-  - [ ] Anti-Tagebuch UX: "Noch keine Einträge. Keine Eingabe = ein guter Tag."
-  - [ ] Subtiles Icon (z.B. Sun oder Smile), keine traurigen Illustrationen
-  - [ ] Keine Gamification ("Erstelle deinen ersten Eintrag!" — VERBOTEN)
-  - [ ] Ton: Einladend, kein Druck
+- [x] Task 6: Empty State (AC: #5)
+  - [x] `src/components/insights/empty-feed.tsx` erstellen
+  - [x] Anti-Tagebuch UX: "Noch keine Einträge. Keine Eingabe = ein guter Tag."
+  - [x] Subtiles Icon (z.B. Sun oder Smile), keine traurigen Illustrationen
+  - [x] Keine Gamification ("Erstelle deinen ersten Eintrag!" — VERBOTEN)
+  - [x] Ton: Einladend, kein Druck
 
-- [ ] Task 7: Server Action für Pagination (AC: #7)
-  - [ ] `src/lib/actions/insights-actions.ts` erstellen
-  - [ ] `loadMoreFeedEvents(cursor: string, limit?: number): Promise<ActionResult<PaginatedFeed>>`
-  - [ ] Zod-Schema: `z.object({ cursor: z.string().datetime(), limit: z.number().int().min(1).max(50).default(20) })`
-  - [ ] Auth-Check via `createServerClient()`
-  - [ ] Return: `ActionResult<PaginatedFeed>` mit `nextCursor` (bestehender Pattern)
+- [x] Task 7: Server Action für Pagination (AC: #7)
+  - [x] `src/lib/actions/insights-actions.ts` erstellen
+  - [x] `loadMoreFeedEvents(cursor: string, limit?: number): Promise<ActionResult<PaginatedFeed>>`
+  - [x] Zod-Schema: `z.object({ cursor: z.string().datetime(), limit: z.number().int().min(1).max(50).default(20) })`
+  - [x] Auth-Check via `createServerClient()`
+  - [x] Return: `ActionResult<PaginatedFeed>` mit `nextCursor` (bestehender Pattern)
 
-- [ ] Task 8: Tests (AC: #1-#7)
-  - [ ] `src/__tests__/lib/db/insights.test.ts` — getChronologicalFeed: Sortierung, Cursor-Pagination, Leer-Ergebnis, nur confirmed Events, nextCursor-Berechnung (7 Tests)
-  - [ ] `src/__tests__/components/insights/symptom-feed.test.tsx` — Feed rendern, leerer Zustand, Tages-Gruppierung, "Mehr laden"-Button, Cursor-Update (6 Tests)
-  - [ ] `src/__tests__/components/insights/feed-event-card.test.tsx` — Symptom-Karte, Medikament-Karte, Typ-Badge, Chevron-Right, Uhrzeit-Formatierung, Foto/Audio-Indikatoren (8 Tests)
-  - [ ] `src/__tests__/components/insights/empty-feed.test.tsx` — Anti-Tagebuch-Text, kein Gamification (2 Tests)
-  - [ ] `src/__tests__/actions/insights-actions.test.ts` — loadMoreFeedEvents: Validierung, Auth, Ergebnis (4 Tests)
-  - [ ] Bestehende Tests dürfen NICHT brechen
-  - [ ] `npm run test` verifizieren
+- [x] Task 8: Tests (AC: #1-#7)
+  - [x] `src/__tests__/lib/db/insights.test.ts` — getChronologicalFeed: 8 Tests (inkl. Sortierung, Cursor-Pagination, Leer-Ergebnis, nextCursor-Berechnung)
+  - [x] `src/__tests__/components/insights/symptom-feed.test.tsx` — Feed rendern, leerer Zustand, Tages-Gruppierung, "Mehr laden"-Button, Cursor-Update (6 Tests)
+  - [x] `src/__tests__/components/insights/feed-event-card.test.tsx` — Symptom-Karte, Medikament-Karte, Typ-Badge, Chevron-Right, Uhrzeit-Formatierung, Foto/Audio-Indikatoren (8 Tests)
+  - [x] `src/__tests__/components/insights/empty-feed.test.tsx` — Anti-Tagebuch-Text, kein Gamification (2 Tests)
+  - [x] `src/__tests__/actions/insights-actions.test.ts` — loadMoreFeedEvents: Validierung, Auth, Ergebnis (4 Tests)
+  - [x] Bestehende Tests brechen nicht — 415/415 Tests grün
+  - [x] `npm run test` verifiziert
 
-- [ ] Task 9: Build-Verifikation
-  - [ ] `npx prettier --write` auf alle geänderten Dateien
-  - [ ] `npm run lint` — keine neuen Fehler
-  - [ ] `npm run build` — erfolgreich
+- [x] Task 9: Build-Verifikation
+  - [x] `npx prettier --write` auf alle geänderten Dateien
+  - [x] `npm run lint` — keine neuen Fehler (nur bestehende Warnings aus anderen Dateien)
+  - [x] `npm run build` — erfolgreich
 
 ## Dev Notes
 
@@ -359,10 +359,42 @@ Letzte relevante Commits:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-sonnet-4-6
 
 ### Debug Log References
 
+Keine Debug-Einträge nötig — Implementierung verlief ohne Blockers.
+
 ### Completion Notes List
 
+- **DB-Layer** (`insights.ts`): Supabase nested select mit `extracted_data(field_name, value)` und `event_photos(id)`. Da `extracted_data` key-value Format nutzt, werden die Felder in `pivotExtractedData()` in JS pivotiert. `event_type === 'voice'` wird als 'symptom' behandelt.
+- **Typen** (`analytics.ts`): `FeedEvent`, `FeedFilter`, `PaginatedFeed` wie spezifiziert. `rawInput` ist `string | null` (DB hat nullable raw_input).
+- **Server Action** (`insights-actions.ts`): Zod-Validierung mit `z.string().datetime()` für ISO-8601 Cursor.
+- **SymptomFeed** (`symptom-feed.tsx`): `useTransition` für optimistisches Loading beim "Mehr laden"-Button.
+- **FeedEventCard** (`feed-event-card.tsx`): `min-h-[44px]` für iOS Touch-Target-Anforderung, `data-testid` für Chevron und Audio-Indikator.
+- **Empty State** (`empty-feed.tsx`): Anti-Tagebuch UX ohne Gamification.
+- **Loading** (`loading.tsx`): shadcn Skeleton-Komponente mit 3 Karten-Platzhaltern.
+- 28 neue Tests, 415/415 gesamt grün, Build erfolgreich.
+
 ### File List
+
+- `src/types/analytics.ts` (neu)
+- `src/lib/db/insights.ts` (neu)
+- `src/lib/actions/insights-actions.ts` (neu)
+- `src/app/(app)/insights/page.tsx` (geändert — Platzhalter überschrieben)
+- `src/app/(app)/insights/loading.tsx` (neu)
+- `src/components/insights/empty-feed.tsx` (neu)
+- `src/components/insights/feed-event-card.tsx` (neu)
+- `src/components/insights/symptom-feed.tsx` (neu)
+- `src/__tests__/lib/db/insights.test.ts` (neu)
+- `src/__tests__/actions/insights-actions.test.ts` (neu)
+- `src/__tests__/components/insights/empty-feed.test.tsx` (neu)
+- `src/__tests__/components/insights/feed-event-card.test.tsx` (neu)
+- `src/__tests__/components/insights/symptom-feed.test.tsx` (neu)
+- `supabase/migrations/00015_feed_composite_index.sql` (neu — Code-Review Fix M2)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (geändert — 4-1 → done)
+
+## Change Log
+
+- **2026-03-14**: Chronologischer Symptom-Feed vollständig implementiert. Neue Dateien: DB-Layer, TypeScript-Typen, Server Action, Server Component (Auswertung-Seite), Loading-Skeleton, SymptomFeed Client Component, FeedEventCard, Empty State. 28 neue Tests, 415/415 gesamt grün, Build erfolgreich.
+- **2026-03-14 (Code Review)**: 5 Issues gefixed (1 HIGH, 4 MEDIUM): H1: Timezone-Bug in Tages-Gruppierung (UTC→lokal), M1: Tote Assertion im Audio-Test repariert, M2: Composite-Index für Feed-Query (Migration 00015), M3: Loading-Skeleton mit Page-Header, M4: Test für voice→symptom-Mapping. 29 Tests, 416/416 gesamt grün.

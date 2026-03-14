@@ -61,20 +61,20 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Sprach-Erfassung & Foto-Dokumentation
-  epic-3: in-progress
+  epic-3: done
   3-1-hold-to-record: done
   3-2-schweizerdeutsch-transkription: done
   3-3-foto-upload: done
   3-4-push-benachrichtigung: done
   3-5-ki-lernen-korrekturen: done
   3-6-persoenliches-vokabular: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # Epic 4: Patienten-Auswertung
   epic-4: in-progress
-  4-1-chronologischer-feed: ready-for-dev
-  4-2-timeline-ansicht: backlog
-  4-3-symptom-ranking-trendlinien: backlog
+  4-1-chronologischer-feed: done
+  4-2-timeline-ansicht: done
+  4-3-symptom-ranking-trendlinien: in-progress
   4-4-event-detail-ansicht: backlog
   4-5-events-daten-loeschen: backlog
   epic-4-retrospective: optional

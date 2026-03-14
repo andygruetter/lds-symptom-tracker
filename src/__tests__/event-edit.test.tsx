@@ -184,7 +184,7 @@ describe('EventEditForm', () => {
     })
   })
 
-  it('hat Zurück-Button', () => {
+  it('hat Schliessen-Button', () => {
     render(
       <EventEditForm
         event={mockEvent}
@@ -194,7 +194,9 @@ describe('EventEditForm', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Zurück' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Schliessen' }),
+    ).toBeInTheDocument()
   })
 
   it('zeigt Einheiten-Toggle für Dauer (Min/Std/Tage)', () => {
