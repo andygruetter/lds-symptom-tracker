@@ -384,6 +384,21 @@ describe('deleteAllEvents', () => {
     expect(result.error?.code).toBe('AUTH_REQUIRED')
   })
 
+  it('gibt Fehler weiter wenn DB-Operation fehlschlägt', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockSoftDeleteAllEvents.mockResolvedValue({
+      deletedCount: 0,
+      error: { error: 'Löschung fehlgeschlagen', code: 'DELETE_FAILED' },
+    })
+
+    const { deleteAllEvents } = await import('@/lib/actions/insights-actions')
+    const result = await deleteAllEvents()
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('DELETE_FAILED')
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
   it('löscht alle Events erfolgreich und ruft revalidatePath auf', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockSoftDeleteAllEvents.mockResolvedValue({

@@ -53,6 +53,29 @@ describe('DeleteEventDialog', () => {
     expect(mockOnOpenChange).toHaveBeenCalledWith(false)
   })
 
+  it('zeigt Fehlermeldung an wenn deleteEvent fehlschlägt', async () => {
+    mockDeleteEvent.mockResolvedValue({
+      data: null,
+      error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' },
+    })
+    const { DeleteEventDialog } =
+      await import('@/components/event/delete-event-dialog')
+    render(
+      <DeleteEventDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        eventId="event-1"
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Ja, Event löschen'))
+
+    await vi.waitFor(() => {
+      expect(screen.getByText('Event nicht gefunden')).toBeTruthy()
+    })
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
   it('ruft deleteEvent auf und navigiert bei Erfolg', async () => {
     mockDeleteEvent.mockResolvedValue({ data: null, error: null })
     const { DeleteEventDialog } =

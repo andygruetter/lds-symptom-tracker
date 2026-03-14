@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { toast } from 'sonner'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,12 +27,10 @@ export function DeleteAllDataDialog({
 }: DeleteAllDataDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
 
   async function handleDelete() {
     setIsDeleting(true)
     setError(null)
-    setSuccess(null)
 
     const result = await deleteAllEvents()
 
@@ -40,21 +40,20 @@ export function DeleteAllDataDialog({
       return
     }
 
-    setSuccess(`${result.data.deletedCount} Events gelöscht`)
+    const count = result.data?.deletedCount ?? 0
+    toast.success(
+      count > 0
+        ? `${count} Events gelöscht`
+        : 'Keine Events zum Löschen vorhanden',
+    )
     setIsDeleting(false)
-
-    // Dialog nach kurzer Anzeige schliessen
-    setTimeout(() => {
-      onOpenChange(false)
-      setSuccess(null)
-    }, 1500)
+    onOpenChange(false)
   }
 
   function handleOpenChange(isOpen: boolean) {
     if (!isOpen) {
       setError(null)
       setIsDeleting(false)
-      setSuccess(null)
     }
     onOpenChange(isOpen)
   }
@@ -71,12 +70,11 @@ export function DeleteAllDataDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        {success && <p className="text-sm text-green-600">{success}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Abbrechen</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            disabled={isDeleting || success !== null}
+            disabled={isDeleting}
             onClick={(e) => {
               e.preventDefault()
               handleDelete()
