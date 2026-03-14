@@ -159,3 +159,94 @@ describe('loadDayEvents', () => {
     )
   })
 })
+
+describe('loadSymptomRanking', () => {
+  it('gibt Fehler zurück bei ungültigem Zeitraum', async () => {
+    const { loadSymptomRanking } =
+      await import('@/lib/actions/insights-actions')
+    const result = await loadSymptomRanking('ungueltig')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('gibt Fehler zurück wenn nicht authentifiziert', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const { loadSymptomRanking } =
+      await import('@/lib/actions/insights-actions')
+    const result = await loadSymptomRanking('3m')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('AUTH_REQUIRED')
+  })
+
+  it('gibt SymptomRanking zurück bei gültigem Zeitraum und Auth', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    const rankingResult = {
+      symptoms: [],
+      medications: [],
+      timeRange: '3m',
+      totalSymptomEvents: 0,
+      totalMedicationEvents: 0,
+    }
+    mockGetSymptomRanking.mockResolvedValue(rankingResult)
+
+    const { loadSymptomRanking } =
+      await import('@/lib/actions/insights-actions')
+    const result = await loadSymptomRanking('3m')
+
+    expect(result.data).toEqual(rankingResult)
+    expect(result.error).toBeNull()
+    expect(mockGetSymptomRanking).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      '3m',
+    )
+  })
+})
+
+describe('loadSymptomEvents', () => {
+  it('gibt Fehler zurück bei ungültigen Parametern', async () => {
+    const { loadSymptomEvents } = await import('@/lib/actions/insights-actions')
+    const result = await loadSymptomEvents('', '3m')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('gibt Fehler zurück wenn nicht authentifiziert', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const { loadSymptomEvents } = await import('@/lib/actions/insights-actions')
+    const result = await loadSymptomEvents('Kopfschmerzen', '3m')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('AUTH_REQUIRED')
+  })
+
+  it('gibt FeedEvent-Array zurück bei gültigem Symptomname und Auth', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockGetSymptomEvents.mockResolvedValue([])
+
+    const { loadSymptomEvents } = await import('@/lib/actions/insights-actions')
+    const result = await loadSymptomEvents('Kopfschmerzen', '3m')
+
+    expect(result.data).toEqual([])
+    expect(result.error).toBeNull()
+    expect(mockGetSymptomEvents).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      'Kopfschmerzen',
+      '3m',
+    )
+  })
+
+  it('gibt Fehler zurück bei ungültigem Zeitraum', async () => {
+    const { loadSymptomEvents } = await import('@/lib/actions/insights-actions')
+    const result = await loadSymptomEvents('Kopfschmerzen', 'ungueltig')
+
+    expect(result.data).toBeNull()
+    expect(result.error?.code).toBe('VALIDATION_ERROR')
+  })
+})

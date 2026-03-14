@@ -56,15 +56,19 @@ export function SymptomRanking({ initialRanking }: Props) {
   const [expandedName, setExpandedName] = useState<string | null>(null)
   const [expandedEvents, setExpandedEvents] = useState<FeedEvent[]>([])
   const [isLoadingEvents, startLoadingEvents] = useTransition()
+  const [error, setError] = useState<string | null>(null)
 
   function handleTimeRangeChange(newRange: TimeRange) {
     setTimeRange(newRange)
     setExpandedName(null)
     setExpandedEvents([])
+    setError(null)
     startTransition(async () => {
       const result = await loadSymptomRanking(newRange)
       if (result.data) {
         setRanking(result.data)
+      } else {
+        setError('Ranking konnte nicht geladen werden.')
       }
     })
   }
@@ -77,10 +81,13 @@ export function SymptomRanking({ initialRanking }: Props) {
     }
     setExpandedName(name)
     setExpandedEvents([])
+    setError(null)
     startLoadingEvents(async () => {
       const result = await loadSymptomEvents(name, timeRange)
       if (result.data) {
         setExpandedEvents(result.data)
+      } else {
+        setError('Einträge konnten nicht geladen werden.')
       }
     })
   }
@@ -104,6 +111,12 @@ export function SymptomRanking({ initialRanking }: Props) {
           </button>
         ))}
       </div>
+
+      {error && (
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
       {isPending ? (
         <>

@@ -72,3 +72,29 @@ export type PaginatedFeed = {
   nextCursor: string | null
   hasMore: boolean
 }
+
+export type ExtractedField = {
+  fieldName: string
+  value: string | null
+  confidence: number | null
+  confirmed: boolean
+}
+
+export type EventPhoto = {
+  id: string
+  signedUrl: string
+}
+
+export type EventDetail = {
+  id: string
+  eventType: 'symptom' | 'medication'
+  occurredAt: string
+  createdAt: string
+  endedAt: string | null
+  rawInput: string | null
+  audioUrl: string | null
+  extractedFields: ExtractedField[]
+  photos: EventPhoto[]
+  symptomName: string | null
+  medication: string | null
+}

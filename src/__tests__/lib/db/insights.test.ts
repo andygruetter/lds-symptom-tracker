@@ -1,10 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  EventDetail,
   MonthTimeline,
   MonthlyCount,
   PaginatedFeed,
 } from '@/types/analytics'
+
+// Mock media module for getEventDetail tests
+vi.mock('@/lib/db/media', () => ({
+  getSignedAudioUrl: vi.fn().mockResolvedValue('https://signed.url/audio.webm'),
+  getSignedPhotoUrl: vi.fn().mockResolvedValue('https://signed.url/photo.jpg'),
+}))
 
 function createMockSupabase(result = { data: [], error: null }) {
   const builder = {
@@ -596,5 +603,211 @@ describe('getMonthlyTimeline', () => {
     const day10 = result.days.find((d) => d.date === '2026-03-10')
     expect(day10!.symptomCount).toBe(1)
     expect(day10!.medicationCount).toBe(0)
+  })
+})
+
+// Helper: create a mock supabase for getEventDetail with per-table responses
+function createMockSupabaseEventDetail({
+  eventRow = null as Record<string, unknown> | null,
+  eventError = null as { message: string } | null,
+  extractedRows = [] as Record<string, unknown>[],
+  photoRows = [] as Record<string, unknown>[],
+} = {}) {
+  const singleResult = { data: eventRow, error: eventError }
+  const extractedResult = { data: extractedRows, error: null }
+  const photosResult = { data: photoRows, error: null }
+
+  let callCount = 0
+
+  const makeBuilder = (resolvedWith: Record<string, unknown>) => ({
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue(resolvedWith),
+    single: vi.fn().mockResolvedValue(resolvedWith),
+  })
+
+  const builders = [
+    makeBuilder(singleResult as never), // symptom_events
+    makeBuilder(extractedResult as never), // extracted_data
+    makeBuilder(photosResult as never), // event_photos
+  ]
+
+  return {
+    from: vi.fn(() => {
+      const builder = builders[callCount] ?? builders[builders.length - 1]
+      callCount++
+      return builder
+    }),
+  }
+}
+
+const baseEvent = {
+  id: 'event-abc',
+  account_id: 'user-1',
+  event_type: 'symptom',
+  occurred_at: '2026-03-14T09:30:00Z',
+  created_at: '2026-03-14T09:30:00Z',
+  ended_at: null,
+  raw_input: 'Rückenschmerzen links',
+  audio_url: null,
+  status: 'confirmed',
+  deleted_at: null,
+}
+
+describe('getEventDetail', () => {
+  it('lädt Event mit allen Daten (Felder, kein Audio, keine Fotos)', async () => {
+    const extractedRows = [
+      {
+        field_name: 'symptom_name',
+        value: 'Rückenschmerzen',
+        confidence: 90,
+        confirmed: true,
+      },
+      {
+        field_name: 'body_region',
+        value: 'Rücken',
+        confidence: 80,
+        confirmed: false,
+      },
+    ]
+    const supabase = createMockSupabaseEventDetail({
+      eventRow: baseEvent,
+      extractedRows,
+      photoRows: [],
+    })
+
+    const { getEventDetail } = await import('@/lib/db/insights')
+    const result = await getEventDetail(
+      supabase as never,
+      'event-abc',
+      'user-1',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result!.id).toBe('event-abc')
+    expect(result!.eventType).toBe('symptom')
+    expect(result!.rawInput).toBe('Rückenschmerzen links')
+    expect(result!.extractedFields).toHaveLength(2)
+    expect(result!.extractedFields[0].fieldName).toBe('symptom_name')
+    expect(result!.extractedFields[0].confidence).toBe(90)
+    expect(result!.extractedFields[0].confirmed).toBe(true)
+    expect(result!.photos).toHaveLength(0)
+    expect(result!.audioUrl).toBeNull()
+  })
+
+  it('generiert Signed URL für Audio und Fotos', async () => {
+    const { getSignedAudioUrl, getSignedPhotoUrl } =
+      await import('@/lib/db/media')
+    const photoRows = [
+      { id: 'photo-1', storage_path: 'user-1/event-abc/photo.jpg' },
+    ]
+    const supabase = createMockSupabaseEventDetail({
+      eventRow: { ...baseEvent, audio_url: 'user-1/event-abc.webm' },
+      extractedRows: [],
+      photoRows,
+    })
+
+    const { getEventDetail } = await import('@/lib/db/insights')
+    const result = await getEventDetail(
+      supabase as never,
+      'event-abc',
+      'user-1',
+    )
+
+    expect(result).not.toBeNull()
+    expect(getSignedAudioUrl).toHaveBeenCalled()
+    expect(result!.audioUrl).toBe('https://signed.url/audio.webm')
+    expect(getSignedPhotoUrl).toHaveBeenCalled()
+    expect(result!.photos).toHaveLength(1)
+    expect(result!.photos[0].id).toBe('photo-1')
+    expect(result!.photos[0].signedUrl).toBe('https://signed.url/photo.jpg')
+  })
+
+  it('gibt null zurück bei nicht gefundenem Event (Ownership-Check)', async () => {
+    const supabase = createMockSupabaseEventDetail({
+      eventRow: null,
+      eventError: { message: 'No rows' },
+    })
+
+    const { getEventDetail } = await import('@/lib/db/insights')
+    const result = await getEventDetail(
+      supabase as never,
+      'event-abc',
+      'user-2',
+    )
+
+    expect(result).toBeNull()
+  })
+
+  it('gibt null zurück bei gelöschtem Event', async () => {
+    const supabase = createMockSupabaseEventDetail({
+      eventRow: null,
+      eventError: { message: 'No rows' },
+    })
+
+    const { getEventDetail } = await import('@/lib/db/insights')
+    const result = await getEventDetail(
+      supabase as never,
+      'event-abc',
+      'user-1',
+    )
+
+    expect(result).toBeNull()
+  })
+
+  it('lädt Medikament-Event korrekt', async () => {
+    const medicationEvent = {
+      ...baseEvent,
+      id: 'med-event-1',
+      event_type: 'medication',
+      raw_input: 'Dafalgan 1g',
+      audio_url: null,
+    }
+    const extractedRows = [
+      {
+        field_name: 'medication',
+        value: 'Dafalgan',
+        confidence: 95,
+        confirmed: true,
+      },
+      { field_name: 'dosage', value: '1g', confidence: 85, confirmed: false },
+    ]
+    const supabase = createMockSupabaseEventDetail({
+      eventRow: medicationEvent,
+      extractedRows,
+      photoRows: [],
+    })
+
+    const { getEventDetail } = await import('@/lib/db/insights')
+    const result = await getEventDetail(
+      supabase as never,
+      'med-event-1',
+      'user-1',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result!.eventType).toBe('medication')
+    expect(result!.medication).toBe('Dafalgan')
+    expect(result!.symptomName).toBeNull()
+  })
+
+  it('lädt Event ohne Audio und Fotos korrekt (audioUrl null, photos leer)', async () => {
+    const supabase = createMockSupabaseEventDetail({
+      eventRow: baseEvent,
+      extractedRows: [],
+      photoRows: [],
+    })
+
+    const { getEventDetail } = await import('@/lib/db/insights')
+    const result = await getEventDetail(
+      supabase as never,
+      'event-abc',
+      'user-1',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result!.audioUrl).toBeNull()
+    expect(result!.photos).toHaveLength(0)
   })
 })

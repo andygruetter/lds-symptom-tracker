@@ -1,8 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { getSignedAudioUrl, getSignedPhotoUrl } from '@/lib/db/media'
 import { toLocalDateKey } from '@/lib/utils/date'
 import type {
   DayEventSummary,
+  EventDetail,
+  EventPhoto,
+  ExtractedField,
   FeedEvent,
   MedicationRankingEntry,
   MonthlyCount,
@@ -340,20 +344,22 @@ export async function getSymptomRanking(
 
     if (isMedication) {
       const name = extracted.medication ?? 'Unbekannt'
-      if (!medicationMap.has(name)) {
-        medicationMap.set(name, { monthlyCounts: new Map() })
+      let entry = medicationMap.get(name)
+      if (!entry) {
+        entry = { monthlyCounts: new Map() }
+        medicationMap.set(name, entry)
       }
-      const entry = medicationMap.get(name)!
       entry.monthlyCounts.set(
         monthKey,
         (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
       )
     } else {
       const name = extracted.symptomName ?? 'Unbekannt'
-      if (!symptomMap.has(name)) {
-        symptomMap.set(name, { monthlyCounts: new Map(), intensities: [] })
+      let entry = symptomMap.get(name)
+      if (!entry) {
+        entry = { monthlyCounts: new Map(), intensities: [] }
+        symptomMap.set(name, entry)
       }
-      const entry = symptomMap.get(name)!
       entry.monthlyCounts.set(
         monthKey,
         (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
@@ -467,6 +473,87 @@ export async function getSymptomEvents(
   })
 
   return filtered.slice(0, limit).map(mapRowToFeedEvent)
+}
+
+export async function getEventDetail(
+  supabase: SupabaseClient<Database>,
+  eventId: string,
+  accountId: string,
+): Promise<EventDetail | null> {
+  const { data: event, error: eventError } = await supabase
+    .from('symptom_events')
+    .select('*')
+    .eq('id', eventId)
+    .eq('account_id', accountId)
+    .is('deleted_at', null)
+    .single()
+
+  if (eventError || !event) {
+    return null
+  }
+
+  const { data: extractedRows } = await supabase
+    .from('extracted_data')
+    .select('field_name, value, confidence, confirmed')
+    .eq('symptom_event_id', eventId)
+
+  const { data: photoRows } = await supabase
+    .from('event_photos')
+    .select('id, storage_path')
+    .eq('symptom_event_id', eventId)
+    .order('created_at', { ascending: true })
+
+  // Generate signed URL for audio (serverseitig)
+  let audioUrl: string | null = null
+  if (event.audio_url) {
+    try {
+      audioUrl = await getSignedAudioUrl(supabase, event.audio_url)
+    } catch {
+      audioUrl = null
+    }
+  }
+
+  // Generate signed URLs for photos using Promise.allSettled
+  const photos: EventPhoto[] = []
+  if (photoRows && photoRows.length > 0) {
+    const results = await Promise.allSettled(
+      photoRows.map((p) => getSignedPhotoUrl(supabase, p.storage_path)),
+    )
+    for (let i = 0; i < photoRows.length; i++) {
+      const result = results[i]
+      if (result.status === 'fulfilled') {
+        photos.push({ id: photoRows[i].id, signedUrl: result.value })
+      }
+    }
+  }
+
+  const extractedFields: ExtractedField[] = (extractedRows ?? []).map((r) => ({
+    fieldName: r.field_name,
+    value: r.value,
+    confidence: r.confidence,
+    confirmed: r.confirmed ?? false,
+  }))
+
+  const eventType = event.event_type === 'medication' ? 'medication' : 'symptom'
+
+  // Resolve symptomName / medication from extracted fields
+  const fieldMap = new Map(extractedFields.map((f) => [f.fieldName, f.value]))
+  const symptomName = fieldMap.get('symptom_name') ?? null
+  const medication = fieldMap.get('medication') ?? null
+
+  return {
+    id: event.id,
+    eventType,
+    occurredAt: event.occurred_at,
+    createdAt: event.created_at,
+    endedAt: event.ended_at,
+    rawInput: event.raw_input,
+    audioUrl,
+    extractedFields,
+    photos,
+    symptomName,
+    medication,
+  }
 }
 
 function buildEmptyTimeline(year: number, month: number): MonthTimeline {

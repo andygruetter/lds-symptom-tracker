@@ -6,11 +6,13 @@ import { createServerClient } from '@/lib/db/client'
 import {
   getDayEvents,
   getChronologicalFeed,
+  getEventDetail,
   getMonthlyTimeline,
   getSymptomEvents,
   getSymptomRanking,
 } from '@/lib/db/insights'
 import type {
+  EventDetail,
   FeedEvent,
   MonthTimeline,
   PaginatedFeed,
@@ -198,4 +200,43 @@ export async function loadSymptomEvents(
     parsed.data.timeRange,
   )
   return { data: events, error: null }
+}
+
+const loadEventDetailSchema = z.object({
+  eventId: z.string().uuid(),
+})
+
+export async function loadEventDetail(
+  eventId: string,
+): Promise<ActionResult<EventDetail>> {
+  const parsed = loadEventDetailSchema.safeParse({ eventId })
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { error: 'Ungültige Event-ID', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      data: null,
+      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
+    }
+  }
+
+  const detail = await getEventDetail(supabase, parsed.data.eventId, user.id)
+
+  if (!detail) {
+    return {
+      data: null,
+      error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' },
+    }
+  }
+
+  return { data: detail, error: null }
 }
