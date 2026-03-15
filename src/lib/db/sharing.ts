@@ -338,6 +338,9 @@ export async function validateSharingLinkById(
  * Lädt Symptom-Events für das Arzt-Dashboard (gefiltert nach Zeitraum + Soft-Delete).
  * Inkl. erstem symptom_name aus extracted_data für die Event-Liste.
  * Verwendet Service Client — Arzt hat keine Auth-Session (RLS würde Query blocken).
+ *
+ * @deprecated Superseded by {@link getSharedFeedEvents} which returns richer FeedEvent[] data.
+ * This function is no longer used in any component. Consider removing in next cleanup.
  */
 export async function getSharedSymptomEvents(
   accountId: string,
@@ -351,6 +354,7 @@ export async function getSharedSymptomEvents(
       'id, event_type, occurred_at, ended_at, raw_input, audio_url, status, extracted_data(field_name, value)',
     )
     .eq('account_id', accountId)
+    .eq('status', 'confirmed')
     .gte('occurred_at', dateFrom)
     .lte('occurred_at', dateTo)
     .is('deleted_at', null)
@@ -621,7 +625,9 @@ export async function getSharedEventDetail(
 
   const { data: event, error: eventError } = await supabase
     .from('symptom_events')
-    .select('*')
+    .select(
+      'id, account_id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, status, deleted_at',
+    )
     .eq('id', eventId)
     .eq('account_id', accountId)
     .gte('occurred_at', dateFrom)
@@ -631,6 +637,12 @@ export async function getSharedEventDetail(
     .single()
 
   if (eventError || !event) {
+    if (eventError) {
+      console.error(
+        '[Sharing] Event-Detail-Abfrage fehlgeschlagen:',
+        eventError.message,
+      )
+    }
     return null
   }
 

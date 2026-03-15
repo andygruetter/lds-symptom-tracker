@@ -1,6 +1,6 @@
 # Story 6.4: Arzt Drill-Down mit Audio-Stream und Foto-Ansicht
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -473,3 +473,30 @@ claude-sonnet-4-6
 - `src/types/sharing.ts` — `symptomName` in `SharedSymptomEvent`
 - `src/types/audit.ts` — `event_drill_down` AuditAction
 - `src/__tests__/lib/db/sharing.test.ts` — Tests für `getSharedEventDetail()` + Fix
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Andy (via claude-opus-4-6) — 2026-03-15
+**Outcome:** ✅ Approved (nach Fixes)
+
+### Fixes Applied
+
+| # | Severity | Issue | Fix |
+|---|----------|-------|-----|
+| H1 | HIGH | Keine Tests für Multi-Symptom-Rendering | 3 Tests hinzugefügt (Gruppen, Shared Fields, rawInput=null) |
+| H2 | HIGH | Keine Tests für Signed URL Failure Handling | 2 Tests hinzugefügt (Audio-Error, Photo-Partial-Failure) |
+| H3 | HIGH | `select('*')` in getSharedEventDetail | Auf explizite Spalten geändert |
+| M1 | MEDIUM | `getSharedSymptomEvents()` Dead Code | `@deprecated` JSDoc hinzugefügt |
+| M2 | MEDIUM | Fehlender `status='confirmed'` Filter | Filter + Test-Assertion ergänzt |
+| M3 | MEDIUM | Kein Error-Logging in getSharedEventDetail | `console.error` hinzugefügt |
+| M4 | MEDIUM | symptomName-Überladung für Medication | Durch M1 Deprecation-Hinweis adressiert |
+
+### Remaining (LOW — nicht gefixt)
+
+- L1: Keine Tests für `formatDurationMinutes()`/`formatSymptomTimestamp()` Helpers
+- L2: Grid-Layout-Asymmetrie auf Tablets (`md` Breakpoint)
+
+### Test Results After Fixes
+
+- 11/11 Komponenten-Tests grün (vorher 8)
+- 44/44 DB-Tests grün (vorher 40)

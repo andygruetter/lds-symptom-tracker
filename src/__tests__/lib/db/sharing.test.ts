@@ -608,6 +608,7 @@ describe('getSharedSymptomEvents', () => {
     expect(result[0].eventType).toBe('symptom')
     expect(result[1].audioUrl).toBe('path/to/audio.webm')
     expect(builder.eq).toHaveBeenCalledWith('account_id', 'user-1')
+    expect(builder.eq).toHaveBeenCalledWith('status', 'confirmed')
     expect(builder.gte).toHaveBeenCalledWith('occurred_at', '2026-01-01')
     expect(builder.lte).toHaveBeenCalledWith('occurred_at', '2026-03-15')
     expect(builder.is).toHaveBeenCalledWith('deleted_at', null)
@@ -1162,6 +1163,59 @@ describe('getSharedEventDetail', () => {
     expect(result?.photos).toEqual([])
     expect(result?.symptomName).toBe('Schwindel')
     expect(mockGetSignedMediaUrl).not.toHaveBeenCalled()
+  })
+
+  it('gibt audioUrl=null zurück wenn getSignedMediaUrl für Audio wirft', async () => {
+    mockGetSignedMediaUrl.mockRejectedValueOnce(new Error('Storage error'))
+
+    createDetailMocks({
+      eventRow: mockEventRow,
+      extractedRows: [],
+      photoRows: [],
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'user-1',
+      'event-uuid-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result?.audioUrl).toBeNull()
+  })
+
+  it('filtert Fotos mit fehlgeschlagener Signed URL heraus (Promise.allSettled)', async () => {
+    mockGetSignedMediaUrl
+      .mockResolvedValueOnce('https://signed.url/audio') // Audio URL
+      .mockResolvedValueOnce('https://signed.url/photo1') // Photo 1 OK
+      .mockRejectedValueOnce(new Error('Storage error')) // Photo 2 FAILS
+      .mockResolvedValueOnce('https://signed.url/photo3') // Photo 3 OK
+
+    const photoRows = [
+      { id: 'photo-1', storage_path: 'photos/p1.jpg' },
+      { id: 'photo-2', storage_path: 'photos/p2.jpg' },
+      { id: 'photo-3', storage_path: 'photos/p3.jpg' },
+    ]
+    createDetailMocks({
+      eventRow: mockEventRow,
+      extractedRows: [],
+      photoRows,
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'user-1',
+      'event-uuid-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result?.photos).toHaveLength(2)
+    expect(result?.photos[0].id).toBe('photo-1')
+    expect(result?.photos[1].id).toBe('photo-3')
   })
 
   it('verwendet Service Client und validiert account_id + Zeitraum-Filter', async () => {
