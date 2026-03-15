@@ -27,5 +27,9 @@ export default async function globalTeardown() {
       await supabase.from('extracted_data').delete().in('symptom_event_id', ids)
     }
     await supabase.from('symptom_events').delete().eq('account_id', testUser.id)
+    // audit_log ON DELETE CASCADE löscht automatisch mit sharing_links
+    // Explizites Cleanup für den Fall von Test-Einträgen ohne gültige FK
+    await supabase.from('audit_log').delete().eq('account_id', testUser.id)
+    await supabase.from('sharing_links').delete().eq('account_id', testUser.id)
   }
 }

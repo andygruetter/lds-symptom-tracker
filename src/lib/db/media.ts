@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { createServiceClient } from '@/lib/db/client'
 import { audioStorageExtension } from '@/lib/utils/mime'
 import type { Database } from '@/types/database'
 
@@ -100,6 +101,34 @@ export async function uploadPhoto(
   }
 
   return storagePath
+}
+
+/**
+ * Signed URL für Media-Dateien im Arzt-Dashboard (15min TTL, kein Download).
+ * Verwendet Service Client — Arzt hat keine Auth-Session.
+ * Wird in Epic 6 (Drill-Down mit Audio/Fotos) vollständig genutzt.
+ *
+ * Sicherheit (FR40, NFR10):
+ * - kein Download-Attribut auf <audio>/<img> (im aufrufenden Component sicherstellen)
+ * - Content-Disposition: inline (Supabase Signed URLs Standard)
+ */
+export async function getSignedMediaUrl(
+  filePath: string,
+  bucket: 'audio' | 'photos' = 'audio',
+  expiresIn = 900,
+): Promise<string> {
+  const supabase = createServiceClient()
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(filePath, expiresIn)
+
+  if (error || !data?.signedUrl) {
+    throw new Error(
+      `Signed Media URL Generierung fehlgeschlagen: ${error?.message}`,
+    )
+  }
+
+  return data.signedUrl
 }
 
 /**
