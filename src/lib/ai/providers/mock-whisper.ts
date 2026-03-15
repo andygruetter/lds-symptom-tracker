@@ -1,11 +1,19 @@
-import type { TranscriptionProvider, TranscriptionResult } from '@/types/ai'
+import type {
+  TranscriptionContext,
+  TranscriptionProvider,
+  TranscriptionResult,
+} from '@/types/ai'
 
 /**
  * Mock Transkriptions-Provider — deterministisch für Tests.
  * Aktiviert via E2E_MOCK_TRANSCRIPTION=true.
  */
 export const mockWhisperProvider: TranscriptionProvider = {
-  async transcribe(audioBuffer: Buffer): Promise<TranscriptionResult> {
+  async transcribe(
+    audioBuffer: Buffer,
+    _mimeType: string,
+    _context?: TranscriptionContext,
+  ): Promise<TranscriptionResult> {
     if (audioBuffer.length === 0) {
       throw new Error('Audio-Buffer ist leer')
     }

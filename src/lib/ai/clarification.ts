@@ -13,15 +13,52 @@ const FIELD_PRIORITY: Record<string, number> = {
   intensity: 4,
   symptom_name: 5,
   duration: 6,
+  trigger: 7,
+  frequency: 8,
+  status: 9,
 }
 
 function getFieldPriority(fieldName: string): number {
-  return FIELD_PRIORITY[fieldName] ?? 7
+  return FIELD_PRIORITY[fieldName] ?? 10
 }
 
 interface ClarificationTemplate {
-  question: string
-  options: string[]
+  question: string | ((extractedValue?: string) => string)
+  options: string[] | ((extractedValue?: string) => string[])
+}
+
+// Dynamische Optionen basierend auf extrahiertem Wert
+const BODY_REGION_SUBOPTIONS: Record<string, string[]> = {
+  kopf: ['Stirn', 'Schläfe', 'Hinterkopf', 'Scheitel'],
+  rücken: ['Oberer Rücken', 'Unterer Rücken', 'Schulterblatt', 'Lendenbereich'],
+  bauch: ['Oberbauch', 'Unterbauch', 'Links', 'Rechts'],
+  bein: ['Oberschenkel', 'Knie', 'Unterschenkel', 'Wade', 'Fuss'],
+  arm: ['Oberarm', 'Unterarm', 'Ellbogen', 'Hand'],
+  schulter: ['Vorne', 'Hinten', 'Seitlich'],
+}
+
+function getBodyRegionOptions(extractedValue?: string): string[] {
+  if (!extractedValue) {
+    return [
+      'Kopf',
+      'Nacken',
+      'Schulter',
+      'Rücken',
+      'Brust',
+      'Bauch',
+      'Bein',
+      'Arm',
+    ]
+  }
+
+  const lower = extractedValue.toLowerCase()
+  for (const [key, options] of Object.entries(BODY_REGION_SUBOPTIONS)) {
+    if (lower.includes(key)) {
+      return options
+    }
+  }
+
+  return ['Oberer Bereich', 'Unterer Bereich', 'Links', 'Rechts', 'Mitte']
 }
 
 const clarificationTemplates: Record<string, ClarificationTemplate> = {
@@ -41,14 +78,11 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
     options: ['Gerade eben', 'Vor 1 Stunde', 'Heute Morgen', 'Gestern'],
   },
   body_region: {
-    question: 'Welche Region genauer?',
-    options: [
-      'Oberer Rücken',
-      'Unterer Rücken',
-      'Schulterblatt',
-      'Lendenbereich',
-      'Nacken',
-    ],
+    question: (value) =>
+      value
+        ? `Du hast '${value}' gesagt — kannst du die Region genauer eingrenzen?`
+        : 'Welche Region genauer?',
+    options: (value) => getBodyRegionOptions(value),
   },
   side: {
     question: 'Welche Seite?',
@@ -64,7 +98,10 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
     ],
   },
   symptom_type: {
-    question: 'Wie fühlt es sich an?',
+    question: (value) =>
+      value
+        ? `Du hast es als '${value}' beschrieben — wie fühlt es sich genauer an?`
+        : 'Wie fühlt es sich an?',
     options: [
       'Stechend',
       'Ziehend',
@@ -82,6 +119,26 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       '1 Stunde',
       'Mehrere Stunden',
       'Mehrere Tage',
+    ],
+  },
+  trigger: {
+    question: 'Was hast du gemacht als das Symptom aufgetreten ist?',
+    options: [
+      'Sport / Bewegung',
+      'Arbeit / Bildschirm',
+      'Nach dem Essen',
+      'Beim Aufstehen',
+      'In Ruhe',
+    ],
+  },
+  frequency: {
+    question: 'Wie oft tritt das Symptom auf?',
+    options: [
+      'Erstmalig',
+      'Gelegentlich',
+      'Täglich',
+      'Mehrmals täglich',
+      'Seit mehreren Tagen',
     ],
   },
 }
@@ -111,16 +168,26 @@ export function generateClarificationQuestions(
   // 3. Max 2 Fragen
   const selected = sorted.slice(0, MAX_QUESTIONS)
 
-  // 4. Generiere Fragen
+  // 4. Generiere kontextabhängige Fragen
   return selected.map((field) => {
     const template =
       clarificationTemplates[field.field_name] ??
       getDefaultTemplate(field.field_name)
 
+    const question =
+      typeof template.question === 'function'
+        ? template.question(field.value)
+        : template.question
+
+    const options =
+      typeof template.options === 'function'
+        ? template.options(field.value)
+        : template.options
+
     return {
       fieldName: field.field_name,
-      question: template.question,
-      options: template.options,
+      question,
+      options,
       allowFreeText: true,
     }
   })

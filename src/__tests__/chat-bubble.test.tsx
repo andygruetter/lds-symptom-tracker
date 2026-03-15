@@ -84,6 +84,7 @@ describe('ChatBubble', () => {
         confidence: 95,
         confirmed: false,
         created_at: '2026-03-02T10:00:00Z',
+        symptom_index: 0,
       },
       {
         id: 'f2',
@@ -93,6 +94,7 @@ describe('ChatBubble', () => {
         confidence: 90,
         confirmed: false,
         created_at: '2026-03-02T10:00:00Z',
+        symptom_index: 0,
       },
     ]
 

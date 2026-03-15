@@ -25,9 +25,10 @@ describe('extractSymptomData', () => {
     const result = await extractSymptomData('Kopfschmerzen rechts stechend')
 
     expect(result.eventType).toBe('symptom')
-    expect(result.fields).toHaveLength(4)
+    expect(result.fields).toHaveLength(5)
     expect(result.fields[0].fieldName).toBe('symptom_name')
     expect(result.fields[0].value).toBe('Kopfschmerzen')
+    expect(result.fields[0].symptomIndex).toBe(0)
     expect(mockExtract).toHaveBeenCalledWith(
       'Kopfschmerzen rechts stechend',
       undefined,

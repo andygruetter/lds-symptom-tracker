@@ -32,6 +32,7 @@ describe('transcribeAudio', () => {
     expect(mockWhisperTranscribe).toHaveBeenCalledWith(
       Buffer.from('audio'),
       'audio/webm',
+      undefined,
     )
     expect(result).toEqual({ text: 'Echte Transkription' })
   })
@@ -47,5 +48,20 @@ describe('transcribeAudio', () => {
 
     expect(mockMockTranscribe).toHaveBeenCalled()
     expect(result.text).toBe('Ich habe Rückenschmerzen links im Schulterblatt')
+  })
+
+  it('leitet TranscriptionContext an Provider weiter', async () => {
+    vi.stubEnv('E2E_MOCK_TRANSCRIPTION', undefined as unknown as string)
+    mockWhisperTranscribe.mockResolvedValue({ text: 'Transkription' })
+
+    const { transcribeAudio } = await import('@/lib/ai/transcribe')
+    const context = { vocabularyTerms: ['Triptane', 'Sumatriptan'] }
+    await transcribeAudio(Buffer.from('audio'), 'audio/webm', context)
+
+    expect(mockWhisperTranscribe).toHaveBeenCalledWith(
+      Buffer.from('audio'),
+      'audio/webm',
+      context,
+    )
   })
 })

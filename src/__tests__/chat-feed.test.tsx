@@ -83,6 +83,7 @@ describe('ChatFeed', () => {
           confidence: 95,
           confirmed: false,
           created_at: '2026-03-02T10:00:00Z',
+          symptom_index: 0,
         },
       ],
     }
@@ -113,6 +114,7 @@ describe('ChatFeed', () => {
           confidence: 95,
           confirmed: true,
           created_at: '2026-03-02T10:00:00Z',
+          symptom_index: 0,
         },
       ],
     }
@@ -143,6 +145,7 @@ describe('ChatFeed', () => {
           confidence: 90,
           confirmed: false,
           created_at: '2026-03-02T10:00:00Z',
+          symptom_index: 0,
         },
         {
           id: 'f2',
@@ -152,6 +155,7 @@ describe('ChatFeed', () => {
           confidence: 55,
           confirmed: false,
           created_at: '2026-03-02T10:00:00Z',
+          symptom_index: 0,
         },
       ],
     }

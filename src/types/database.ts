@@ -146,6 +146,7 @@ export type Database = {
           field_name: string
           id: string
           symptom_event_id: string
+          symptom_index: number
           value: string
         }
         Insert: {
@@ -155,6 +156,7 @@ export type Database = {
           field_name: string
           id?: string
           symptom_event_id: string
+          symptom_index?: number
           value: string
         }
         Update: {
@@ -164,11 +166,53 @@ export type Database = {
           field_name?: string
           id?: string
           symptom_event_id?: string
+          symptom_index?: number
           value?: string
         }
         Relationships: [
           {
             foreignKeyName: 'extracted_data_symptom_event_id_fkey'
+            columns: ['symptom_event_id']
+            isOneToOne: false
+            referencedRelation: 'symptom_events'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      extraction_metrics: {
+        Row: {
+          id: string
+          symptom_event_id: string
+          account_id: string
+          fields_extracted: number
+          fields_dropped: number
+          avg_confidence: number
+          low_confidence_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          symptom_event_id: string
+          account_id: string
+          fields_extracted?: number
+          fields_dropped?: number
+          avg_confidence?: number
+          low_confidence_count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          symptom_event_id?: string
+          account_id?: string
+          fields_extracted?: number
+          fields_dropped?: number
+          avg_confidence?: number
+          low_confidence_count?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'extraction_metrics_symptom_event_id_fkey'
             columns: ['symptom_event_id']
             isOneToOne: false
             referencedRelation: 'symptom_events'

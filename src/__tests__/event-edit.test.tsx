@@ -46,6 +46,7 @@ const mockExtractedFields = [
     confidence: 95,
     confirmed: true,
     created_at: '2026-03-10T10:00:00Z',
+    symptom_index: 0,
   },
   {
     id: 'f2',
@@ -55,6 +56,7 @@ const mockExtractedFields = [
     confidence: 88,
     confirmed: false,
     created_at: '2026-03-10T10:00:00Z',
+    symptom_index: 0,
   },
   {
     id: 'f3',
@@ -64,6 +66,7 @@ const mockExtractedFields = [
     confidence: 75,
     confirmed: false,
     created_at: '2026-03-10T10:00:00Z',
+    symptom_index: 0,
   },
 ]
 

@@ -11,6 +11,7 @@ export interface ExtractionField {
   fieldName: string
   value: string
   confidence: number
+  symptomIndex: number
 }
 
 export interface ExtractionResult {
@@ -24,12 +25,14 @@ const rawExtractionFieldSchema = z.object({
   fieldName: z.string(),
   value: z.string().nullable(),
   confidence: z.number().min(0).max(100),
+  symptomIndex: z.number().int().min(0).optional().default(0),
 })
 
 export const extractionFieldSchema = z.object({
   fieldName: z.string(),
   value: z.string(),
   confidence: z.number().min(0).max(100),
+  symptomIndex: z.number().int().min(0).default(0),
 })
 
 export const extractionResultSchema = z.object({
@@ -39,8 +42,14 @@ export const extractionResultSchema = z.object({
     .min(1)
     .transform((fields) =>
       fields.filter(
-        (f): f is { fieldName: string; value: string; confidence: number } =>
-          f.value !== null,
+        (
+          f,
+        ): f is {
+          fieldName: string
+          value: string
+          confidence: number
+          symptomIndex: number
+        } => f.value !== null,
       ),
     ),
 })
@@ -74,16 +83,21 @@ export interface ExtractionProvider {
   ): Promise<ExtractionResult>
 }
 
-// Transkription Types (Voice → Text via Whisper/GPT-4o-mini-transcribe)
+// Transkription Types (Voice → Text via Whisper/GPT-4o-transcribe)
 export interface TranscriptionResult {
   text: string
   duration?: number
+}
+
+export interface TranscriptionContext {
+  vocabularyTerms?: string[]
 }
 
 export interface TranscriptionProvider {
   transcribe(
     audioBuffer: Buffer,
     mimeType: string,
+    context?: TranscriptionContext,
   ): Promise<TranscriptionResult>
 }
 

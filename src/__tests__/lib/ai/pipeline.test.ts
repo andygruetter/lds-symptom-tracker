@@ -50,11 +50,19 @@ vi.mock('@/lib/ai/prompt-enrichment', () => ({
     mockBuildVocabularyContext(...args),
 }))
 
+// Mock validation (passthrough by default)
+const mockValidateExtractionFields = vi.fn()
+vi.mock('@/lib/ai/validation', () => ({
+  validateExtractionFields: (...args: unknown[]) =>
+    mockValidateExtractionFields(...args),
+}))
+
 const mockSelect = vi.fn()
 const mockSingle = vi.fn()
 const mockEq = vi.fn()
 const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
+const mockDelete = vi.fn()
 
 function createMockSupabase() {
   // Reset chain for each call
@@ -71,6 +79,7 @@ function createMockSupabase() {
   mockSelect.mockReturnValue({ eq: mockEq })
   mockInsert.mockResolvedValue({ error: null })
   mockUpdate.mockReturnValue({ eq: mockEq })
+  mockDelete.mockReturnValue({ eq: mockEq })
 
   // Chain: select → eq → single
   mockEq.mockImplementation(function (this: unknown) {
@@ -91,6 +100,14 @@ function createMockSupabase() {
       if (table === 'extracted_data') {
         return {
           insert: mockInsert,
+          delete: () => ({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }
+      }
+      if (table === 'extraction_metrics') {
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
         }
       }
       return {}
@@ -112,6 +129,8 @@ beforeEach(() => {
   mockGetSignedAudioUrl.mockResolvedValue(
     'https://storage.example.com/signed-url',
   )
+  // Default: passthrough — return fields as-is
+  mockValidateExtractionFields.mockImplementation((fields: unknown[]) => fields)
 
   // Mock global fetch for audio download
   vi.stubGlobal(
@@ -135,6 +154,9 @@ describe('runExtractionPipeline', () => {
       expect.stringContaining('Kopfschmerzen rechts'),
       undefined,
     )
+    expect(mockValidateExtractionFields).toHaveBeenCalledWith(
+      symptomExtraction.fields,
+    )
     expect(mockInsert).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
@@ -142,6 +164,7 @@ describe('runExtractionPipeline', () => {
           field_name: 'symptom_name',
           value: 'Kopfschmerzen',
           confidence: 95,
+          symptom_index: 0,
         }),
       ]),
     )
@@ -292,6 +315,7 @@ describe('runExtractionPipeline', () => {
     expect(mockTranscribeAudio).toHaveBeenCalledWith(
       expect.any(Buffer),
       'audio/webm',
+      { vocabularyTerms: [] },
     )
 
     // raw_input + transcribed Status sollten gesetzt worden sein
