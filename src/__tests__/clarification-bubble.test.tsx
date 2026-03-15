@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ClarificationBubble } from '@/components/capture/clarification-bubble'
+import { ClarificationInline } from '@/components/capture/clarification-inline'
 import type { ClarificationQuestion } from '@/types/ai'
 
 const mockQuestion: ClarificationQuestion = {
@@ -11,19 +11,19 @@ const mockQuestion: ClarificationQuestion = {
   allowFreeText: true,
 }
 
-describe('ClarificationBubble', () => {
+describe('ClarificationInline', () => {
   const defaultProps = {
     question: mockQuestion,
     onAnswer: vi.fn(),
   }
 
   it('zeigt Fragetext an', () => {
-    render(<ClarificationBubble {...defaultProps} />)
+    render(<ClarificationInline {...defaultProps} />)
     expect(screen.getByText('Welche Seite?')).toBeInTheDocument()
   })
 
   it('zeigt Optionen als tippbare Chips', () => {
-    render(<ClarificationBubble {...defaultProps} />)
+    render(<ClarificationInline {...defaultProps} />)
 
     expect(screen.getByRole('button', { name: 'Links' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Rechts' })).toBeInTheDocument()
@@ -34,21 +34,21 @@ describe('ClarificationBubble', () => {
 
   it('ruft onAnswer bei Chip-Klick auf', () => {
     const onAnswer = vi.fn()
-    render(<ClarificationBubble {...defaultProps} onAnswer={onAnswer} />)
+    render(<ClarificationInline {...defaultProps} onAnswer={onAnswer} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Links' }))
     expect(onAnswer).toHaveBeenCalledWith('Seite', 'Links')
   })
 
   it('zeigt "Andere Antwort..." Button wenn allowFreeText', () => {
-    render(<ClarificationBubble {...defaultProps} />)
+    render(<ClarificationInline {...defaultProps} />)
     expect(
       screen.getByRole('button', { name: /andere antwort/i }),
     ).toBeInTheDocument()
   })
 
   it('zeigt Freitext-Input nach Klick auf "Andere Antwort..."', () => {
-    render(<ClarificationBubble {...defaultProps} />)
+    render(<ClarificationInline {...defaultProps} />)
 
     fireEvent.click(screen.getByRole('button', { name: /andere antwort/i }))
     expect(screen.getByPlaceholderText('Eigene Antwort...')).toBeInTheDocument()
@@ -56,7 +56,7 @@ describe('ClarificationBubble', () => {
 
   it('sendet Freitext-Antwort bei OK-Klick', () => {
     const onAnswer = vi.fn()
-    render(<ClarificationBubble {...defaultProps} onAnswer={onAnswer} />)
+    render(<ClarificationInline {...defaultProps} onAnswer={onAnswer} />)
 
     fireEvent.click(screen.getByRole('button', { name: /andere antwort/i }))
     const input = screen.getByPlaceholderText('Eigene Antwort...')
@@ -68,7 +68,7 @@ describe('ClarificationBubble', () => {
 
   it('sendet Freitext-Antwort bei Enter', () => {
     const onAnswer = vi.fn()
-    render(<ClarificationBubble {...defaultProps} onAnswer={onAnswer} />)
+    render(<ClarificationInline {...defaultProps} onAnswer={onAnswer} />)
 
     fireEvent.click(screen.getByRole('button', { name: /andere antwort/i }))
     const input = screen.getByPlaceholderText('Eigene Antwort...')
@@ -80,7 +80,7 @@ describe('ClarificationBubble', () => {
 
   it('zeigt beantworteten Zustand mit hervorgehobener Antwort', () => {
     render(
-      <ClarificationBubble
+      <ClarificationInline
         {...defaultProps}
         isAnswered
         answeredValue="Links"
@@ -95,19 +95,13 @@ describe('ClarificationBubble', () => {
   })
 
   it('hat role="group" und aria-label', () => {
-    const { container } = render(<ClarificationBubble {...defaultProps} />)
+    const { container } = render(<ClarificationInline {...defaultProps} />)
     const group = container.querySelector('[role="group"]')
     expect(group).toHaveAttribute('aria-label', 'Nachfrage: Welche Seite?')
   })
 
-  it('hat Received-Bubble Styling', () => {
-    const { container } = render(<ClarificationBubble {...defaultProps} />)
-    const bubble = container.querySelector('.bg-card')
-    expect(bubble).toHaveClass('rounded-2xl', 'rounded-bl-sm', 'shadow-sm')
-  })
-
   it('Chips haben min-h-11 Touch-Target', () => {
-    render(<ClarificationBubble {...defaultProps} />)
+    render(<ClarificationInline {...defaultProps} />)
     const chip = screen.getByRole('button', { name: 'Links' })
     expect(chip).toHaveClass('min-h-11')
   })
@@ -118,7 +112,7 @@ describe('ClarificationBubble', () => {
       allowFreeText: false,
     }
     render(
-      <ClarificationBubble {...defaultProps} question={noFreeTextQuestion} />,
+      <ClarificationInline {...defaultProps} question={noFreeTextQuestion} />,
     )
 
     expect(

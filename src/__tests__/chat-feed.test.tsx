@@ -128,7 +128,7 @@ describe('ChatFeed', () => {
     expect(screen.getByText('Gespeichert ✓')).toBeInTheDocument()
   })
 
-  it('zeigt ClarificationBubble für unsichere Felder in extracted Events', () => {
+  it('zeigt Clarification-Fragen für unsichere Felder in extracted Events', () => {
     const extractedEvent: SymptomEvent = {
       ...mockEvent,
       status: 'extracted',
