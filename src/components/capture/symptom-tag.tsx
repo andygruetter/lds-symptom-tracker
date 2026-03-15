@@ -4,6 +4,20 @@ import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
+const FIELD_LABELS: Record<string, string> = {
+  symptom_name: 'Symptom',
+  body_region: 'Körperregion',
+  side: 'Seite',
+  symptom_type: 'Art',
+  intensity: 'Stärke',
+  symptom_time: 'Zeitpunkt',
+  duration: 'Dauer',
+}
+
+function getFieldLabel(fieldName: string): string {
+  return FIELD_LABELS[fieldName] ?? fieldName
+}
+
 interface SymptomTagProps {
   label: string
   value: string
@@ -71,7 +85,9 @@ export function SymptomTag({
   if (isEditing) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-foreground/40 px-2.5 py-1">
-        <span className="text-xs text-muted-foreground">{label}:</span>
+        <span className="text-xs text-muted-foreground">
+          {getFieldLabel(label)}:
+        </span>
         {options && options.length > 0 ? (
           <select
             value={editValue}
@@ -115,7 +131,7 @@ export function SymptomTag({
     <button
       type="button"
       role="button"
-      aria-label={`${label} ändern`}
+      aria-label={`${getFieldLabel(label)} ändern`}
       onClick={onStartEdit}
       className={cn(
         'inline-flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs',
