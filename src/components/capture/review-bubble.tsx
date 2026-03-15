@@ -124,6 +124,155 @@ function getField(
   return fields.find((f) => f.field_name === name)
 }
 
+function groupBySymptomIndex(fields: ExtractedData[]): ExtractedData[][] {
+  const groups = new Map<number, ExtractedData[]>()
+  for (const field of fields) {
+    const idx = field.symptom_index ?? 0
+    if (!groups.has(idx)) groups.set(idx, [])
+    groups.get(idx)!.push(field)
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, fields]) => fields)
+}
+
+function SingleSymptomReview({
+  fields,
+  editingField,
+  setEditingField,
+  handleEdit,
+}: {
+  fields: ExtractedData[]
+  editingField: string | null
+  setEditingField: (id: string | null) => void
+  handleEdit: (fieldName: string, newValue: string) => void
+}) {
+  const visibleFields = fields.filter(
+    (f) => f.value !== '<UNKNOWN>' && f.value !== 'UNKNOWN',
+  )
+
+  const symptomName = getFieldValue(fields, 'symptom_name')
+  const bodyRegion = getFieldValue(fields, 'body_region')
+  const side = getFieldValue(fields, 'side')
+  const symptomType = getFieldValue(fields, 'symptom_type')
+  const intensity = getFieldValue(fields, 'intensity')
+  const symptomTime = getFieldValue(fields, 'symptom_time')
+  const duration = getFieldValue(fields, 'duration')
+
+  const locationParts = [bodyRegion, side].filter(Boolean)
+  if (symptomType) locationParts.push(symptomType)
+  const severityInfo = intensity ? getSeverityInfo(intensity) : null
+  const formattedTime = symptomTime ? formatSymptomTimestamp(symptomTime) : null
+  const formattedDuration = duration ? formatDurationMinutes(duration) : null
+
+  const extraFields = visibleFields.filter(
+    (f) => !STRUCTURED_FIELDS.has(f.field_name),
+  )
+
+  function renderEditableField(
+    fieldName: string,
+    displayContent: React.ReactNode,
+  ) {
+    const field = getField(fields, fieldName)
+    if (!field) return null
+
+    if (editingField === field.id) {
+      return (
+        <SymptomTag
+          label={field.field_name}
+          value={field.value}
+          confidence={field.confidence}
+          editable={!field.confirmed}
+          isEditing
+          onStartEdit={() => setEditingField(field.id)}
+          onEdit={(newValue) => handleEdit(field.field_name, newValue)}
+          onCancelEdit={() => setEditingField(null)}
+        />
+      )
+    }
+
+    if (field.confirmed) {
+      return displayContent
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => setEditingField(field.id)}
+        className="min-h-[44px] w-full text-left active:opacity-60"
+        aria-label={`${FIELD_LABELS[fieldName] ?? fieldName} ändern`}
+      >
+        {displayContent}
+      </button>
+    )
+  }
+
+  if (visibleFields.length === 0) return null
+
+  return (
+    <div className="space-y-1.5">
+      {symptomName &&
+        renderEditableField(
+          'symptom_name',
+          <p className="text-sm font-semibold text-foreground">
+            {symptomName}
+          </p>,
+        )}
+
+      {(locationParts.length > 0 || severityInfo) && (
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+          {locationParts.length > 0 && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="size-3 shrink-0" aria-hidden="true" />
+              <span className="break-words">{locationParts.join(' · ')}</span>
+            </span>
+          )}
+          {locationParts.length > 0 && severityInfo && (
+            <span aria-hidden="true">·</span>
+          )}
+          {severityInfo && (
+            <span className="inline-flex items-center gap-1">
+              <span
+                className={cn(
+                  'inline-block size-2 shrink-0 rounded-full',
+                  severityInfo.colorClass,
+                )}
+                aria-hidden="true"
+              />
+              {severityInfo.label}
+            </span>
+          )}
+        </div>
+      )}
+
+      {(formattedTime || formattedDuration) && (
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Clock className="size-3 shrink-0" aria-hidden="true" />
+          {[formattedTime, formattedDuration].filter(Boolean).join(' · ')}
+        </p>
+      )}
+
+      {extraFields.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
+          {extraFields.map((field) => (
+            <SymptomTag
+              key={field.id}
+              label={field.field_name}
+              value={field.value}
+              confidence={field.confidence}
+              editable={!field.confirmed}
+              isEditing={editingField === field.id}
+              onStartEdit={() => setEditingField(field.id)}
+              onEdit={(newValue) => handleEdit(field.field_name, newValue)}
+              onCancelEdit={() => setEditingField(null)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ReviewBubble({
   extractedFields,
   eventId,
@@ -169,138 +318,25 @@ export function ReviewBubble({
   )
   const hasVisibleFields = visibleFields.length > 0
 
-  // Structured field values
-  const symptomName = getFieldValue(extractedFields, 'symptom_name')
-  const bodyRegion = getFieldValue(extractedFields, 'body_region')
-  const side = getFieldValue(extractedFields, 'side')
-  const symptomType = getFieldValue(extractedFields, 'symptom_type')
-  const intensity = getFieldValue(extractedFields, 'intensity')
-  const symptomTime = getFieldValue(extractedFields, 'symptom_time')
-  const duration = getFieldValue(extractedFields, 'duration')
-
-  const locationParts = [bodyRegion, side].filter(Boolean)
-  if (symptomType) locationParts.push(symptomType)
-  const severityInfo = intensity ? getSeverityInfo(intensity) : null
-  const formattedTime = symptomTime ? formatSymptomTimestamp(symptomTime) : null
-  const formattedDuration = duration ? formatDurationMinutes(duration) : null
-
-  // Extra fields not handled by the structured layout
-  const extraFields = visibleFields.filter(
-    (f) => !STRUCTURED_FIELDS.has(f.field_name),
-  )
-
+  const symptomGroups = groupBySymptomIndex(visibleFields)
   const confidenceInfo = getConfidenceLabel(avgConfidence)
-
-  // Render a field as SymptomTag when editing, otherwise as structured text
-  function renderEditableField(
-    fieldName: string,
-    displayContent: React.ReactNode,
-  ) {
-    const field = getField(extractedFields, fieldName)
-    if (!field) return null
-
-    if (editingField === field.id) {
-      return (
-        <SymptomTag
-          label={field.field_name}
-          value={field.value}
-          confidence={field.confidence}
-          editable={!field.confirmed}
-          isEditing
-          onStartEdit={() => setEditingField(field.id)}
-          onEdit={(newValue) => handleEdit(field.field_name, newValue)}
-          onCancelEdit={() => setEditingField(null)}
-        />
-      )
-    }
-
-    if (field.confirmed) {
-      return displayContent
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={() => setEditingField(field.id)}
-        className="min-h-[44px] w-full text-left active:opacity-60"
-        aria-label={`${FIELD_LABELS[fieldName] ?? fieldName} ändern`}
-      >
-        {displayContent}
-      </button>
-    )
-  }
 
   return (
     <div className="flex justify-start">
       <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-card px-4 py-3 text-card-foreground shadow-sm">
         {hasVisibleFields ? (
-          <div className="space-y-1.5">
-            {/* Primary: Symptom name */}
-            {symptomName &&
-              renderEditableField(
-                'symptom_name',
-                <p className="text-sm font-semibold text-foreground">
-                  {symptomName}
-                </p>,
-              )}
-
-            {/* Secondary: Location, type, intensity */}
-            {(locationParts.length > 0 || severityInfo) && (
-              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
-                {locationParts.length > 0 && (
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="size-3 shrink-0" aria-hidden="true" />
-                    <span className="break-words">
-                      {locationParts.join(' · ')}
-                    </span>
-                  </span>
-                )}
-                {locationParts.length > 0 && severityInfo && (
-                  <span aria-hidden="true">·</span>
-                )}
-                {severityInfo && (
-                  <span className="inline-flex items-center gap-1">
-                    <span
-                      className={cn(
-                        'inline-block size-2 shrink-0 rounded-full',
-                        severityInfo.colorClass,
-                      )}
-                      aria-hidden="true"
-                    />
-                    {severityInfo.label}
-                  </span>
-                )}
+          <div className="space-y-2">
+            {symptomGroups.map((group, i) => (
+              <div key={i}>
+                {i > 0 && <div className="mb-2 border-t border-border/50" />}
+                <SingleSymptomReview
+                  fields={group}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  handleEdit={handleEdit}
+                />
               </div>
-            )}
-
-            {/* Tertiary: Time + Duration */}
-            {(formattedTime || formattedDuration) && (
-              <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="size-3 shrink-0" aria-hidden="true" />
-                {[formattedTime, formattedDuration].filter(Boolean).join(' · ')}
-              </p>
-            )}
-
-            {/* Extra fields as tags */}
-            {extraFields.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {extraFields.map((field) => (
-                  <SymptomTag
-                    key={field.id}
-                    label={field.field_name}
-                    value={field.value}
-                    confidence={field.confidence}
-                    editable={!field.confirmed}
-                    isEditing={editingField === field.id}
-                    onStartEdit={() => setEditingField(field.id)}
-                    onEdit={(newValue) =>
-                      handleEdit(field.field_name, newValue)
-                    }
-                    onCancelEdit={() => setEditingField(null)}
-                  />
-                ))}
-              </div>
-            )}
+            ))}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

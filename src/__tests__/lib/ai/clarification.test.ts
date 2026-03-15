@@ -15,6 +15,7 @@ function makeField(
     value: 'test-value',
     confirmed: false,
     created_at: '2026-03-03T10:00:00Z',
+    symptom_index: 0,
     ...overrides,
   }
 }

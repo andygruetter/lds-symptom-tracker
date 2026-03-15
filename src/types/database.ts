@@ -9,47 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      audit_log: {
-        Row: {
-          id: string
-          account_id: string
-          sharing_link_id: string
-          action: string
-          accessed_at: string
-          ip_address_hash: string | null
-          metadata: Json | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          account_id: string
-          sharing_link_id: string
-          action: string
-          accessed_at?: string
-          ip_address_hash?: string | null
-          metadata?: Json | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          account_id?: string
-          sharing_link_id?: string
-          action?: string
-          accessed_at?: string
-          ip_address_hash?: string | null
-          metadata?: Json | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'audit_log_sharing_link_id_fkey'
-            columns: ['sharing_link_id']
-            isOneToOne: false
-            referencedRelation: 'sharing_links'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       accounts: {
         Row: {
           created_at: string
@@ -70,6 +29,47 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      audit_log: {
+        Row: {
+          accessed_at: string
+          account_id: string
+          action: string
+          created_at: string
+          id: string
+          ip_address_hash: string | null
+          metadata: Json | null
+          sharing_link_id: string
+        }
+        Insert: {
+          accessed_at?: string
+          account_id: string
+          action: string
+          created_at?: string
+          id?: string
+          ip_address_hash?: string | null
+          metadata?: Json | null
+          sharing_link_id: string
+        }
+        Update: {
+          accessed_at?: string
+          account_id?: string
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address_hash?: string | null
+          metadata?: Json | null
+          sharing_link_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'audit_log_sharing_link_id_fkey'
+            columns: ['sharing_link_id']
+            isOneToOne: false
+            referencedRelation: 'sharing_links'
+            referencedColumns: ['id']
+          },
+        ]
       }
       corrections: {
         Row: {
@@ -181,34 +181,34 @@ export type Database = {
       }
       extraction_metrics: {
         Row: {
-          id: string
-          symptom_event_id: string
           account_id: string
-          fields_extracted: number
-          fields_dropped: number
           avg_confidence: number
-          low_confidence_count: number
           created_at: string
+          fields_dropped: number
+          fields_extracted: number
+          id: string
+          low_confidence_count: number
+          symptom_event_id: string
         }
         Insert: {
-          id?: string
-          symptom_event_id: string
           account_id: string
-          fields_extracted?: number
-          fields_dropped?: number
           avg_confidence?: number
-          low_confidence_count?: number
           created_at?: string
+          fields_dropped?: number
+          fields_extracted?: number
+          id?: string
+          low_confidence_count?: number
+          symptom_event_id: string
         }
         Update: {
-          id?: string
-          symptom_event_id?: string
           account_id?: string
-          fields_extracted?: number
-          fields_dropped?: number
           avg_confidence?: number
-          low_confidence_count?: number
           created_at?: string
+          fields_dropped?: number
+          fields_extracted?: number
+          id?: string
+          low_confidence_count?: number
+          symptom_event_id?: string
         }
         Relationships: [
           {
@@ -285,37 +285,37 @@ export type Database = {
       }
       sharing_links: {
         Row: {
-          id: string
           account_id: string
-          token: string
+          created_at: string
           date_from: string
           date_to: string
           expires_at: string
+          id: string
           recipient_email: string | null
           revoked_at: string | null
-          created_at: string
+          token: string
         }
         Insert: {
-          id?: string
           account_id: string
-          token: string
+          created_at?: string
           date_from: string
           date_to: string
           expires_at: string
+          id?: string
           recipient_email?: string | null
           revoked_at?: string | null
-          created_at?: string
+          token: string
         }
         Update: {
-          id?: string
           account_id?: string
-          token?: string
+          created_at?: string
           date_from?: string
           date_to?: string
           expires_at?: string
+          id?: string
           recipient_email?: string | null
           revoked_at?: string | null
-          created_at?: string
+          token?: string
         }
         Relationships: []
       }
@@ -364,6 +364,7 @@ export type Database = {
     }
     Functions: {
       cleanup_deleted_accounts: { Args: never; Returns: undefined }
+      cleanup_deleted_events: { Args: never; Returns: undefined }
       upsert_vocabulary_entry: {
         Args: {
           p_account_id: string

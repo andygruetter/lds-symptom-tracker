@@ -47,6 +47,18 @@ function getFieldValue(
   return fields.find((f) => f.field_name === name)?.value
 }
 
+function groupBySymptomIndex(fields: ExtractedData[]): ExtractedData[][] {
+  const groups = new Map<number, ExtractedData[]>()
+  for (const field of fields) {
+    const idx = field.symptom_index ?? 0
+    if (!groups.has(idx)) groups.set(idx, [])
+    groups.get(idx)!.push(field)
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, fields]) => fields)
+}
+
 function formatSymptomTimestamp(isoString: string): string {
   const date = new Date(isoString)
   if (isNaN(date.getTime())) return isoString
@@ -108,43 +120,8 @@ const KNOWN_MEDICATION_FIELDS = new Set([
   'reason',
 ])
 
-function ConfirmedFieldsSummary({
-  fields,
-  isMedication,
-}: {
-  fields: ExtractedData[]
-  isMedication: boolean
-}) {
+function SingleSymptomSummary({ fields }: { fields: ExtractedData[] }) {
   const get = (name: string) => getFieldValue(fields, name)
-
-  if (isMedication) {
-    const medName = get('medication_name')
-    const action = get('action')
-    const dosage = get('dosage')
-    const reason = get('reason')
-    const unknownFields = fields.filter(
-      (f) => !KNOWN_MEDICATION_FIELDS.has(f.field_name),
-    )
-
-    return (
-      <div className="mt-1.5">
-        {medName && <p className="text-sm font-semibold">{medName}</p>}
-        <div className="mt-1 space-y-0.5">
-          {(action || dosage) && (
-            <p className="text-xs text-muted-foreground">
-              {[action, dosage].filter(Boolean).join(' · ')}
-            </p>
-          )}
-          {reason && <p className="text-xs text-muted-foreground">{reason}</p>}
-          {unknownFields.map((f) => (
-            <p key={f.id} className="text-xs text-muted-foreground">
-              {f.value}
-            </p>
-          ))}
-        </div>
-      </div>
-    )
-  }
 
   const symptomName = get('symptom_name')
   const bodyRegion = get('body_region')
@@ -168,9 +145,9 @@ function ConfirmedFieldsSummary({
   )
 
   return (
-    <div className="mt-1.5">
+    <div>
       {symptomName && <p className="text-sm font-semibold">{symptomName}</p>}
-      <div className="mt-1 space-y-0.5">
+      <div className="mt-0.5 space-y-0.5">
         {(line1Parts.length > 0 || severityInfo) && (
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             {line1Parts.length > 0 && <span>{line1Parts.join(' · ')}</span>}
@@ -199,6 +176,57 @@ function ConfirmedFieldsSummary({
           </p>
         ))}
       </div>
+    </div>
+  )
+}
+
+function ConfirmedFieldsSummary({
+  fields,
+  isMedication,
+}: {
+  fields: ExtractedData[]
+  isMedication: boolean
+}) {
+  if (isMedication) {
+    const get = (name: string) => getFieldValue(fields, name)
+    const medName = get('medication_name')
+    const action = get('action')
+    const dosage = get('dosage')
+    const reason = get('reason')
+    const unknownFields = fields.filter(
+      (f) => !KNOWN_MEDICATION_FIELDS.has(f.field_name),
+    )
+
+    return (
+      <div className="mt-1.5">
+        {medName && <p className="text-sm font-semibold">{medName}</p>}
+        <div className="mt-1 space-y-0.5">
+          {(action || dosage) && (
+            <p className="text-xs text-muted-foreground">
+              {[action, dosage].filter(Boolean).join(' · ')}
+            </p>
+          )}
+          {reason && <p className="text-xs text-muted-foreground">{reason}</p>}
+          {unknownFields.map((f) => (
+            <p key={f.id} className="text-xs text-muted-foreground">
+              {f.value}
+            </p>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const symptomGroups = groupBySymptomIndex(fields)
+
+  return (
+    <div className="mt-1.5 space-y-2">
+      {symptomGroups.map((group, i) => (
+        <div key={i}>
+          {i > 0 && <div className="mb-2 border-t border-border/50" />}
+          <SingleSymptomSummary fields={group} />
+        </div>
+      ))}
     </div>
   )
 }

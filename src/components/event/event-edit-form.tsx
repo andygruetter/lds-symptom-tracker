@@ -61,6 +61,18 @@ function durationToMinutes(value: string, unit: DurationUnit): string {
   return String(Math.round(num))
 }
 
+function groupBySymptomIndex(fields: ExtractedData[]): ExtractedData[][] {
+  const groups = new Map<number, ExtractedData[]>()
+  for (const field of fields) {
+    const idx = field.symptom_index ?? 0
+    if (!groups.has(idx)) groups.set(idx, [])
+    groups.get(idx)!.push(field)
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, fields]) => fields)
+}
+
 interface EventEditFormProps {
   event: SymptomEvent
   extractedFields: ExtractedData[]
@@ -82,23 +94,46 @@ export function EventEditForm({
 }: EventEditFormProps) {
   const router = useRouter()
 
+  const symptomGroups = groupBySymptomIndex(extractedFields)
+  const isMultiSymptom = symptomGroups.length > 1
+
+  // Build keyed field maps: "fieldName" for single, "fieldName:index" for multi
+  function fieldKey(name: string, symptomIndex: number): string {
+    return isMultiSymptom ? `${name}:${symptomIndex}` : name
+  }
+
   // Build initial values map from extracted fields
-  const fieldMap = Object.fromEntries(
-    extractedFields.map((f) => [f.field_name, f]),
-  )
+  const buildFieldMap = () => {
+    const map: Record<string, ExtractedData> = {}
+    for (const group of symptomGroups) {
+      const idx = group[0]?.symptom_index ?? 0
+      for (const f of group) {
+        map[fieldKey(f.field_name, idx)] = f
+      }
+    }
+    return map
+  }
+
+  const fieldMap = buildFieldMap()
+
+  // Build all keys: for multi-symptom, each group gets all field names
+  const allKeys = isMultiSymptom
+    ? symptomGroups.flatMap((group) => {
+        const idx = group[0]?.symptom_index ?? 0
+        return allFieldNames.map((name) => fieldKey(name, idx))
+      })
+    : allFieldNames
 
   const initialValues = useRef<Record<string, string>>(
-    Object.fromEntries(
-      allFieldNames.map((name) => [name, fieldMap[name]?.value ?? '']),
-    ),
+    Object.fromEntries(allKeys.map((key) => [key, fieldMap[key]?.value ?? ''])),
   )
 
   const [fields, setFields] = useState<Record<string, FieldState>>(
     Object.fromEntries(
-      allFieldNames.map((name) => [
-        name,
+      allKeys.map((key) => [
+        key,
         {
-          value: fieldMap[name]?.value ?? '',
+          value: fieldMap[key]?.value ?? '',
           saving: false,
           error: null,
         },
@@ -106,8 +141,11 @@ export function EventEditForm({
     ),
   )
 
-  // Duration unit state
-  const durationInitial = parseDuration(fieldMap['duration']?.value ?? '')
+  // Duration unit state (use first symptom group's duration)
+  const durationKey = isMultiSymptom
+    ? fieldKey('duration', symptomGroups[0]?.[0]?.symptom_index ?? 0)
+    : 'duration'
+  const durationInitial = parseDuration(fieldMap[durationKey]?.value ?? '')
   const [durationUnit, setDurationUnit] = useState<DurationUnit>(
     durationInitial.unit,
   )
@@ -122,16 +160,21 @@ export function EventEditForm({
     }
   }
 
-  const saveField = async (fieldName: string, newValue: string) => {
+  const saveField = async (
+    key: string,
+    fieldName: string,
+    newValue: string,
+    symptomIndex: number = 0,
+  ) => {
     // F8-Fix: Dirty-Check — nur bei tatsächlicher Änderung speichern
-    if (newValue === initialValues.current[fieldName]) return
+    if (newValue === initialValues.current[key]) return
     if (!newValue.trim()) {
       // Felder können nicht geleert werden — Display auf ursprünglichen Wert zurücksetzen
       setFields((prev) => ({
         ...prev,
-        [fieldName]: {
-          ...prev[fieldName],
-          value: initialValues.current[fieldName],
+        [key]: {
+          ...prev[key],
+          value: initialValues.current[key],
         },
       }))
       return
@@ -139,47 +182,53 @@ export function EventEditForm({
 
     setFields((prev) => ({
       ...prev,
-      [fieldName]: { ...prev[fieldName], saving: true, error: null },
+      [key]: { ...prev[key], saving: true, error: null },
     }))
 
     const result = await correctExtractedField({
       eventId: event.id,
       fieldName,
       newValue,
+      symptomIndex,
     })
 
     if (result.error) {
       setFields((prev) => ({
         ...prev,
-        [fieldName]: {
-          ...prev[fieldName],
+        [key]: {
+          ...prev[key],
           saving: false,
           error: result.error!.error,
         },
       }))
     } else {
       // Update initial value so next blur doesn't re-save
-      initialValues.current[fieldName] = newValue
+      initialValues.current[key] = newValue
       setFields((prev) => ({
         ...prev,
-        [fieldName]: { ...prev[fieldName], saving: false, error: null },
+        [key]: { ...prev[key], saving: false, error: null },
       }))
     }
   }
 
-  const handleBlur = (fieldName: string) => {
-    const value = fields[fieldName].value
-    saveField(fieldName, value)
+  const handleBlur = (
+    key: string,
+    fieldName: string,
+    symptomIndex: number = 0,
+  ) => {
+    const value = fields[key].value
+    saveField(key, fieldName, value, symptomIndex)
   }
 
-  const handleDurationBlur = () => {
+  const handleDurationBlur = (symptomIndex: number = 0) => {
     const minutes = durationToMinutes(durationDisplay, durationUnit)
+    const key = fieldKey('duration', symptomIndex)
     if (minutes) {
       setFields((prev) => ({
         ...prev,
-        duration: { ...prev.duration, value: minutes },
+        [key]: { ...prev[key], value: minutes },
       }))
-      saveField('duration', minutes)
+      saveField(key, 'duration', minutes, symptomIndex)
     }
   }
 
@@ -209,12 +258,12 @@ export function EventEditForm({
     }
   }
 
-  const handleSymptomTimeChange = (datetimeLocalValue: string) => {
+  const handleSymptomTimeChange = (key: string, datetimeLocalValue: string) => {
     // Convert datetime-local to ISO-8601 with timezone offset
     if (!datetimeLocalValue) {
       setFields((prev) => ({
         ...prev,
-        symptom_time: { ...prev.symptom_time, value: '' },
+        [key]: { ...prev[key], value: '' },
       }))
       return
     }
@@ -222,23 +271,25 @@ export function EventEditForm({
     const isoValue = new Date(datetimeLocalValue).toISOString()
     setFields((prev) => ({
       ...prev,
-      symptom_time: { ...prev.symptom_time, value: isoValue },
+      [key]: { ...prev[key], value: isoValue },
     }))
   }
 
-  const handleSymptomTimeBlur = () => {
-    saveField('symptom_time', fields.symptom_time.value)
+  const handleSymptomTimeBlur = (key: string, symptomIndex: number = 0) => {
+    saveField(key, 'symptom_time', fields[key].value, symptomIndex)
   }
 
-  const renderField = (fieldName: string) => {
-    const fieldState = fields[fieldName]
-    const extractedField = fieldMap[fieldName]
+  const renderField = (fieldName: string, symptomIndex: number = 0) => {
+    const key = fieldKey(fieldName, symptomIndex)
+    const fieldState = fields[key]
+    if (!fieldState) return null
+    const extractedField = fieldMap[key]
     const hasValue = !!fieldState.value
     const confidence = extractedField?.confidence ?? null
     const isLowConfidence = confidence !== null && confidence < 70
 
     return (
-      <div key={fieldName} className="flex flex-col gap-1.5">
+      <div key={key} className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium text-muted-foreground">
             {FIELD_LABELS[fieldName] ?? fieldName}
@@ -283,7 +334,7 @@ export function EventEditForm({
               step={durationUnit === 'tage' ? 0.5 : 1}
               value={durationDisplay}
               onChange={(e) => setDurationDisplay(e.target.value)}
-              onBlur={handleDurationBlur}
+              onBlur={() => handleDurationBlur(symptomIndex)}
               placeholder={hasValue ? undefined : 'Nicht erfasst'}
               className="h-14 flex-1 rounded-xl border border-border bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
@@ -309,8 +360,8 @@ export function EventEditForm({
           <input
             type="datetime-local"
             value={formatForDatetimeLocal(fieldState.value)}
-            onChange={(e) => handleSymptomTimeChange(e.target.value)}
-            onBlur={handleSymptomTimeBlur}
+            onChange={(e) => handleSymptomTimeChange(key, e.target.value)}
+            onBlur={() => handleSymptomTimeBlur(key, symptomIndex)}
             className="h-14 rounded-xl border border-border bg-background px-4 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         ) : fieldName === 'side' ? (
@@ -327,9 +378,9 @@ export function EventEditForm({
                   const next = fieldState.value === value ? '' : value
                   setFields((prev) => ({
                     ...prev,
-                    [fieldName]: { ...prev[fieldName], value: next },
+                    [key]: { ...prev[key], value: next },
                   }))
-                  saveField(fieldName, next)
+                  saveField(key, fieldName, next, symptomIndex)
                 }}
                 className={cn(
                   'h-14 flex-1 text-sm font-medium transition-colors',
@@ -365,11 +416,11 @@ export function EventEditForm({
               onChange={(e) =>
                 setFields((prev) => ({
                   ...prev,
-                  [fieldName]: { ...prev[fieldName], value: e.target.value },
+                  [key]: { ...prev[key], value: e.target.value },
                 }))
               }
-              onPointerUp={() => handleBlur(fieldName)}
-              onTouchEnd={() => handleBlur(fieldName)}
+              onPointerUp={() => handleBlur(key, fieldName, symptomIndex)}
+              onTouchEnd={() => handleBlur(key, fieldName, symptomIndex)}
               className="h-2 w-full cursor-pointer accent-primary"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -385,10 +436,10 @@ export function EventEditForm({
             onChange={(e) =>
               setFields((prev) => ({
                 ...prev,
-                [fieldName]: { ...prev[fieldName], value: e.target.value },
+                [key]: { ...prev[key], value: e.target.value },
               }))
             }
-            onBlur={() => handleBlur(fieldName)}
+            onBlur={() => handleBlur(key, fieldName, symptomIndex)}
             placeholder="Nicht erfasst"
             className="h-14 rounded-xl border border-border bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
@@ -429,30 +480,78 @@ export function EventEditForm({
           </div>
         )}
 
-        {/* Zeitpunkt & Dauer */}
-        <div className="mb-5">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">
-            Zeitpunkt &amp; Dauer
-          </h2>
-          <div className="flex flex-col gap-4">
-            {renderField('symptom_time')}
-            {renderField('duration')}
-          </div>
-        </div>
+        {isMultiSymptom ? (
+          <>
+            {/* Zeitpunkt & Dauer — shared across symptoms (from first group) */}
+            <div className="mb-5">
+              <h2 className="mb-3 text-sm font-semibold text-foreground">
+                Zeitpunkt &amp; Dauer
+              </h2>
+              <div className="flex flex-col gap-4">
+                {renderField(
+                  'symptom_time',
+                  symptomGroups[0]?.[0]?.symptom_index ?? 0,
+                )}
+                {renderField(
+                  'duration',
+                  symptomGroups[0]?.[0]?.symptom_index ?? 0,
+                )}
+              </div>
+            </div>
 
-        {/* Symptom-Details */}
-        <div className="mb-5">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">
-            Symptom-Details
-          </h2>
-          <div className="flex flex-col gap-4">
-            {renderField('symptom_name')}
-            {renderField('body_region')}
-            {renderField('side')}
-            {renderField('symptom_type')}
-            {renderField('intensity')}
-          </div>
-        </div>
+            {/* Per-symptom detail sections */}
+            {symptomGroups.map((group, i) => {
+              const idx = group[0]?.symptom_index ?? 0
+              const groupFieldMap = Object.fromEntries(
+                group.map((f) => [f.field_name, f]),
+              )
+              const symptomLabel =
+                groupFieldMap['symptom_name']?.value ?? `Symptom ${i + 1}`
+
+              return (
+                <div key={idx} className="mb-5">
+                  <h2 className="mb-3 text-sm font-semibold text-foreground">
+                    {symptomLabel}
+                  </h2>
+                  <div className="flex flex-col gap-4">
+                    {renderField('symptom_name', idx)}
+                    {renderField('body_region', idx)}
+                    {renderField('side', idx)}
+                    {renderField('symptom_type', idx)}
+                    {renderField('intensity', idx)}
+                  </div>
+                </div>
+              )
+            })}
+          </>
+        ) : (
+          <>
+            {/* Zeitpunkt & Dauer */}
+            <div className="mb-5">
+              <h2 className="mb-3 text-sm font-semibold text-foreground">
+                Zeitpunkt &amp; Dauer
+              </h2>
+              <div className="flex flex-col gap-4">
+                {renderField('symptom_time')}
+                {renderField('duration')}
+              </div>
+            </div>
+
+            {/* Symptom-Details */}
+            <div className="mb-5">
+              <h2 className="mb-3 text-sm font-semibold text-foreground">
+                Symptom-Details
+              </h2>
+              <div className="flex flex-col gap-4">
+                {renderField('symptom_name')}
+                {renderField('body_region')}
+                {renderField('side')}
+                {renderField('symptom_type')}
+                {renderField('intensity')}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Änderungshistorie */}
         <CorrectionHistory corrections={corrections} />

@@ -13,6 +13,7 @@ const mockFields: ExtractedData[] = [
     confidence: 92,
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
   },
   {
     id: 'field-2',
@@ -22,6 +23,7 @@ const mockFields: ExtractedData[] = [
     confidence: 75,
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
   },
   {
     id: 'field-3',
@@ -31,6 +33,7 @@ const mockFields: ExtractedData[] = [
     confidence: 88,
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
   },
 ]
 
@@ -67,6 +70,7 @@ describe('ReviewBubble', () => {
         confidence: 80,
         confirmed: false,
         created_at: '2026-03-02T10:00:00Z',
+        symptom_index: 0,
       },
     ]
     render(<ReviewBubble {...defaultProps} extractedFields={fieldsWithTime} />)
@@ -140,6 +144,7 @@ describe('ReviewBubble', () => {
         confidence: 70,
         confirmed: false,
         created_at: '2026-03-02T10:00:00Z',
+        symptom_index: 0,
       },
     ]
     render(<ReviewBubble {...defaultProps} extractedFields={fieldsWithExtra} />)

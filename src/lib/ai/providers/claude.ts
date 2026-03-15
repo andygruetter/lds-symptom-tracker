@@ -282,11 +282,7 @@ Entscheide ob es sich um ein Symptom oder ein Medikament handelt.
 ## Schritt 2: Felder extrahieren
 
 ### Bei Symptomen extrahiere:
-- symptom_name: Standardisierter Name. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.symptomNames.join(', ')}
-
-## Synonym-Normalisierung
-WICHTIG: Verwende IMMER den kanonischen Begriff, auch wenn der Patient ein Synonym verwendet:
-${SYMPTOM_TAXONOMY.synonyms.map(([from, to]) => `- "${from}" → "${to}"`).join('\n')}
+- symptom_name: Bezeichnung des Symptoms. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.symptomNames.join(', ')}
 - body_region: Körperregion. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.bodyRegions.join(', ')}
 - side: "links", "rechts", "beidseits" oder null
 - symptom_type: Art des Symptoms. Bevorzuge: ${SYMPTOM_TAXONOMY.symptomTypes.join(', ')}
@@ -467,6 +463,17 @@ const extractionTool: Anthropic.Messages.Tool = {
   },
 }
 
+// Synonym-Lookup für Post-Processing-Normalisierung (case-insensitive)
+const synonymLookup = new Map<string, string>(
+  SYMPTOM_TAXONOMY.synonyms.map(([from, to]) => [from.toLowerCase(), to]),
+)
+
+/** Normalisiert extrahierte Werte anhand der Synonym-Tabelle */
+function normalizeExtractedValue(fieldName: string, value: string): string {
+  if (fieldName !== 'symptom_name') return value
+  return synonymLookup.get(value.toLowerCase()) ?? value
+}
+
 function createClient(): Anthropic {
   return new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
@@ -513,6 +520,13 @@ export const claudeProvider: ExtractionProvider = {
       throw new Error(`Invalid extraction result: ${parsed.error.message}`)
     }
 
-    return parsed.data
+    // Post-Processing: Synonyme normalisieren
+    const result = parsed.data
+    result.fields = result.fields.map((field) => ({
+      ...field,
+      value: normalizeExtractedValue(field.fieldName, field.value),
+    }))
+
+    return result
   },
 }

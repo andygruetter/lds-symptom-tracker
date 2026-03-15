@@ -163,6 +163,7 @@ describe('EventEditForm', () => {
         eventId: 'event-1',
         fieldName: 'symptom_name',
         newValue: 'Migräne',
+        symptomIndex: 0,
       })
     })
   })

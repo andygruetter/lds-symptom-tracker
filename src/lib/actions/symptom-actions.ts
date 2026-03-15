@@ -347,7 +347,7 @@ export async function correctExtractedField(
     }
   }
 
-  const { eventId, fieldName, newValue } = parsed.data
+  const { eventId, fieldName, newValue, symptomIndex } = parsed.data
 
   // 3. Ownership-Check (F5-Fix): Sicherstellen dass Event dem User gehört
   const { data: ownedEvent } = await supabase
@@ -370,6 +370,7 @@ export async function correctExtractedField(
     .select()
     .eq('symptom_event_id', eventId)
     .eq('field_name', fieldName)
+    .eq('symptom_index', symptomIndex)
     .single()
 
   let resultField: ExtractedData
@@ -384,6 +385,7 @@ export async function correctExtractedField(
         value: newValue,
         confidence: 100,
         confirmed: true,
+        symptom_index: symptomIndex,
       })
       .select()
       .single()
@@ -435,6 +437,7 @@ export async function correctExtractedField(
       .update({ value: newValue, confirmed: true })
       .eq('symptom_event_id', eventId)
       .eq('field_name', fieldName)
+      .eq('symptom_index', symptomIndex)
       .select()
       .single()
 

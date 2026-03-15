@@ -33,6 +33,7 @@ export const correctExtractedFieldSchema = z.object({
   eventId: z.string().uuid('Ungültige Event-ID'),
   fieldName: z.string().min(1, 'Feldname darf nicht leer sein'),
   newValue: z.string().min(1, 'Neuer Wert darf nicht leer sein'),
+  symptomIndex: z.number().int().min(0).optional().default(0),
 })
 
 export type CorrectExtractedFieldInput = z.infer<

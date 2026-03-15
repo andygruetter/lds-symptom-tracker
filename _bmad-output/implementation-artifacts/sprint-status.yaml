@@ -89,12 +89,12 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Arzt-Dashboard & PDF-Export
-  epic-6: backlog
-  6-1-arzt-dashboard-ki-zusammenfassung: backlog
-  6-2-arzt-timeline: backlog
+  epic-6: in-progress
+  6-1-arzt-dashboard-ki-zusammenfassung: ready-for-dev
+  6-2-arzt-timeline: ready-for-dev
   6-3-arzt-symptom-ranking: backlog
   6-4-arzt-drill-down: backlog
-  6-5-pdf-report: backlog
+  6-5-pdf-report: ready-for-dev
   epic-6-retrospective: optional
 
   # Epic 7: Marketing-Seite
