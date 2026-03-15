@@ -20,7 +20,13 @@ function TrendLabel({
   return <span className="text-[#5A6270]">→</span>
 }
 
-function SparklineCell({ counts }: { counts: { count: number }[] }) {
+function SparklineCell({
+  counts,
+  color,
+}: {
+  counts: { count: number }[]
+  color: string
+}) {
   if (counts.length < 2) return <span className="text-muted-foreground">—</span>
 
   const maxCount = Math.max(...counts.map((c) => c.count), 1)
@@ -36,6 +42,12 @@ function SparklineCell({ counts }: { counts: { count: number }[] }) {
 
   const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ')
 
+  const fillPoints = [
+    ...points.map((p) => `${p.x},${p.y}`),
+    `${points[points.length - 1].x},${height}`,
+    `${points[0].x},${height}`,
+  ].join(' ')
+
   return (
     <svg
       width={width}
@@ -43,14 +55,14 @@ function SparklineCell({ counts }: { counts: { count: number }[] }) {
       viewBox={`0 0 ${width} ${height}`}
       aria-hidden="true"
     >
+      <polygon points={fillPoints} fill={color} fillOpacity={0.2} />
       <polyline
         points={polylinePoints}
         fill="none"
-        stroke="currentColor"
+        stroke={color}
         strokeWidth={1.5}
         strokeLinejoin="round"
         strokeLinecap="round"
-        className="text-muted-foreground"
       />
     </svg>
   )
@@ -121,11 +133,14 @@ export function DoctorRanking({ ranking }: Props) {
                     </td>
                     <td className="py-2 text-right text-muted-foreground">
                       {avgIntensity !== null
-                        ? `${avgIntensity.toFixed(1)}/10`
+                        ? `∅ ${avgIntensity.toFixed(1)}/10`
                         : '—'}
                     </td>
                     <td className="py-2 text-right">
-                      <SparklineCell counts={entry.monthlyCounts} />
+                      <SparklineCell
+                        counts={entry.monthlyCounts}
+                        color="#C06A3C"
+                      />
                     </td>
                   </tr>
                 )
@@ -179,7 +194,10 @@ export function DoctorRanking({ ranking }: Props) {
                   </td>
                   <td className="py-2 text-right text-muted-foreground">—</td>
                   <td className="py-2 text-right">
-                    <SparklineCell counts={entry.monthlyCounts} />
+                    <SparklineCell
+                      counts={entry.monthlyCounts}
+                      color="#4A7FA5"
+                    />
                   </td>
                 </tr>
               ))}

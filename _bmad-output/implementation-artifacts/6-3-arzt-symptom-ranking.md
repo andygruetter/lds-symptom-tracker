@@ -1,6 +1,6 @@
 # Story 6.3: Arzt-Symptom-Ranking mit Trendlinien
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -62,9 +62,9 @@ So that ich die häufigsten und sich verändernden Beschwerden des Patienten ide
   - [x] Audit-Log: `ranking_view` Action loggen (best-effort, optional — oder in `dashboard_view` subsumiert)
 
 - [x] Task 5: Tests (AC: #1-#10)
-  - [x] `src/__tests__/lib/db/sharing.test.ts` erweitern — `getSharedSymptomRanking()` Tests (5 Tests: leeres Ergebnis, DB-Fehler, Symptome + Medikamente, Sortierung, Timezone-Edge-Case, Unbekannt-Gruppe)
-  - [x] `src/__tests__/components/sharing/doctor-ranking.test.tsx` (NEU) — Rendering-Tests (6 Tests: Symptome anzeigen, Medikamente anzeigen, leerer Zustand, Arzt-Theme Styling, responsive Klassen, Platzhalter-Text nicht mehr vorhanden)
-  - [x] `src/__tests__/components/sharing/doctor-ranking-card.test.tsx` (NEU) — Card-Tests (8 Tests: Symptom-Variante, Medikament-Variante, Trend-Pfeile ↑/→/↓, Sparkline, keine Sparkline bei <2 Punkten, Intensität, Touch-Target, Arzt-Theme)
+  - [x] `src/__tests__/lib/db/sharing.test.ts` erweitern — `getSharedSymptomRanking()` Tests (6 Tests: leeres Ergebnis, DB-Fehler, Symptome + Medikamente, Sortierung, Timezone-Edge-Case, Unbekannt-Gruppe)
+  - [x] `src/__tests__/components/sharing/doctor-ranking.test.tsx` (NEU) — Rendering-Tests (7 Tests: Symptome anzeigen, Medikamente anzeigen, leerer Zustand, Arzt-Theme Styling, responsive Klassen, Desktop-Tabellen-Inhalte, Platzhalter-Text nicht mehr vorhanden)
+  - [x] `src/__tests__/components/sharing/doctor-ranking-card.test.tsx` (NEU) — Card-Tests (10 Tests: Symptom-Variante, Medikament-Variante, Trend-Pfeile ↑/→/↓, Sparkline, keine Sparkline bei <2 Punkten, Intensität, Touch-Target, Arzt-Theme)
   - [x] Alle bestehenden Tests müssen grün bleiben (keine Regressionen)
 
 - [x] Task 6: Build-Verifikation (AC: alle)
@@ -433,20 +433,20 @@ claude-sonnet-4-6
 - `doctor-ranking-card.tsx`: Reine Anzeige-Komponente, Arzt-Theme (`border border-border`, kompaktes Padding `px-3 py-2`), min-height 44px, TrendArrow und Sparkline SVG kopiert (keine Imports)
 - `doctor-ranking.tsx`: Server Component, responsive (Mobile: Karten-Stapel, Desktop: semantische Tabelle ab `xl:`), bedingte Medikamente-Sektion, Empty State
 - Dashboard-Page: Ranking-Platzhalter durch echte `<DoctorRanking>` Komponente ersetzt
-- 19 neue Tests: 5 DB-Tests in `sharing.test.ts`, 6 Rendering-Tests in `doctor-ranking.test.tsx`, 8 Card-Tests in `doctor-ranking-card.test.tsx`
+- 23 neue Tests: 6 DB-Tests in `sharing.test.ts`, 7 Rendering-Tests in `doctor-ranking.test.tsx`, 10 Card-Tests in `doctor-ranking-card.test.tsx`
 - Build erfolgreich; Lint: 0 neue Errors; Tests: 778/778 grün (keine Regressionen)
 
 ### File List
 
-- `src/lib/db/insights.ts` — `TimelineRawRow` zu `export type` geändert
 - `src/lib/db/sharing.ts` — `getSharedSymptomRanking()` hinzugefügt; imports aus `insights.ts` und `analytics.ts` erweitert
 - `src/components/sharing/doctor-ranking.tsx` — NEU: Server Component, responsive Karten/Tabelle
 - `src/components/sharing/doctor-ranking-card.tsx` — NEU: Arzt-Theme Karten-Komponente
 - `src/app/share/dashboard/page.tsx` — Ranking-Platzhalter durch `<DoctorRanking>` ersetzt
 - `src/__tests__/lib/db/sharing.test.ts` — `getSharedSymptomRanking()` Tests hinzugefügt
-- `src/__tests__/components/sharing/doctor-ranking.test.tsx` — NEU: 6 Rendering-Tests
-- `src/__tests__/components/sharing/doctor-ranking-card.test.tsx` — NEU: 8 Card-Tests
+- `src/__tests__/components/sharing/doctor-ranking.test.tsx` — NEU: 7 Rendering-Tests (inkl. Desktop-Tabellen-Content)
+- `src/__tests__/components/sharing/doctor-ranking-card.test.tsx` — NEU: 10 Card-Tests
 
 ### Change Log
 
-- 2026-03-15: Story 6.3 implementiert — Arzt-Symptom-Ranking mit Trendlinien. DB-Funktion `getSharedSymptomRanking()`, Server Components `DoctorRanking` + `DoctorRankingCard`, Dashboard-Integration, 19 neue Tests.
+- 2026-03-15: Story 6.3 implementiert — Arzt-Symptom-Ranking mit Trendlinien. DB-Funktion `getSharedSymptomRanking()`, Server Components `DoctorRanking` + `DoctorRankingCard`, Dashboard-Integration, 23 neue Tests.
+- 2026-03-15: Code Review (claude-opus-4-6) — 6 Fixes: Desktop-SparklineCell Farbe+Fill (H1), ∅-Präfix Intensität (M5), Desktop-Tabellen-Test (M2), File List korrigiert (M3), Test-Anzahl korrigiert (M4). Empfehlung: Aggregations-Duplikation refactoring (M1) als Follow-up.

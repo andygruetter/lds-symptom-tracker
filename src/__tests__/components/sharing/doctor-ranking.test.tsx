@@ -163,6 +163,40 @@ describe('DoctorRanking', () => {
     expect(desktopTable?.tagName).toBe('TABLE')
   })
 
+  it('rendert Desktop-Tabelle mit korrekten Daten in Zellen', async () => {
+    const { DoctorRanking } =
+      await import('@/components/sharing/doctor-ranking')
+    const ranking = makeRanking({
+      symptoms: [
+        {
+          name: 'Rückenschmerzen',
+          totalCount: 12,
+          monthlyCounts: [
+            { year: 2026, month: 1, count: 4 },
+            { year: 2026, month: 2, count: 8 },
+          ],
+          trend: 'increasing',
+          avgIntensity: 6.5,
+        },
+      ],
+      totalSymptomEvents: 12,
+    })
+
+    const { container } = render(<DoctorRanking ranking={ranking} />)
+
+    const desktopTable = container.querySelector('.hidden.xl\\:table')
+    expect(desktopTable).toBeInTheDocument()
+
+    // Prüfe dass die Tabelle tatsächlich Daten rendert
+    const cells = desktopTable!.querySelectorAll('td')
+    const cellTexts = Array.from(cells).map((td) => td.textContent?.trim())
+
+    expect(cellTexts).toContain('Rückenschmerzen')
+    expect(cellTexts).toContain('12x')
+    expect(cellTexts).toContain('∅ 6.5/10')
+    expect(cellTexts).toContain('↑')
+  })
+
   it('zeigt KEINEN Platzhalter-Text "Kommt in einer zukünftigen Version"', async () => {
     const { DoctorRanking } =
       await import('@/components/sharing/doctor-ranking')
