@@ -189,7 +189,7 @@ describe('getSharedFeedEvents', () => {
     await getSharedFeedEvents('user-1', '2026-01-01', '2026-03-15')
 
     expect(builder.select).toHaveBeenCalledWith(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
     )
   })
 })
