@@ -1,4 +1,4 @@
-import { groupEventsByDay } from '@/components/insights/symptom-feed'
+import { groupEventsByDay } from '@/lib/utils/date'
 import type { FeedEvent } from '@/types/analytics'
 
 import { DoctorEventCard } from './doctor-event-card'
