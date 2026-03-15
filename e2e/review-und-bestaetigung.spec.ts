@@ -36,7 +36,7 @@ test.describe('Review und Bestätigung', () => {
 
     await capturePage.goto()
 
-    // SymptomTag buttons have aria-label like "fieldName ändern"
+    // SymptomTag buttons use German labels in aria-label
     await expect(
       page.getByRole('button', { name: 'Symptom ändern' }),
     ).toBeVisible()
