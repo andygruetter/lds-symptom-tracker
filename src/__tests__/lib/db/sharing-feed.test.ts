@@ -60,6 +60,7 @@ describe('getSharedFeedEvents', () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: mockRows, error: null }),
@@ -98,6 +99,7 @@ describe('getSharedFeedEvents', () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
@@ -111,8 +113,15 @@ describe('getSharedFeedEvents', () => {
     expect(builder.eq).toHaveBeenCalledWith('account_id', 'acc-123')
     expect(builder.eq).toHaveBeenCalledWith('status', 'confirmed')
     expect(builder.is).toHaveBeenCalledWith('deleted_at', null)
-    expect(builder.gte).toHaveBeenCalledWith('occurred_at', '2026-01-01')
-    expect(builder.lte).toHaveBeenCalledWith('occurred_at', '2026-06-30')
+    // Buffered dates: dateFrom -1 day, dateTo +1 day (lt = exclusive)
+    expect(builder.gte).toHaveBeenCalledWith(
+      'occurred_at',
+      expect.stringContaining('2025-12-31'),
+    )
+    expect(builder.lt).toHaveBeenCalledWith(
+      'occurred_at',
+      expect.stringContaining('2026-07-01'),
+    )
     expect(builder.order).toHaveBeenCalledWith('occurred_at', {
       ascending: false,
     })
@@ -123,6 +132,7 @@ describe('getSharedFeedEvents', () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi
@@ -146,6 +156,7 @@ describe('getSharedFeedEvents', () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
@@ -167,6 +178,7 @@ describe('getSharedFeedEvents', () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
