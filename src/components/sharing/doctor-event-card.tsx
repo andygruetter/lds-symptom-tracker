@@ -1,6 +1,6 @@
 import { Camera, Mic } from 'lucide-react'
 
-import type { FeedEvent } from '@/types/analytics'
+import type { FeedEvent, FeedSymptomGroup } from '@/types/analytics'
 
 function formatTime(isoString: string): string {
   return new Intl.DateTimeFormat('de-CH', {
@@ -18,6 +18,34 @@ function formatDuration(occurredAt: string, endedAt: string): string {
   if (hours > 0 && minutes > 0) return `${hours}h ${minutes}min`
   if (hours > 0) return `${hours}h`
   return `${minutes}min`
+}
+
+function SymptomGroupRow({
+  group,
+  symbol,
+}: {
+  group: FeedSymptomGroup
+  symbol: string
+}) {
+  const locationParts = [group.bodyRegion, group.side].filter(Boolean)
+  const detailParts: string[] = []
+  if (group.intensity !== null) detailParts.push(`${group.intensity}/10`)
+  if (group.symptomType) detailParts.push(group.symptomType)
+
+  return (
+    <div>
+      <p className="text-sm font-medium text-foreground">
+        {symbol} {group.symptomName ?? '—'}
+      </p>
+      {(locationParts.length > 0 || detailParts.length > 0) && (
+        <p className="text-xs text-muted-foreground">
+          {[locationParts.join(', '), ...detailParts]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      )}
+    </div>
+  )
 }
 
 type Props = {
@@ -77,6 +105,17 @@ export function DoctorEventCard({ event }: Props) {
             </p>
             {event.dosage && (
               <p className="text-xs text-muted-foreground">{event.dosage}</p>
+            )}
+          </div>
+        ) : event.symptoms.length > 1 ? (
+          <div className="space-y-1.5">
+            {event.symptoms.map((s, i) => (
+              <SymptomGroupRow key={i} group={s} symbol={symbol} />
+            ))}
+            {event.endedAt && (
+              <p className="text-xs text-muted-foreground">
+                Dauer: {formatDuration(event.occurredAt, event.endedAt)}
+              </p>
             )}
           </div>
         ) : (
