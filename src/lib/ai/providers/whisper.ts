@@ -26,7 +26,7 @@ export const whisperProvider: TranscriptionProvider = {
       model: WHISPER_MODEL,
       language: 'de',
       prompt:
-        'Falls Deutsch oder Schweizerdeutsch gesprochen wird, bitte in Hochdeutsch transkribieren.',
+        'Transkribiere in Hochdeutsch. Schweizerdeutsch und Dialekt immer in korrektes Standarddeutsch übersetzen. Beispiel: "Chopfweh" wird zu "Kopfschmerzen", "Buuchschmerze" wird zu "Bauchschmerzen".',
     })
 
     return { text: result.text }

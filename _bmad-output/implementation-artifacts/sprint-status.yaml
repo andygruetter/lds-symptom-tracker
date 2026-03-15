@@ -80,12 +80,12 @@ development_status:
   epic-4-retrospective: done
 
   # Epic 5: Sharing-System & Daten-Souveränität
-  epic-5: backlog
-  5-1-sharing-link-generieren: backlog
-  5-2-sharing-link-email: backlog
-  5-3-arzt-zugriff-sharing: backlog
-  5-4-sharing-link-ablauf: backlog
-  5-5-audit-log: backlog
+  epic-5: in-progress
+  5-1-sharing-link-generieren: done
+  5-2-sharing-link-email: done
+  5-3-arzt-zugriff-sharing: done
+  5-4-sharing-link-ablauf: done
+  5-5-audit-log: done
   epic-5-retrospective: optional
 
   # Epic 6: Arzt-Dashboard & PDF-Export

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { MonthTimeline } from '@/components/insights/month-timeline'
 import { SymptomFeed } from '@/components/insights/symptom-feed'
 import { SymptomRanking } from '@/components/insights/symptom-ranking'
+import { ShareSheet } from '@/components/sharing/share-sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createServerClient } from '@/lib/db/client'
 import {
@@ -36,7 +37,10 @@ export default async function InsightsPage() {
   return (
     <div className="min-h-screen">
       <div className="sticky top-0 z-10 border-b border-border bg-background px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <h1 className="text-xl font-semibold">Auswertung</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Auswertung</h1>
+          <ShareSheet />
+        </div>
       </div>
 
       <Tabs defaultValue="feed" className="w-full">

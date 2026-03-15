@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
+import { validateSharingLinkById } from '@/lib/db/sharing'
+import { parseSharingSession } from '@/lib/sharing/session'
 import { updateSession } from '@/lib/supabase/middleware'
 
 export async function proxy(request: NextRequest) {
@@ -19,6 +21,37 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
+  }
+
+  // Arzt-Dashboard: Sharing-Cookie prüfen (vor dem generischen /share Durchlass)
+  if (path.startsWith('/share/dashboard')) {
+    const sharingSession = request.cookies.get('sharing_session')
+    if (!sharingSession?.value) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/share/expired'
+      return NextResponse.redirect(url)
+    }
+
+    // Story 5.4: Ablauf + Widerruf prüfen via DB-Lookup
+    const session = parseSharingSession(sharingSession.value)
+    if (!session) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/share/expired'
+      const response = NextResponse.redirect(url)
+      response.cookies.delete('sharing_session')
+      return response
+    }
+
+    const linkData = await validateSharingLinkById(session.linkId)
+    if (!linkData) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/share/expired'
+      const response = NextResponse.redirect(url)
+      response.cookies.delete('sharing_session')
+      return response
+    }
+
+    return supabaseResponse
   }
 
   // Öffentliche Routen durchlassen: /auth/*, /api/*, /share/*, /~offline

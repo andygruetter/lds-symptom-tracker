@@ -9,6 +9,47 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          id: string
+          account_id: string
+          sharing_link_id: string
+          action: string
+          accessed_at: string
+          ip_address_hash: string | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          sharing_link_id: string
+          action: string
+          accessed_at?: string
+          ip_address_hash?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          sharing_link_id?: string
+          action?: string
+          accessed_at?: string
+          ip_address_hash?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'audit_log_sharing_link_id_fkey'
+            columns: ['sharing_link_id']
+            isOneToOne: false
+            referencedRelation: 'sharing_links'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       accounts: {
         Row: {
           created_at: string
@@ -195,6 +236,42 @@ export type Database = {
           keys_auth?: string
           keys_p256dh?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sharing_links: {
+        Row: {
+          id: string
+          account_id: string
+          token: string
+          date_from: string
+          date_to: string
+          expires_at: string
+          recipient_email: string | null
+          revoked_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          token: string
+          date_from: string
+          date_to: string
+          expires_at: string
+          recipient_email?: string | null
+          revoked_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          token?: string
+          date_from?: string
+          date_to?: string
+          expires_at?: string
+          recipient_email?: string | null
+          revoked_at?: string | null
+          created_at?: string
         }
         Relationships: []
       }

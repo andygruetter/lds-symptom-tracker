@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto'
+
 import dotenv from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
 
@@ -231,6 +233,103 @@ export async function createMultipleTestEvents(
   }
 
   return events
+}
+
+interface SharingLinkInsert {
+  token?: string
+  date_from?: string
+  date_to?: string
+  expires_at?: string
+  revoked_at?: string | null
+  recipient_email?: string | null
+}
+
+export function generateTestToken(): string {
+  return randomBytes(32).toString('hex')
+}
+
+export async function createTestSharingLink(
+  accountId: string,
+  overrides?: SharingLinkInsert,
+) {
+  const token = overrides?.token ?? generateTestToken()
+  const { data, error } = await supabase
+    .from('sharing_links')
+    .insert({
+      account_id: accountId,
+      token,
+      date_from: overrides?.date_from ?? '2026-01-01',
+      date_to: overrides?.date_to ?? '2026-03-15',
+      expires_at:
+        overrides?.expires_at ??
+        new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      revoked_at: overrides?.revoked_at ?? null,
+      recipient_email: overrides?.recipient_email ?? null,
+    })
+    .select()
+    .single()
+
+  if (error)
+    throw new Error(`Sharing-Link erstellen fehlgeschlagen: ${error.message}`)
+  return data
+}
+
+export async function getSharingLink(linkId: string) {
+  const { data, error } = await supabase
+    .from('sharing_links')
+    .select('*')
+    .eq('id', linkId)
+    .single()
+
+  if (error)
+    throw new Error(`Sharing-Link laden fehlgeschlagen: ${error.message}`)
+  return data
+}
+
+export async function cleanupTestSharingLinks(accountId: string) {
+  await supabase.from('sharing_links').delete().eq('account_id', accountId)
+}
+
+export async function createTestAuditEntry(
+  accountId: string,
+  sharingLinkId: string,
+  overrides?: {
+    action?: string
+    accessed_at?: string
+    ip_address_hash?: string | null
+  },
+) {
+  const { data, error } = await supabase
+    .from('audit_log')
+    .insert({
+      account_id: accountId,
+      sharing_link_id: sharingLinkId,
+      action: overrides?.action ?? 'dashboard_view',
+      accessed_at: overrides?.accessed_at ?? new Date().toISOString(),
+      ip_address_hash: overrides?.ip_address_hash ?? null,
+    })
+    .select()
+    .single()
+
+  if (error)
+    throw new Error(`Audit-Eintrag erstellen fehlgeschlagen: ${error.message}`)
+  return data
+}
+
+export async function getAuditEntriesForLink(sharingLinkId: string) {
+  const { data, error } = await supabase
+    .from('audit_log')
+    .select('*')
+    .eq('sharing_link_id', sharingLinkId)
+    .order('accessed_at', { ascending: false })
+
+  if (error)
+    throw new Error(`Audit-Einträge laden fehlgeschlagen: ${error.message}`)
+  return data ?? []
+}
+
+export async function cleanupTestAuditEntries(accountId: string) {
+  await supabase.from('audit_log').delete().eq('account_id', accountId)
 }
 
 export async function cleanupTestData(accountId: string) {
