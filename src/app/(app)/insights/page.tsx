@@ -1,9 +1,13 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
+
+import { FileDown } from 'lucide-react'
 
 import { MonthTimeline } from '@/components/insights/month-timeline'
 import { SymptomFeed } from '@/components/insights/symptom-feed'
 import { SymptomRanking } from '@/components/insights/symptom-ranking'
 import { ShareSheet } from '@/components/sharing/share-sheet'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createServerClient } from '@/lib/db/client'
 import {
@@ -39,7 +43,15 @@ export default async function InsightsPage() {
       <div className="sticky top-0 z-10 border-b border-border bg-background px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Auswertung</h1>
-          <ShareSheet />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/export/pdf">
+                <FileDown className="mr-1.5 h-4 w-4" />
+                PDF
+              </Link>
+            </Button>
+            <ShareSheet />
+          </div>
         </div>
       </div>
 

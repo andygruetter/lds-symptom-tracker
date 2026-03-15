@@ -1,6 +1,6 @@
 # Story 6.5: PDF-Report generieren und herunterladen
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,83 +22,83 @@ So that ich eine physische Zusammenfassung für den Arztbesuch mitnehmen kann (F
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Dependency installieren (AC: alle)
-  - [ ] `npm install @react-pdf/renderer` (Architektur-Entscheidung D9)
-  - [ ] Kompatibilität mit Next.js 15 / React 19 verifizieren
-  - [ ] Falls Inkompatibilitäten: `@react-pdf/renderer@latest` oder Alternative `react-pdf` prüfen
+- [x] Task 1: Dependency installieren (AC: alle)
+  - [x] `npm install @react-pdf/renderer` (Architektur-Entscheidung D9)
+  - [x] Kompatibilität mit Next.js 15 / React 19 verifizieren
+  - [x] Falls Inkompatibilitäten: `@react-pdf/renderer@latest` oder Alternative `react-pdf` prüfen
 
-- [ ] Task 2: PDF-Dokument-Komponente (AC: 2, 6)
-  - [ ] `src/lib/pdf/symptom-report.tsx` erstellen
-  - [ ] `src/lib/pdf/pdf-styles.ts` erstellen
-  - [ ] PDF-Sections implementieren:
+- [x] Task 2: PDF-Dokument-Komponente (AC: 2, 6)
+  - [x] `src/lib/pdf/symptom-report.tsx` erstellen
+  - [x] `src/lib/pdf/pdf-styles.ts` erstellen
+  - [x] PDF-Sections implementieren:
     - Header: Titel "Symptom-Report", Zeitraum-Badge, Erstellungsdatum
     - Zusammenfassung: KI-generierter Fließtext (2-4 Sätze)
     - Symptom-Ranking: Tabelle (Name, Häufigkeit, Trend-Pfeil, Ø Intensität)
     - Timeline: Monatsweise Tabelle mit täglichen Event-Counts
     - Event-Details: Pro Event — Datum, Symptom, Intensität, Transkription, Foto-Thumbnails
-  - [ ] Fotos: Signed URL → fetch → Base64 → `<Image />` (max 200px)
-  - [ ] Design: Professional Slate (#374955 Primary, #F6F7F9 Background), print-optimiert
+  - [x] Fotos: Signed URL → fetch → Base64 → `<Image />` (max 200px)
+  - [x] Design: Professional Slate (#374955 Primary, #F6F7F9 Background), print-optimiert
 
-- [ ] Task 3: KI-Zusammenfassung (AC: 2)
-  - [ ] `src/lib/ai/summarize.ts` erstellen — wiederverwendbares Interface für Story 6.1+
-  - [ ] `generateSummary(events: SymptomEvent[]): Promise<string>` exportieren
-  - [ ] Claude API via `src/lib/ai/providers/claude.ts` aufrufen
-  - [ ] Prompt: "Erstelle eine medizinische Zusammenfassung (2-4 Sätze, Deutsch, faktisch, nicht wertend)"
-  - [ ] Fallback bei API-Fehler: Statistische Zusammenfassung (X Events, häufigstes Symptom, Zeitraum)
-  - [ ] `src/__tests__/lib/ai/summarize.test.ts` — Unit-Test mit gemocktem Claude-Provider
+- [x] Task 3: KI-Zusammenfassung (AC: 2)
+  - [x] `src/lib/ai/summarize.ts` erstellen — wiederverwendbares Interface für Story 6.1+
+  - [x] `generateSummary(events: SymptomEvent[]): Promise<string>` exportieren
+  - [x] Claude API via `src/lib/ai/providers/claude.ts` aufrufen
+  - [x] Prompt: "Erstelle eine medizinische Zusammenfassung (2-4 Sätze, Deutsch, faktisch, nicht wertend)"
+  - [x] Fallback bei API-Fehler: Statistische Zusammenfassung (X Events, häufigstes Symptom, Zeitraum)
+  - [x] `src/__tests__/lib/ai/summarize.test.ts` — Unit-Test mit gemocktem Claude-Provider
 
-- [ ] Task 4: Daten-Aggregation (AC: 2, 3)
-  - [ ] `src/lib/pdf/pdf-data.ts` erstellen
-  - [ ] `aggregatePdfData(accountId, dateFrom, dateTo)` Funktion:
+- [x] Task 4: Daten-Aggregation (AC: 2, 3)
+  - [x] `src/lib/pdf/pdf-data.ts` erstellen
+  - [x] `aggregatePdfData(accountId, dateFrom, dateTo)` Funktion:
     - Symptom-Ranking: `getSymptomRankingByAccount()` nutzen (siehe Hinweis unten)
     - Timeline: `getMonthlyTimelineByAccount()` nutzen
     - Events: via Service Client direkt abfragen (mit extracted_data + event_photos)
     - Fotos: Signed URLs holen → fetch → Base64 (**max 50 Fotos, Thumbnails 150px** — Memory-Limit auf Serverless)
-  - [ ] `DateRange` → absolute Datumsgrenzen Mapping:
+  - [x] `DateRange` → absolute Datumsgrenzen Mapping:
     - `'1m'` → `today - 30 days` bis `today`
     - `'3m'` → `today - 90 days` bis `today`
     - `'6m'` → `today - 180 days` bis `today`
     - `'12m'` → `today - 365 days` bis `today`
     - NICHT `TimeRange` (`'30d'|'3m'|'6m'|'all'`) verwenden — das ist ein anderer Enum!
 
-- [ ] Task 5: API-Route (AC: 1, 4, 5, 7)
-  - [ ] `src/app/api/report/pdf/route.ts` erstellen
-  - [ ] GET-Handler mit Query-Params: `?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
-  - [ ] Dual-Auth Logik:
+- [x] Task 5: API-Route (AC: 1, 4, 5, 7)
+  - [x] `src/app/api/report/pdf/route.ts` erstellen
+  - [x] GET-Handler mit Query-Params: `?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
+  - [x] Dual-Auth Logik:
     - Patient: `createServerClient()` → `auth.getUser()` → accountId aus Session
     - Arzt: `parseSharingSession()` aus Cookie → `validateSharingToken()` → accountId + Zeitraum aus Sharing-Link
-  - [ ] `createServiceClient()` für Daten-Zugriff (RLS bypass)
-  - [ ] `renderToBuffer()` → Response mit `Content-Type: application/pdf`
-  - [ ] Audit-Log: `trackSharingAccess()` mit action `'pdf_download'`
-  - [ ] Error Handling: `PDF_GENERATION_FAILED`, `AUTH_REQUIRED`, `INVALID_DATE_RANGE`
+  - [x] `createServiceClient()` für Daten-Zugriff (RLS bypass)
+  - [x] `renderToBuffer()` → Response mit `Content-Type: application/pdf`
+  - [x] Audit-Log: `trackSharingAccess()` mit action `'pdf_download'`
+  - [x] Error Handling: `PDF_GENERATION_FAILED`, `AUTH_REQUIRED`, `INVALID_DATE_RANGE`
 
-- [ ] Task 6: Patient-Export-Seite (AC: 1, 3, 5)
-  - [ ] `src/app/(app)/export/pdf/page.tsx` erstellen
-  - [ ] Zeitraum-Auswahl: shadcn `Select` (1 Monat, 3 Monate, 6 Monate, 12 Monate)
-  - [ ] "PDF-Report erstellen" Button (Primary)
-  - [ ] Loading-State: `isGeneratingPdf` → "PDF wird erstellt..." mit Spinner
-  - [ ] Nach Generierung: Blob-URL erstellen → Download per `<a download>` + "Drucken" per `window.open(blobUrl)` in neuem Tab
-  - [ ] Client Component mit `fetch('/api/report/pdf?...')` → Blob → Download
-  - [ ] Navigation: Link/Button zur Export-Seite in bestehendem UI platzieren (z.B. Insights-Header oder Sharing-Sheet)
+- [x] Task 6: Patient-Export-Seite (AC: 1, 3, 5)
+  - [x] `src/app/(app)/export/pdf/page.tsx` erstellen
+  - [x] Zeitraum-Auswahl: shadcn `Select` (1 Monat, 3 Monate, 6 Monate, 12 Monate)
+  - [x] "PDF-Report erstellen" Button (Primary)
+  - [x] Loading-State: `isGeneratingPdf` → "PDF wird erstellt..." mit Spinner
+  - [x] Nach Generierung: Blob-URL erstellen → Download per `<a download>` + "Drucken" per `window.open(blobUrl)` in neuem Tab
+  - [x] Client Component mit `fetch('/api/report/pdf?...')` → Blob → Download
+  - [x] Navigation: Link/Button zur Export-Seite in bestehendem UI platzieren (z.B. Insights-Header oder Sharing-Sheet)
 
-- [ ] Task 7: PDF-Button im Arzt-Dashboard (AC: 1, 5)
-  - [ ] `src/components/sharing/pdf-download-button.tsx` erstellen
-  - [ ] In `src/app/share/dashboard/page.tsx` integrieren (Sticky Header, rechts oben)
-  - [ ] Nutzt Sharing-Context automatisch (dateFrom, dateTo aus Cookie/Session)
-  - [ ] Doctor Theme Styling: `bg-primary rounded-lg` (#374955)
-  - [ ] Download-Trigger: `fetch('/api/report/pdf')` → Blob → Download
+- [x] Task 7: PDF-Button im Arzt-Dashboard (AC: 1, 5)
+  - [x] `src/components/sharing/pdf-download-button.tsx` erstellen
+  - [x] In `src/app/share/dashboard/page.tsx` integrieren (Sticky Header, rechts oben)
+  - [x] Nutzt Sharing-Context automatisch (dateFrom, dateTo aus Cookie/Session)
+  - [x] Doctor Theme Styling: `bg-primary rounded-lg` (#374955)
+  - [x] Download-Trigger: `fetch('/api/report/pdf')` → Blob → Download
 
-- [ ] Task 8: Unit- & Integration-Tests (AC: alle)
-  - [ ] `src/__tests__/lib/ai/summarize.test.ts` — KI-Summary (gemockter Claude-Provider)
-  - [ ] `src/__tests__/lib/pdf/symptom-report.test.tsx` — PDF-Komponenten-Struktur (React-Komponente testen, NICHT renderToBuffer — `@react-pdf/renderer` Mocking ist komplex, stattdessen Struktur/Props-Tests)
-  - [ ] `src/__tests__/api/report-pdf.test.ts` — API-Route (Dual-Auth, Validierung, Error Handling, Audit-Logging)
-  - [ ] `src/__tests__/components/sharing/pdf-download-button.test.tsx` — Button-Interaktion + Download-Trigger
+- [x] Task 8: Unit- & Integration-Tests (AC: alle)
+  - [x] `src/__tests__/lib/ai/summarize.test.ts` — KI-Summary (gemockter Claude-Provider)
+  - [x] `src/__tests__/lib/pdf/symptom-report.test.tsx` — PDF-Komponenten-Struktur (React-Komponente testen, NICHT renderToBuffer — `@react-pdf/renderer` Mocking ist komplex, stattdessen Struktur/Props-Tests)
+  - [x] `src/__tests__/api/report-pdf.test.ts` — API-Route (Dual-Auth, Validierung, Error Handling, Audit-Logging)
+  - [x] `src/__tests__/components/sharing/pdf-download-button.test.tsx` — Button-Interaktion + Download-Trigger
 
-- [ ] Task 9: E2E-Test (AC: 1, 4, 5)
-  - [ ] `e2e/pdf-export.spec.ts` — Playwright-Tests:
+- [x] Task 9: E2E-Test (AC: 1, 4, 5)
+  - [x] `e2e/pdf-export.spec.ts` — Playwright-Tests:
     - Patient-Flow: Login → Export-Seite → Zeitraum wählen → PDF generieren → Download verifizieren
     - Doctor-Flow: Sharing-Link → Dashboard → PDF-Button → Download verifizieren
-  - [ ] Performance-Assertion: PDF-Generierung < 20 Sekunden (NFR4) mit realistischen Testdaten
+  - [x] Performance-Assertion: PDF-Generierung < 20 Sekunden (NFR4) mit realistischen Testdaten
 
 ## Dev Notes
 
@@ -323,9 +323,38 @@ src/lib/db/insights.ts                  → getSymptomRankingByAccount(), getMon
 ## Dev Agent Record
 
 ### Agent Model Used
+claude-opus-4-6 (Implementation) → claude-opus-4-6 (Code Review)
 
 ### Debug Log References
+- Code Review: 2026-03-15 — Adversarial Review mit 3 High, 4 Medium, 2 Low Findings
 
 ### Completion Notes List
+- @react-pdf/renderer ^4.3.2 installiert, Next.js 15 / React 19 kompatibel
+- Dual-Auth API-Route implementiert (Patient-Session + Arzt-Cookie)
+- KI-Zusammenfassung via Claude Provider mit statistischem Fallback
+- E2E-Mock via E2E_MOCK_SUMMARY env var
+- Code Review Fix: Patient-Audit-Logging als console.info (DB-Migration pending, sharing_link_id NOT NULL)
+- Code Review Fix: Navigation-Link zur Export-Seite im Insights-Header hinzugefügt
+- Code Review Fix: Foto-Thumbnail max 200px (AC6-konform)
+- Code Review Fix: DateRange-Berechnung korrigiert (setMonth statt days*30)
+- Code Review Fix: PDF-Komponenten-Tests von Platzhalter auf echte Content-Assertions umgeschrieben
 
 ### File List
+- `src/app/api/report/pdf/route.ts` — **NEU** PDF API Route (Dual-Auth, Audit-Log)
+- `src/app/(app)/export/pdf/page.tsx` — **NEU** Patient Export-Seite (Zeitraum-Auswahl, Download, Print)
+- `src/components/sharing/pdf-download-button.tsx` — **NEU** PDF-Download-Button (Patient + Arzt)
+- `src/lib/ai/summarize.ts` — **NEU** KI-Zusammenfassung Router (Claude Provider + E2E Mock)
+- `src/lib/ai/providers/claude.ts` — **MODIFIZIERT** Summary-Provider hinzugefügt
+- `src/lib/pdf/symptom-report.tsx` — **NEU** @react-pdf/renderer Dokument-Komponente
+- `src/lib/pdf/pdf-styles.ts` — **NEU** PDF Stylesheet (Professional Slate Theme)
+- `src/lib/pdf/pdf-data.ts` — **NEU** Daten-Aggregation für PDF
+- `src/lib/db/insights.ts` — **MODIFIZIERT** getSymptomRankingByAccount(), getMonthlyTimelinesByRange()
+- `src/app/share/dashboard/page.tsx` — **MODIFIZIERT** PdfDownloadButton integriert
+- `src/app/(app)/insights/page.tsx` — **MODIFIZIERT** PDF-Export-Link im Header (Code Review Fix)
+- `src/types/report.ts` — **NEU** PdfReportData, PdfEventDetail Types
+- `src/types/summary.ts` — **NEU** SummaryEventData, SummaryProvider Types
+- `src/__tests__/api/report-pdf.test.ts` — **NEU** API-Route Tests (Dual-Auth, Validierung, Error)
+- `src/__tests__/lib/ai/summarize.test.ts` — **NEU** Summary-Router Tests
+- `src/__tests__/lib/pdf/symptom-report.test.tsx` — **NEU** PDF-Komponenten-Tests (Content-Assertions)
+- `src/__tests__/components/sharing/pdf-download-button.test.tsx` — **NEU** Button-Tests
+- `e2e/pdf-export.spec.ts` — **NEU** Playwright E2E (Patient + Doctor Flow)

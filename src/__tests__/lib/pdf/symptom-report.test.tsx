@@ -1,14 +1,33 @@
-import { describe, expect, it, vi } from 'vitest'
+import { render } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PdfReportData } from '@/types/report'
 
-// Mock @react-pdf/renderer to avoid complex PDF rendering in unit tests
+// Mock @react-pdf/renderer — render as simple HTML equivalents
 vi.mock('@react-pdf/renderer', () => ({
-  Document: ({ children }: { children: React.ReactNode }) => children,
-  Page: ({ children }: { children: React.ReactNode }) => children,
-  Text: ({ children }: { children: React.ReactNode }) => children,
-  View: ({ children }: { children: React.ReactNode }) => children,
-  Image: () => null,
+  Document: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="document">{children}</div>
+  ),
+  Page: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="page">{children}</div>
+  ),
+  Text: ({
+    children,
+  }: {
+    children: React.ReactNode
+    style?: unknown
+    render?: unknown
+  }) => <span>{children}</span>,
+  View: ({
+    children,
+  }: {
+    children: React.ReactNode
+    style?: unknown
+    fixed?: boolean
+  }) => <div>{children}</div>,
+  Image: ({ src }: { src: string }) => (
+    <img src={src.slice(0, 40)} alt="photo" />
+  ),
   StyleSheet: {
     create: (styles: Record<string, unknown>) => styles,
   },
@@ -75,13 +94,81 @@ const sampleData: PdfReportData = {
 }
 
 describe('SymptomReportDocument', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('ist eine React-Komponente (Funktion)', () => {
     expect(typeof SymptomReportDocument).toBe('function')
   })
 
-  it('akzeptiert PdfReportData als Props', () => {
-    // Should not throw when called with valid data
-    expect(() => SymptomReportDocument({ data: sampleData })).not.toThrow()
+  it('rendert Titel und Zeitraum im Header', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Symptom-Report')
+    expect(text).toContain('Zeitraum:')
+  })
+
+  it('rendert KI-Zusammenfassung', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('KI-Zusammenfassung')
+    expect(text).toContain(sampleData.summary)
+  })
+
+  it('rendert Symptom-Ranking mit allen Einträgen', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Symptom-Ranking')
+    expect(text).toContain('Kopfschmerzen')
+    expect(text).toContain('Schwindel')
+    expect(text).toContain('5x')
+    expect(text).toContain('3x')
+  })
+
+  it('rendert Trend-Labels auf Deutsch', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Stabil')
+    expect(text).toContain('Sinkend')
+  })
+
+  it('rendert Timeline-Übersicht', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Timeline-Übersicht')
+  })
+
+  it('rendert Event-Details mit Transkription', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Event-Details')
+    expect(text).toContain('Starke Kopfschmerzen rechts')
+  })
+
+  it('rendert Intensität und Körperregion in Event-Meta', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Kopf')
+    expect(text).toContain('7/10')
+  })
+
+  it('rendert Footer mit Vertraulichkeitshinweis', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Vertraulich')
+  })
+
+  it('zeigt Durchschnittsintensität mit einer Dezimalstelle', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('6.2 / 10')
+  })
+
+  it('zeigt Strich für fehlende Intensität', () => {
+    const { container } = render(<SymptomReportDocument data={sampleData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('–')
   })
 
   it('akzeptiert leere Daten ohne Fehler', () => {
@@ -97,10 +184,13 @@ describe('SymptomReportDocument', () => {
         totalEvents: 0,
       },
     }
-    expect(() => SymptomReportDocument({ data: emptyData })).not.toThrow()
+    const { container } = render(<SymptomReportDocument data={emptyData} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Keine Symptome')
+    expect(text).toContain('Keine Events')
   })
 
-  it('verarbeitet Events mit Fotos', () => {
+  it('verarbeitet Events mit Fotos als Image-Elemente', () => {
     const dataWithPhotos: PdfReportData = {
       ...sampleData,
       events: [
@@ -110,7 +200,11 @@ describe('SymptomReportDocument', () => {
         },
       ],
     }
-    expect(() => SymptomReportDocument({ data: dataWithPhotos })).not.toThrow()
+    const { container } = render(
+      <SymptomReportDocument data={dataWithPhotos} />,
+    )
+    const images = container.querySelectorAll('img')
+    expect(images).toHaveLength(2)
   })
 
   it('verarbeitet Medikamenten-Events', () => {
@@ -132,6 +226,8 @@ describe('SymptomReportDocument', () => {
         },
       ],
     }
-    expect(() => SymptomReportDocument({ data: dataWithMed })).not.toThrow()
+    const { container } = render(<SymptomReportDocument data={dataWithMed} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Ibuprofen 400mg')
   })
 })

@@ -124,14 +124,14 @@ export const pdfStyles = StyleSheet.create({
   photosRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
     marginTop: 6,
   },
   photo: {
-    width: 80,
-    height: 80,
-    objectFit: 'cover',
+    maxWidth: 200,
+    objectFit: 'contain',
     borderRadius: 2,
+    marginRight: 4,
+    marginBottom: 4,
   },
   // Footer
   footer: {

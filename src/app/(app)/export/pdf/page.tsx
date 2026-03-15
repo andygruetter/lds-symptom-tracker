@@ -27,7 +27,7 @@ function computeDateParams(months: number): {
   const today = new Date()
   const endDate = today.toISOString().slice(0, 10)
   const start = new Date(today)
-  start.setDate(start.getDate() - months * 30)
+  start.setMonth(start.getMonth() - months)
   const startDate = start.toISOString().slice(0, 10)
   return { startDate, endDate }
 }
