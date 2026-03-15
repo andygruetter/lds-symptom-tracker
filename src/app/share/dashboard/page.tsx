@@ -1,18 +1,18 @@
+import { Suspense } from 'react'
+
+import { AISummaryCard } from '@/components/sharing/ai-summary-card'
+import { AISummarySkeleton } from '@/components/sharing/ai-summary-skeleton'
+import { DoctorRanking } from '@/components/sharing/doctor-ranking'
+import { DoctorTimeline } from '@/components/sharing/doctor-timeline'
+import { TimelineSkeleton } from '@/components/sharing/timeline-skeleton'
 import { trackSharingAccessFromPage } from '@/lib/db/audit'
-import { getSharedSymptomEvents } from '@/lib/db/sharing'
+import { getSharedFeedEvents, getSharedSymptomRanking } from '@/lib/db/sharing'
 import { getSharingContext } from '@/lib/sharing/context'
 
 /**
- * Arzt-Dashboard Page — Shell mit Platzhalter-Cards.
+ * Arzt-Dashboard Page mit KI-Zusammenfassung (6.1), Timeline (6.2) und Symptom-Ranking (6.3).
  *
- * Echte Inhalte kommen in Epic 6:
- * - 6.1 KI-generierte Zusammenfassung
- * - 6.2 Timeline mit Events
- * - 6.3 Symptom-Ranking
- * - 6.4 Drill-Down mit Audio/Fotos
- *
- * Nutzt getSharingContext() (React.cache — kein doppelter DB-Call mit Layout).
- * Loggt dashboard_view ins Audit-Log (Story 5.5, AC#1).
+ * Nutzt React Streaming (Suspense) für optimales Loading.
  */
 export default async function DashboardPage() {
   const linkData = await getSharingContext()
@@ -23,42 +23,42 @@ export default async function DashboardPage() {
     'dashboard_view',
   )
 
-  const events = await getSharedSymptomEvents(
-    linkData.accountId,
-    linkData.dateFrom,
-    linkData.dateTo,
-  )
+  const [events, ranking] = await Promise.all([
+    getSharedFeedEvents(linkData.accountId, linkData.dateFrom, linkData.dateTo),
+    getSharedSymptomRanking(
+      linkData.accountId,
+      linkData.dateFrom,
+      linkData.dateTo,
+    ),
+  ])
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {/* KI-Zusammenfassung Platzhalter */}
-      <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold">KI-Zusammenfassung</h2>
-        <p className="text-sm text-muted-foreground">
-          Kommt in einer zukünftigen Version.
-        </p>
-        <div className="mt-4 rounded-md bg-muted/50 p-3">
-          <p className="text-sm font-medium">
-            {events.length} Events im Zeitraum
-          </p>
-        </div>
+      {/* KI-Zusammenfassung — volle Breite, Suspense für Loading */}
+      <div className="md:col-span-2 xl:col-span-3">
+        <Suspense fallback={<AISummarySkeleton />}>
+          <AISummaryCard
+            sharingLinkId={linkData.id}
+            accountId={linkData.accountId}
+            dateFrom={linkData.dateFrom}
+            dateTo={linkData.dateTo}
+          />
+        </Suspense>
       </div>
 
-      {/* Timeline Platzhalter */}
-      <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold">Timeline</h2>
-        <p className="text-sm text-muted-foreground">
-          Kommt in einer zukünftigen Version.
-        </p>
+      {/* Timeline — volle Breite (Story 6.2) */}
+      <div className="md:col-span-2 xl:col-span-3">
+        <Suspense fallback={<TimelineSkeleton />}>
+          <DoctorTimeline
+            events={events}
+            dateFrom={linkData.dateFrom}
+            dateTo={linkData.dateTo}
+          />
+        </Suspense>
       </div>
 
-      {/* Symptom-Ranking Platzhalter */}
-      <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold">Symptom-Ranking</h2>
-        <p className="text-sm text-muted-foreground">
-          Kommt in einer zukünftigen Version.
-        </p>
-      </div>
+      {/* Symptom-Ranking (Story 6.3) */}
+      <DoctorRanking ranking={ranking} />
     </div>
   )
 }

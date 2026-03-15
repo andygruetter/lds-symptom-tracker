@@ -19,17 +19,17 @@ import type {
 import type { AppError } from '@/types/common'
 import type { Database } from '@/types/database'
 
-type ExtractedDataRow = { field_name: string; value: string }
-type PhotoRow = { id: string }
+export type ExtractedDataRow = { field_name: string; value: string }
+export type PhotoRow = { id: string }
 
-type TimelineRawRow = {
+export type TimelineRawRow = {
   id: string
   event_type: string
   occurred_at: string
   extracted_data: ExtractedDataRow[] | null
 }
 
-type RawFeedRow = {
+export type RawFeedRow = {
   id: string
   event_type: string
   occurred_at: string
@@ -41,7 +41,7 @@ type RawFeedRow = {
   event_photos: PhotoRow[] | null
 }
 
-function pivotExtractedData(rows: ExtractedDataRow[] | null): {
+export function pivotExtractedData(rows: ExtractedDataRow[] | null): {
   symptomName: string | null
   bodyRegion: string | null
   side: string | null
@@ -77,7 +77,7 @@ function pivotExtractedData(rows: ExtractedDataRow[] | null): {
   }
 }
 
-function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
+export function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
   const extracted = pivotExtractedData(row.extracted_data)
   const eventType = row.event_type === 'medication' ? 'medication' : 'symptom'
 
@@ -422,6 +422,181 @@ export async function getSymptomRanking(
     totalSymptomEvents: symptoms.reduce((s, e) => s + e.totalCount, 0),
     totalMedicationEvents: medications.reduce((s, e) => s + e.totalCount, 0),
   }
+}
+
+/**
+ * Symptom-Ranking mit expliziten Datumsgrenzen (für PDF/Service-Client).
+ * Dependency-Injection: Supabase-Client als Parameter.
+ */
+export async function getSymptomRankingByAccount(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<SymptomRanking> {
+  // +1 Tag Puffer für Timezone-Safety
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .eq('account_id', accountId)
+    .eq('status', 'confirmed')
+    .is('deleted_at', null)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lte('occurred_at', bufferEnd.toISOString())
+    .order('occurred_at', { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error(
+        '[Insights] RankingByAccount-Abfrage fehlgeschlagen:',
+        error.message,
+      )
+    }
+    return {
+      symptoms: [],
+      medications: [],
+      timeRange: '30d',
+      totalSymptomEvents: 0,
+      totalMedicationEvents: 0,
+    }
+  }
+
+  const rows = data as unknown as TimelineRawRow[]
+  const cutoffKey = dateFrom
+  const endKey = dateTo
+
+  const symptomMap = new Map<
+    string,
+    { monthlyCounts: Map<string, number>; intensities: number[] }
+  >()
+  const medicationMap = new Map<
+    string,
+    { monthlyCounts: Map<string, number> }
+  >()
+
+  for (const row of rows) {
+    const localKey = toLocalDateKey(new Date(row.occurred_at))
+    if (localKey < cutoffKey || localKey > endKey) continue
+
+    const extracted = pivotExtractedData(row.extracted_data)
+    const isMedication = row.event_type === 'medication'
+    const [yearStr, monthStr] = localKey.split('-')
+    const monthKey = `${yearStr}-${monthStr}`
+
+    if (isMedication) {
+      const name = extracted.medication ?? 'Unbekannt'
+      let entry = medicationMap.get(name)
+      if (!entry) {
+        entry = { monthlyCounts: new Map() }
+        medicationMap.set(name, entry)
+      }
+      entry.monthlyCounts.set(
+        monthKey,
+        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
+      )
+    } else {
+      const name = extracted.symptomName ?? 'Unbekannt'
+      let entry = symptomMap.get(name)
+      if (!entry) {
+        entry = { monthlyCounts: new Map(), intensities: [] }
+        symptomMap.set(name, entry)
+      }
+      entry.monthlyCounts.set(
+        monthKey,
+        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
+      )
+      if (extracted.intensity !== null) {
+        entry.intensities.push(extracted.intensity)
+      }
+    }
+  }
+
+  function toSortedMonthlyCountsByAccount(
+    countsMap: Map<string, number>,
+  ): MonthlyCount[] {
+    return Array.from(countsMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, count]) => {
+        const [y, m] = key.split('-').map(Number)
+        return { year: y, month: m, count }
+      })
+  }
+
+  const symptoms: SymptomRankingEntry[] = Array.from(symptomMap.entries())
+    .map(([name, { monthlyCounts, intensities }]) => {
+      const counts = toSortedMonthlyCountsByAccount(monthlyCounts)
+      const totalCount = counts.reduce((s, c) => s + c.count, 0)
+      const avgIntensity =
+        intensities.length > 0
+          ? intensities.reduce((s, v) => s + v, 0) / intensities.length
+          : null
+      return {
+        name,
+        totalCount,
+        monthlyCounts: counts,
+        trend: calculateTrend(counts),
+        avgIntensity,
+      }
+    })
+    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
+
+  const medications: MedicationRankingEntry[] = Array.from(
+    medicationMap.entries(),
+  )
+    .map(([name, { monthlyCounts }]) => {
+      const counts = toSortedMonthlyCountsByAccount(monthlyCounts)
+      const totalCount = counts.reduce((s, c) => s + c.count, 0)
+      return {
+        name,
+        totalCount,
+        monthlyCounts: counts,
+        trend: calculateTrend(counts),
+      }
+    })
+    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
+
+  return {
+    symptoms,
+    medications,
+    timeRange: '30d',
+    totalSymptomEvents: symptoms.reduce((s, e) => s + e.totalCount, 0),
+    totalMedicationEvents: medications.reduce((s, e) => s + e.totalCount, 0),
+  }
+}
+
+/**
+ * Monatliche Timelines für einen Datumsbereich (für PDF/Service-Client).
+ * Gibt eine Timeline pro Monat im Zeitraum dateFrom–dateTo zurück.
+ */
+export async function getMonthlyTimelinesByRange(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<MonthTimeline[]> {
+  const from = new Date(dateFrom)
+  const to = new Date(dateTo)
+
+  const months: Array<{ year: number; month: number }> = []
+  const current = new Date(from.getFullYear(), from.getMonth(), 1)
+
+  while (current <= to) {
+    months.push({ year: current.getFullYear(), month: current.getMonth() + 1 })
+    current.setMonth(current.getMonth() + 1)
+  }
+
+  const timelines = await Promise.all(
+    months.map(({ year, month }) =>
+      getMonthlyTimeline(supabase, accountId, year, month),
+    ),
+  )
+
+  return timelines
 }
 
 export async function getSymptomEvents(

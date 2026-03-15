@@ -12,7 +12,7 @@ So that ich eine physische Zusammenfassung für den Arztbesuch mitnehmen kann (F
 
 ## Acceptance Criteria
 
-1. **Dual-Auth Entry-Points**: Authentifizierter Patient über `/app/export/pdf` ODER Arzt über Sharing-Dashboard (Cookie-Auth) — beide nutzen denselben API-Endpunkt `/api/report/pdf`
+1. **Dual-Auth Entry-Points**: Authentifizierter Patient über `/app/export/pdf` ODER Arzt über Sharing-Dashboard (Cookie-Auth) — beide nutzen denselben API-Endpunkt `/api/report/pdf` (bewusste Abweichung von Architektur-Spec `/api/share/pdf` — neutraler Pfad für Dual-Access)
 2. **Report-Inhalt**: Zusammenfassung (KI-generierter Text), Timeline-Übersicht (tabellarisch), Symptom-Ranking (sortiert nach Häufigkeit mit Trends), Event-Details (mit Transkriptionen + Foto-Thumbnails)
 3. **Zeitraum wählbar**: Patient wählt 1m/3m/6m/12m; Arzt nutzt automatisch den Sharing-Link-Zeitraum
 4. **Performance**: PDF-Generierung < 20 Sekunden (NFR4)
@@ -39,19 +39,29 @@ So that ich eine physische Zusammenfassung für den Arztbesuch mitnehmen kann (F
   - [ ] Fotos: Signed URL → fetch → Base64 → `<Image />` (max 200px)
   - [ ] Design: Professional Slate (#374955 Primary, #F6F7F9 Background), print-optimiert
 
-- [ ] Task 3: Daten-Aggregation + KI-Summary (AC: 2, 3)
+- [ ] Task 3: KI-Zusammenfassung (AC: 2)
+  - [ ] `src/lib/ai/summarize.ts` erstellen — wiederverwendbares Interface für Story 6.1+
+  - [ ] `generateSummary(events: SymptomEvent[]): Promise<string>` exportieren
+  - [ ] Claude API via `src/lib/ai/providers/claude.ts` aufrufen
+  - [ ] Prompt: "Erstelle eine medizinische Zusammenfassung (2-4 Sätze, Deutsch, faktisch, nicht wertend)"
+  - [ ] Fallback bei API-Fehler: Statistische Zusammenfassung (X Events, häufigstes Symptom, Zeitraum)
+  - [ ] `src/__tests__/lib/ai/summarize.test.ts` — Unit-Test mit gemocktem Claude-Provider
+
+- [ ] Task 4: Daten-Aggregation (AC: 2, 3)
   - [ ] `src/lib/pdf/pdf-data.ts` erstellen
   - [ ] `aggregatePdfData(accountId, dateFrom, dateTo)` Funktion:
-    - Symptom-Ranking: `getSymptomRanking()` adaptieren für expliziten accountId (siehe Hinweis unten)
-    - Timeline: `getMonthlyTimeline()` adaptieren für expliziten accountId
+    - Symptom-Ranking: `getSymptomRankingByAccount()` nutzen (siehe Hinweis unten)
+    - Timeline: `getMonthlyTimelineByAccount()` nutzen
     - Events: via Service Client direkt abfragen (mit extracted_data + event_photos)
-    - Fotos: Signed URLs holen via `createSignedUrl()`, dann fetch → Base64
-  - [ ] `generatePdfSummary(events)` Funktion:
-    - Claude API via `src/lib/ai/providers/claude.ts` aufrufen
-    - Prompt: "Erstelle eine medizinische Zusammenfassung (2-4 Sätze, Deutsch, faktisch, nicht wertend)"
-    - Fallback bei API-Fehler: Statistische Zusammenfassung (X Events, häufigstes Symptom, Zeitraum)
+    - Fotos: Signed URLs holen → fetch → Base64 (**max 50 Fotos, Thumbnails 150px** — Memory-Limit auf Serverless)
+  - [ ] `DateRange` → absolute Datumsgrenzen Mapping:
+    - `'1m'` → `today - 30 days` bis `today`
+    - `'3m'` → `today - 90 days` bis `today`
+    - `'6m'` → `today - 180 days` bis `today`
+    - `'12m'` → `today - 365 days` bis `today`
+    - NICHT `TimeRange` (`'30d'|'3m'|'6m'|'all'`) verwenden — das ist ein anderer Enum!
 
-- [ ] Task 4: API-Route (AC: 1, 4, 5, 7)
+- [ ] Task 5: API-Route (AC: 1, 4, 5, 7)
   - [ ] `src/app/api/report/pdf/route.ts` erstellen
   - [ ] GET-Handler mit Query-Params: `?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
   - [ ] Dual-Auth Logik:
@@ -62,32 +72,42 @@ So that ich eine physische Zusammenfassung für den Arztbesuch mitnehmen kann (F
   - [ ] Audit-Log: `trackSharingAccess()` mit action `'pdf_download'`
   - [ ] Error Handling: `PDF_GENERATION_FAILED`, `AUTH_REQUIRED`, `INVALID_DATE_RANGE`
 
-- [ ] Task 5: Patient-Export-Seite (AC: 1, 3, 5)
+- [ ] Task 6: Patient-Export-Seite (AC: 1, 3, 5)
   - [ ] `src/app/(app)/export/pdf/page.tsx` erstellen
   - [ ] Zeitraum-Auswahl: shadcn `Select` (1 Monat, 3 Monate, 6 Monate, 12 Monate)
   - [ ] "PDF-Report erstellen" Button (Primary)
   - [ ] Loading-State: `isGeneratingPdf` → "PDF wird erstellt..." mit Spinner
-  - [ ] Nach Generierung: Download-Link anbieten + "Drucken" Button
+  - [ ] Nach Generierung: Blob-URL erstellen → Download per `<a download>` + "Drucken" per `window.open(blobUrl)` in neuem Tab
   - [ ] Client Component mit `fetch('/api/report/pdf?...')` → Blob → Download
+  - [ ] Navigation: Link/Button zur Export-Seite in bestehendem UI platzieren (z.B. Insights-Header oder Sharing-Sheet)
 
-- [ ] Task 6: PDF-Button im Arzt-Dashboard (AC: 1, 5)
+- [ ] Task 7: PDF-Button im Arzt-Dashboard (AC: 1, 5)
   - [ ] `src/components/sharing/pdf-download-button.tsx` erstellen
   - [ ] In `src/app/share/dashboard/page.tsx` integrieren (Sticky Header, rechts oben)
   - [ ] Nutzt Sharing-Context automatisch (dateFrom, dateTo aus Cookie/Session)
   - [ ] Doctor Theme Styling: `bg-primary rounded-lg` (#374955)
   - [ ] Download-Trigger: `fetch('/api/report/pdf')` → Blob → Download
 
-- [ ] Task 7: Tests (AC: alle)
-  - [ ] `src/__tests__/lib/pdf/symptom-report.test.tsx` — PDF-Rendering mit Mock-Daten
-  - [ ] `src/__tests__/api/report-pdf.test.ts` — API-Route (Auth, Validierung, Error Handling)
-  - [ ] `src/__tests__/components/sharing/pdf-download-button.test.tsx` — Button-Interaktion
+- [ ] Task 8: Unit- & Integration-Tests (AC: alle)
+  - [ ] `src/__tests__/lib/ai/summarize.test.ts` — KI-Summary (gemockter Claude-Provider)
+  - [ ] `src/__tests__/lib/pdf/symptom-report.test.tsx` — PDF-Komponenten-Struktur (React-Komponente testen, NICHT renderToBuffer — `@react-pdf/renderer` Mocking ist komplex, stattdessen Struktur/Props-Tests)
+  - [ ] `src/__tests__/api/report-pdf.test.ts` — API-Route (Dual-Auth, Validierung, Error Handling, Audit-Logging)
+  - [ ] `src/__tests__/components/sharing/pdf-download-button.test.tsx` — Button-Interaktion + Download-Trigger
+
+- [ ] Task 9: E2E-Test (AC: 1, 4, 5)
+  - [ ] `e2e/pdf-export.spec.ts` — Playwright-Tests:
+    - Patient-Flow: Login → Export-Seite → Zeitraum wählen → PDF generieren → Download verifizieren
+    - Doctor-Flow: Sharing-Link → Dashboard → PDF-Button → Download verifizieren
+  - [ ] Performance-Assertion: PDF-Generierung < 20 Sekunden (NFR4) mit realistischen Testdaten
 
 ## Dev Notes
 
 ### Kritische Architektur-Entscheidungen
 
 - **D9**: `@react-pdf/renderer` — React-Komponenten → PDF, kein Headless Browser, Serverless-kompatibel
+  - **Fallback-Plan**: Falls React 19 Inkompatibilität → `pdfkit` als Alternative (generiert PDF ohne React-Dependency, aber verliert React-Komponenten-Logik)
 - **D4**: PDF als API Route (nicht Server Action) — Binary Response + Streaming möglich
+- **Abweichung von D9-Spec**: API-Pfad `/api/report/pdf` statt `/api/share/pdf` — bewusste Entscheidung für neutralen Pfad, da sowohl Patient als auch Arzt zugreifen (nicht nur Sharing-Kontext)
 - `createServiceClient()` NUR in `src/app/api/` — niemals in Server Actions oder Components
 
 ### Bestehender Code — WIEDERVERWENDEN, nicht neu bauen
@@ -110,7 +130,7 @@ So that ich eine physische Zusammenfassung für den Arztbesuch mitnehmen kann (F
 
 `getSymptomRanking()` und `getMonthlyTimeline()` in `src/lib/db/insights.ts` nutzen intern `createServerClient()` + `auth.getUser()` — das funktioniert nur für authentifizierte Patienten. Für den Arzt-Zugriff (Service Client, kein User-Session) gibt es zwei Optionen:
 
-**Option A (empfohlen)**: Neue Varianten `getSymptomRankingByAccount(accountId, dateFrom, dateTo)` und `getMonthlyTimelineByAccount(accountId, year, month)` in `src/lib/db/insights.ts` erstellen, die `createServiceClient()` + expliziten accountId nutzen. Originalfunktionen unverändert lassen.
+**Option A (empfohlen)**: Neue Varianten `getSymptomRankingByAccount(supabaseClient, accountId, dateFrom, dateTo)` und `getMonthlyTimelineByAccount(supabaseClient, accountId, year, month)` in `src/lib/db/insights.ts` erstellen. Supabase-Client als Parameter (Dependency Injection) — so funktioniert dieselbe Logik mit Server- und Service-Client. Originalfunktionen können intern die neuen Varianten aufrufen.
 
 **Option B**: In `src/lib/pdf/pdf-data.ts` direkte Supabase-Queries mit Service Client schreiben (dupliziert Logik, aber isoliert PDF-Code).
 
@@ -224,7 +244,7 @@ vi.mock('@/lib/db/client', () => ({
 
 1. **`@react-pdf/renderer` noch NICHT installiert** — Task 1 zuerst!
 2. **Stories 6.1-6.4 nicht implementiert** — PDF muss eigenständig funktionieren, kein Dependency auf Arzt-Dashboard-Features
-3. **`lib/ai/summarize.ts` existiert nicht** — KI-Summary direkt in `pdf-data.ts` implementieren
+3. **`lib/ai/summarize.ts` existiert nicht** — als eigenes Modul erstellen (NICHT inline in `pdf-data.ts`) — wird von Story 6.1 wiederverwendet
 4. **Signed URLs für Fotos haben 15-Min TTL** — Fotos sofort fetchen und als Base64 einbetten, nicht URL im PDF referenzieren
 5. **Sharing-Cookie HMAC-Secret** — `SHARING_HMAC_SECRET` env var muss gesetzt sein
 6. **Patient-Zugriff braucht Datums-Params** — startDate/endDate als Query-Params validieren (Zod)
@@ -257,17 +277,23 @@ src/
   │       └── page.tsx                  → Patient Export-Seite
   ├── components/sharing/
   │   └── pdf-download-button.tsx       → PDF-Button (Patient + Arzt)
-  ├── lib/pdf/
-  │   ├── symptom-report.tsx            → @react-pdf/renderer Dokument
-  │   ├── pdf-styles.ts                 → PDF Stylesheet
-  │   └── pdf-data.ts                   → Daten-Aggregation + KI-Summary
+  ├── lib/
+  │   ├── ai/
+  │   │   └── summarize.ts             → KI-Zusammenfassung (wiederverwendbar für 6.1)
+  │   └── pdf/
+  │       ├── symptom-report.tsx        → @react-pdf/renderer Dokument
+  │       ├── pdf-styles.ts            → PDF Stylesheet
+  │       └── pdf-data.ts              → Daten-Aggregation
   └── __tests__/
-      ├── lib/pdf/
-      │   └── symptom-report.test.tsx
+      ├── lib/
+      │   ├── ai/summarize.test.ts
+      │   └── pdf/symptom-report.test.tsx
       ├── api/
       │   └── report-pdf.test.ts
       └── components/sharing/
           └── pdf-download-button.test.tsx
+e2e/
+  └── pdf-export.spec.ts               → Playwright E2E (Patient + Doctor Flow)
 ```
 
 Bestehende Dateien (Modifikation):

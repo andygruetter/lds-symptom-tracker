@@ -667,3 +667,311 @@ describe('getSharedSymptomEvents', () => {
     expect(builder.eq).toHaveBeenCalledWith('account_id', 'account-xyz')
   })
 })
+
+describe('getSharedEventsForSummary', () => {
+  it('gibt Events mit extrahierten Feldern zurück', async () => {
+    const mockData = [
+      {
+        id: 'evt-1',
+        event_type: 'symptom',
+        occurred_at: '2026-03-01T08:00:00Z',
+        ended_at: null,
+        raw_input: 'Kopfschmerzen rechts',
+        extracted_data: [
+          {
+            field_name: 'symptom_name',
+            value: 'Kopfschmerzen',
+            confidence: 95,
+          },
+          { field_name: 'body_region', value: 'Kopf', confidence: 90 },
+        ],
+      },
+    ]
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: mockData, error: null }),
+    }
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedEventsForSummary } = await import('@/lib/db/sharing')
+    const result = await getSharedEventsForSummary(
+      'user-1',
+      '2026-03-01',
+      '2026-03-15',
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('evt-1')
+    expect(result[0].eventType).toBe('symptom')
+    expect(result[0].extractedFields).toHaveLength(2)
+    expect(result[0].extractedFields[0].fieldName).toBe('symptom_name')
+    expect(result[0].extractedFields[0].value).toBe('Kopfschmerzen')
+    // Sortierung ASC für Summary-Kontext
+    expect(builder.order).toHaveBeenCalledWith('occurred_at', {
+      ascending: true,
+    })
+  })
+
+  it('gibt Events ohne extracted_data korrekt zurück (leeres Array)', async () => {
+    const mockData = [
+      {
+        id: 'evt-2',
+        event_type: 'symptom',
+        occurred_at: '2026-03-02T10:00:00Z',
+        ended_at: null,
+        raw_input: 'Schwindel',
+        extracted_data: [],
+      },
+    ]
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: mockData, error: null }),
+    }
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedEventsForSummary } = await import('@/lib/db/sharing')
+    const result = await getSharedEventsForSummary(
+      'user-1',
+      '2026-03-01',
+      '2026-03-15',
+    )
+
+    expect(result[0].extractedFields).toEqual([])
+  })
+
+  it('gibt leeres Array zurück bei DB-Fehler', async () => {
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      order: vi
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: 'DB error' } }),
+    }
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedEventsForSummary } = await import('@/lib/db/sharing')
+    const result = await getSharedEventsForSummary(
+      'user-1',
+      '2026-03-01',
+      '2026-03-15',
+    )
+
+    expect(result).toEqual([])
+  })
+})
+
+describe('getSharedSymptomRanking', () => {
+  function createRankingBuilder(rows: unknown[], error: unknown = null) {
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: rows, error }),
+    }
+    return builder
+  }
+
+  it('gibt leeres Ranking zurück wenn keine Events vorhanden', async () => {
+    const builder = createRankingBuilder([])
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toEqual([])
+    expect(result.medications).toEqual([])
+    expect(result.totalSymptomEvents).toBe(0)
+    expect(result.totalMedicationEvents).toBe(0)
+    expect(result.timeRange).toBe('all')
+  })
+
+  it('gibt leeres Ranking zurück bei DB-Fehler', async () => {
+    const builder = createRankingBuilder(null as never, { message: 'DB error' })
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toEqual([])
+    expect(result.medications).toEqual([])
+  })
+
+  it('trennt Symptome und Medikamente korrekt', async () => {
+    const mockRows = [
+      {
+        id: 'e1',
+        event_type: 'symptom',
+        occurred_at: '2026-02-10T10:00:00Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+          { field_name: 'intensity', value: '7' },
+        ],
+      },
+      {
+        id: 'e2',
+        event_type: 'symptom',
+        occurred_at: '2026-02-15T09:00:00Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+          { field_name: 'intensity', value: '5' },
+        ],
+      },
+      {
+        id: 'e3',
+        event_type: 'medication',
+        occurred_at: '2026-02-20T08:00:00Z',
+        extracted_data: [
+          { field_name: 'medication', value: 'Ibuprofen 400mg' },
+        ],
+      },
+    ]
+    const builder = createRankingBuilder(mockRows)
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-02-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toHaveLength(1)
+    expect(result.symptoms[0].name).toBe('Kopfschmerzen')
+    expect(result.symptoms[0].totalCount).toBe(2)
+    expect(result.symptoms[0].avgIntensity).toBeCloseTo(6.0)
+
+    expect(result.medications).toHaveLength(1)
+    expect(result.medications[0].name).toBe('Ibuprofen 400mg')
+    expect(result.medications[0].totalCount).toBe(1)
+
+    expect(result.totalSymptomEvents).toBe(2)
+    expect(result.totalMedicationEvents).toBe(1)
+  })
+
+  it('sortiert nach totalCount absteigend, dann alphabetisch', async () => {
+    const mockRows = [
+      {
+        id: 'e1',
+        event_type: 'symptom',
+        occurred_at: '2026-02-10T10:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Rücken' }],
+      },
+      {
+        id: 'e2',
+        event_type: 'symptom',
+        occurred_at: '2026-02-11T10:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Rücken' }],
+      },
+      {
+        id: 'e3',
+        event_type: 'symptom',
+        occurred_at: '2026-02-12T10:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Rücken' }],
+      },
+      {
+        id: 'e4',
+        event_type: 'symptom',
+        occurred_at: '2026-02-13T10:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Kopf' }],
+      },
+    ]
+    const builder = createRankingBuilder(mockRows)
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-02-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms[0].name).toBe('Rücken')
+    expect(result.symptoms[0].totalCount).toBe(3)
+    expect(result.symptoms[1].name).toBe('Kopf')
+    expect(result.symptoms[1].totalCount).toBe(1)
+  })
+
+  it('verwirft Events ausserhalb des Zeitraums (Timezone-Edge-Case)', async () => {
+    // Events am Puffer-Tag (1 Tag vor dateFrom) sollen NICHT gezählt werden
+    const mockRows = [
+      {
+        id: 'e1',
+        event_type: 'symptom',
+        // Puffer-Event: occurred_at am Tag vor dateFrom (2026-01-31)
+        occurred_at: '2026-01-31T23:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Puffer-Event' }],
+      },
+      {
+        id: 'e2',
+        event_type: 'symptom',
+        // Valides Event: am ersten Tag des Zeitraums
+        occurred_at: '2026-02-01T10:00:00Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+        ],
+      },
+    ]
+    const builder = createRankingBuilder(mockRows)
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-02-01',
+      '2026-03-15',
+    )
+
+    // Nur das valide Event soll gezählt werden
+    const names = result.symptoms.map((s) => s.name)
+    expect(names).not.toContain('Puffer-Event')
+    expect(names).toContain('Kopfschmerzen')
+    // Zeitraum-Filter prüfen: gte und lt werden mit ISO-Strings aufgerufen
+    expect(builder.gte).toHaveBeenCalledWith('occurred_at', expect.any(String))
+    expect(builder.lt).toHaveBeenCalledWith('occurred_at', expect.any(String))
+  })
+
+  it('sammelt Events ohne symptom_name in Unbekannt-Gruppe', async () => {
+    const mockRows = [
+      {
+        id: 'e1',
+        event_type: 'symptom',
+        occurred_at: '2026-02-10T10:00:00Z',
+        extracted_data: [], // kein symptom_name
+      },
+    ]
+    const builder = createRankingBuilder(mockRows)
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-02-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toHaveLength(1)
+    expect(result.symptoms[0].name).toBe('Unbekannt')
+    expect(result.symptoms[0].totalCount).toBe(1)
+  })
+})

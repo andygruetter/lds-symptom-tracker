@@ -138,4 +138,5 @@ export type SharedSymptomEvent = {
   rawInput: string | null
   audioUrl: string | null
   status: string
+  symptomName: string | null
 }

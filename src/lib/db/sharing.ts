@@ -1,8 +1,26 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { createServiceClient } from '@/lib/db/client'
+import {
+  calculateTrend,
+  mapRowToFeedEvent,
+  pivotExtractedData,
+  type RawFeedRow,
+  type TimelineRawRow,
+} from '@/lib/db/insights'
+import { getSignedMediaUrl } from '@/lib/db/media'
 import { generateSharingToken } from '@/lib/utils/crypto'
 import { toLocalDateKey } from '@/lib/utils/date'
+import type {
+  EventDetail,
+  EventPhoto,
+  ExtractedField,
+  FeedEvent,
+  MedicationRankingEntry,
+  MonthlyCount,
+  SymptomRanking,
+  SymptomRankingEntry,
+} from '@/types/analytics'
 import type { ActionResult } from '@/types/common'
 import type { Database } from '@/types/database'
 import type {
@@ -14,6 +32,7 @@ import type {
   SharingLinkListItem,
   SharingLinkStatus,
 } from '@/types/sharing'
+import type { SummaryEventData } from '@/types/summary'
 
 type DbClient = SupabaseClient<Database>
 
@@ -317,6 +336,7 @@ export async function validateSharingLinkById(
 
 /**
  * Lädt Symptom-Events für das Arzt-Dashboard (gefiltert nach Zeitraum + Soft-Delete).
+ * Inkl. erstem symptom_name aus extracted_data für die Event-Liste.
  * Verwendet Service Client — Arzt hat keine Auth-Session (RLS würde Query blocken).
  */
 export async function getSharedSymptomEvents(
@@ -328,7 +348,7 @@ export async function getSharedSymptomEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, ended_at, raw_input, audio_url, status',
+      'id, event_type, occurred_at, ended_at, raw_input, audio_url, status, extracted_data(field_name, value)',
     )
     .eq('account_id', accountId)
     .gte('occurred_at', dateFrom)
@@ -338,15 +358,344 @@ export async function getSharedSymptomEvents(
 
   if (error || !data) return []
 
+  return data.map((row) => {
+    const extractedData = Array.isArray(row.extracted_data)
+      ? (row.extracted_data as { field_name: string; value: string }[])
+      : []
+    const symptomName =
+      extractedData.find((f) => f.field_name === 'symptom_name')?.value ?? null
+    const medication =
+      extractedData.find((f) => f.field_name === 'medication')?.value ?? null
+
+    return {
+      id: row.id,
+      eventType: row.event_type,
+      occurredAt: row.occurred_at,
+      endedAt: row.ended_at,
+      rawInput: row.raw_input,
+      audioUrl: row.audio_url,
+      status: row.status,
+      symptomName: row.event_type === 'medication' ? medication : symptomName,
+    }
+  })
+}
+
+/**
+ * Lädt alle Events mit extrahierten Daten für die Arzt-Timeline.
+ * JOIN mit extracted_data + event_photos — liefert vollständige FeedEvent[].
+ * Verwendet Service Client — Arzt hat keine Auth-Session.
+ */
+export async function getSharedFeedEvents(
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<FeedEvent[]> {
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select(
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value), event_photos(id)',
+    )
+    .eq('account_id', accountId)
+    .eq('status', 'confirmed')
+    .is('deleted_at', null)
+    .gte('occurred_at', dateFrom)
+    .lte('occurred_at', dateTo)
+    .order('occurred_at', { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error(
+        '[Sharing] Feed-Events-Abfrage fehlgeschlagen:',
+        error.message,
+      )
+    }
+    return []
+  }
+
+  const rows = data as unknown as RawFeedRow[]
+  return rows.map(mapRowToFeedEvent)
+}
+
+/**
+ * Lädt Events mit extrahierten Daten für die KI-Summary-Generierung.
+ * JOIN mit extracted_data — liefert alle Felder pro Event.
+ * Sortierung: occurred_at ASC (chronologisch für Summary-Kontext).
+ * Verwendet Service Client — Arzt hat keine Auth-Session.
+ */
+export async function getSharedEventsForSummary(
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<SummaryEventData[]> {
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select(
+      'id, event_type, occurred_at, ended_at, raw_input, extracted_data(field_name, value, confidence)',
+    )
+    .eq('account_id', accountId)
+    .gte('occurred_at', dateFrom)
+    .lte('occurred_at', dateTo)
+    .is('deleted_at', null)
+    .order('occurred_at', { ascending: true })
+
+  if (error || !data) return []
+
   return data.map((row) => ({
     id: row.id,
     eventType: row.event_type,
     occurredAt: row.occurred_at,
     endedAt: row.ended_at,
     rawInput: row.raw_input,
-    audioUrl: row.audio_url,
-    status: row.status,
+    extractedFields: Array.isArray(row.extracted_data)
+      ? row.extracted_data.map((f) => ({
+          fieldName: f.field_name,
+          value: f.value,
+          confidence: f.confidence,
+        }))
+      : [],
   }))
+}
+
+/**
+ * Lädt Symptom-Ranking für das Arzt-Dashboard (gefiltert nach Zeitraum).
+ * Aggregiert Symptome und Medikamente nach Häufigkeit mit Trend-Berechnung.
+ * Verwendet Service Client — Arzt hat keine Auth-Session (RLS-Bypass).
+ */
+export async function getSharedSymptomRanking(
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<SymptomRanking> {
+  const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .eq('account_id', accountId)
+    .eq('status', 'confirmed')
+    .is('deleted_at', null)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
+    .order('occurred_at', { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error('[Sharing] Ranking-Abfrage fehlgeschlagen:', error.message)
+    }
+    return {
+      symptoms: [],
+      medications: [],
+      timeRange: 'all',
+      totalSymptomEvents: 0,
+      totalMedicationEvents: 0,
+    }
+  }
+
+  const rows = data as unknown as TimelineRawRow[]
+
+  // Aggregation-Maps: name → monatliche Counts + Intensitäten
+  const symptomMap = new Map<
+    string,
+    { monthlyCounts: Map<string, number>; intensities: number[] }
+  >()
+  const medicationMap = new Map<
+    string,
+    { monthlyCounts: Map<string, number> }
+  >()
+
+  for (const row of rows) {
+    const localKey = toLocalDateKey(new Date(row.occurred_at))
+
+    // Puffer-Events die ausserhalb des Zielzeitraums fallen ignorieren
+    if (localKey < dateFrom || localKey > dateTo) continue
+
+    const extracted = pivotExtractedData(row.extracted_data)
+    const isMedication = row.event_type === 'medication'
+    const [yearStr, monthStr] = localKey.split('-')
+    const year = parseInt(yearStr, 10)
+    const month = parseInt(monthStr, 10)
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`
+
+    if (isMedication) {
+      const name = extracted.medication ?? 'Unbekannt'
+      let entry = medicationMap.get(name)
+      if (!entry) {
+        entry = { monthlyCounts: new Map() }
+        medicationMap.set(name, entry)
+      }
+      entry.monthlyCounts.set(
+        monthKey,
+        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
+      )
+    } else {
+      const name = extracted.symptomName ?? 'Unbekannt'
+      let entry = symptomMap.get(name)
+      if (!entry) {
+        entry = { monthlyCounts: new Map(), intensities: [] }
+        symptomMap.set(name, entry)
+      }
+      entry.monthlyCounts.set(
+        monthKey,
+        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
+      )
+      if (extracted.intensity !== null) {
+        entry.intensities.push(extracted.intensity)
+      }
+    }
+  }
+
+  function toSortedMonthlyCounts(
+    countsMap: Map<string, number>,
+  ): MonthlyCount[] {
+    return Array.from(countsMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, count]) => {
+        const [y, m] = key.split('-').map(Number)
+        return { year: y, month: m, count }
+      })
+  }
+
+  const symptoms: SymptomRankingEntry[] = Array.from(symptomMap.entries())
+    .map(([name, { monthlyCounts, intensities }]) => {
+      const counts = toSortedMonthlyCounts(monthlyCounts)
+      const totalCount = counts.reduce((s, c) => s + c.count, 0)
+      const avgIntensity =
+        intensities.length > 0
+          ? intensities.reduce((s, v) => s + v, 0) / intensities.length
+          : null
+      return {
+        name,
+        totalCount,
+        monthlyCounts: counts,
+        trend: calculateTrend(counts),
+        avgIntensity,
+      }
+    })
+    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
+
+  const medications: MedicationRankingEntry[] = Array.from(
+    medicationMap.entries(),
+  )
+    .map(([name, { monthlyCounts }]) => {
+      const counts = toSortedMonthlyCounts(monthlyCounts)
+      const totalCount = counts.reduce((s, c) => s + c.count, 0)
+      return {
+        name,
+        totalCount,
+        monthlyCounts: counts,
+        trend: calculateTrend(counts),
+      }
+    })
+    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
+
+  return {
+    symptoms,
+    medications,
+    timeRange: 'all',
+    totalSymptomEvents: symptoms.reduce((s, e) => s + e.totalCount, 0),
+    totalMedicationEvents: medications.reduce((s, e) => s + e.totalCount, 0),
+  }
+}
+
+/**
+ * Lädt ein einzelnes Event mit allen Details für den Arzt-Drill-Down (Story 6.4).
+ * Validiert account_id + Zeitraum + Soft-Delete + status='confirmed'.
+ * Gibt signed URLs für Audio und Fotos zurück (15min TTL).
+ * Verwendet Service Client — Arzt hat keine Auth-Session (RLS würde Query blocken).
+ */
+export async function getSharedEventDetail(
+  accountId: string,
+  eventId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<EventDetail | null> {
+  const supabase = createServiceClient()
+
+  const { data: event, error: eventError } = await supabase
+    .from('symptom_events')
+    .select('*')
+    .eq('id', eventId)
+    .eq('account_id', accountId)
+    .gte('occurred_at', dateFrom)
+    .lte('occurred_at', dateTo)
+    .is('deleted_at', null)
+    .eq('status', 'confirmed')
+    .single()
+
+  if (eventError || !event) {
+    return null
+  }
+
+  const [{ data: extractedRows }, { data: photoRows }] = await Promise.all([
+    supabase
+      .from('extracted_data')
+      .select('field_name, value, confidence, confirmed, symptom_index')
+      .eq('symptom_event_id', eventId),
+    supabase
+      .from('event_photos')
+      .select('id, storage_path')
+      .eq('symptom_event_id', eventId)
+      .order('created_at', { ascending: true }),
+  ])
+
+  // Signed URL für Audio via Service Client (getSignedMediaUrl verwendet createServiceClient intern)
+  let audioUrl: string | null = null
+  if (event.audio_url) {
+    try {
+      audioUrl = await getSignedMediaUrl(event.audio_url, 'audio')
+    } catch {
+      audioUrl = null
+    }
+  }
+
+  // Signed URLs für Fotos via Promise.allSettled (resilient)
+  const photos: EventPhoto[] = []
+  if (photoRows && photoRows.length > 0) {
+    const results = await Promise.allSettled(
+      photoRows.map((p) => getSignedMediaUrl(p.storage_path, 'photos')),
+    )
+    for (let i = 0; i < photoRows.length; i++) {
+      const result = results[i]
+      if (result.status === 'fulfilled') {
+        photos.push({ id: photoRows[i].id, signedUrl: result.value })
+      }
+    }
+  }
+
+  const extractedFields: ExtractedField[] = (extractedRows ?? []).map((r) => ({
+    fieldName: r.field_name,
+    value: r.value,
+    confidence: r.confidence,
+    confirmed: r.confirmed ?? false,
+    symptomIndex: r.symptom_index ?? 0,
+  }))
+
+  const eventType = event.event_type === 'medication' ? 'medication' : 'symptom'
+  const fieldMap = new Map(extractedFields.map((f) => [f.fieldName, f.value]))
+  const symptomName = fieldMap.get('symptom_name') ?? null
+  const medication = fieldMap.get('medication') ?? null
+
+  return {
+    id: event.id,
+    eventType,
+    occurredAt: event.occurred_at,
+    createdAt: event.created_at,
+    endedAt: event.ended_at,
+    rawInput: event.raw_input,
+    audioUrl,
+    extractedFields,
+    photos,
+    symptomName,
+    medication,
+  }
 }
 
 /**
