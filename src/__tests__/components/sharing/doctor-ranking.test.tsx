@@ -50,9 +50,7 @@ describe('DoctorRanking', () => {
 
     render(<DoctorRanking ranking={ranking} />)
 
-    expect(screen.getAllByText('Kopfschmerzen')).toHaveLength(
-      expect.any(Number) || 1,
-    )
+    // Mobile + Desktop zeigen denselben Text, daher mindestens 1 Element
     expect(screen.getAllByText('Kopfschmerzen').length).toBeGreaterThanOrEqual(
       1,
     )
@@ -105,7 +103,8 @@ describe('DoctorRanking', () => {
     })
     rerender(<DoctorRanking ranking={rankingMit} />)
     expect(screen.getByText('Medikamente')).toBeInTheDocument()
-    expect(screen.getByText('Ibuprofen')).toBeInTheDocument()
+    // Mobile + Desktop zeigen denselben Text
+    expect(screen.getAllByText('Ibuprofen').length).toBeGreaterThanOrEqual(1)
   })
 
   it('verwendet Arzt-Theme: border und rounded-lg statt shadow-sm', async () => {
