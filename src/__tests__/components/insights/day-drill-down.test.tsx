@@ -28,6 +28,15 @@ const makeEvent = (id: string): FeedEvent => ({
   dosage: null,
   photoCount: 0,
   hasAudio: false,
+  symptoms: [
+    {
+      symptomName: `Symptom ${id}`,
+      bodyRegion: null,
+      side: null,
+      symptomType: null,
+      intensity: null,
+    },
+  ],
 })
 
 describe('DayDrillDown', () => {

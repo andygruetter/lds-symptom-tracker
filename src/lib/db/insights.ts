@@ -8,6 +8,7 @@ import type {
   EventPhoto,
   ExtractedField,
   FeedEvent,
+  FeedSymptomGroup,
   MedicationRankingEntry,
   MonthlyCount,
   MonthTimeline,
@@ -19,7 +20,11 @@ import type {
 import type { AppError } from '@/types/common'
 import type { Database } from '@/types/database'
 
-export type ExtractedDataRow = { field_name: string; value: string }
+export type ExtractedDataRow = {
+  field_name: string
+  value: string
+  symptom_index?: number
+}
 export type PhotoRow = { id: string }
 
 export type TimelineRawRow = {
@@ -77,9 +82,40 @@ export function pivotExtractedData(rows: ExtractedDataRow[] | null): {
   }
 }
 
+function groupExtractedBySymptomIndex(
+  rows: ExtractedDataRow[] | null,
+): FeedSymptomGroup[] {
+  if (!rows || rows.length === 0) return []
+
+  const groups = new Map<number, Map<string, string>>()
+  for (const r of rows) {
+    const idx = r.symptom_index ?? 0
+    if (!groups.has(idx)) groups.set(idx, new Map())
+    groups.get(idx)!.set(r.field_name, r.value)
+  }
+
+  return [...groups.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, map]) => {
+      const intensityRaw = map.get('intensity')
+      return {
+        symptomName: map.get('symptom_name') ?? null,
+        bodyRegion: map.get('body_region') ?? null,
+        side: map.get('side') ?? null,
+        symptomType: map.get('symptom_type') ?? null,
+        intensity:
+          intensityRaw !== undefined ? parseFloat(intensityRaw) || null : null,
+      }
+    })
+}
+
 export function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
   const extracted = pivotExtractedData(row.extracted_data)
   const eventType = row.event_type === 'medication' ? 'medication' : 'symptom'
+  const symptoms =
+    eventType === 'symptom'
+      ? groupExtractedBySymptomIndex(row.extracted_data)
+      : []
 
   return {
     id: row.id,
@@ -91,6 +127,7 @@ export function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
     ...extracted,
     photoCount: row.event_photos?.length ?? 0,
     hasAudio: row.audio_url !== null,
+    symptoms,
   }
 }
 
@@ -105,7 +142,7 @@ export async function getChronologicalFeed(
   let query = supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -613,7 +650,7 @@ export async function getSymptomEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -767,7 +804,7 @@ export async function getDayEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')

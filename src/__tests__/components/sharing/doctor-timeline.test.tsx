@@ -3,24 +3,55 @@ import { describe, expect, it } from 'vitest'
 
 import type { FeedEvent } from '@/types/analytics'
 
-const makeEvent = (overrides: Partial<FeedEvent> = {}): FeedEvent => ({
-  id: 'evt-1',
-  eventType: 'symptom',
-  occurredAt: '2026-03-14T09:30:00Z',
-  createdAt: '2026-03-14T09:30:00Z',
-  endedAt: null,
-  rawInput: 'Kopfschmerzen',
-  symptomName: 'Kopfschmerzen',
-  bodyRegion: 'Kopf',
-  side: null,
-  symptomType: null,
-  intensity: 5,
-  medication: null,
-  dosage: null,
-  photoCount: 0,
-  hasAudio: false,
-  ...overrides,
-})
+const makeEvent = (overrides: Partial<FeedEvent> = {}): FeedEvent => {
+  const base: FeedEvent = {
+    id: 'evt-1',
+    eventType: 'symptom',
+    occurredAt: '2026-03-14T09:30:00Z',
+    createdAt: '2026-03-14T09:30:00Z',
+    endedAt: null,
+    rawInput: 'Kopfschmerzen',
+    symptomName: 'Kopfschmerzen',
+    bodyRegion: 'Kopf',
+    side: null,
+    symptomType: null,
+    intensity: 5,
+    medication: null,
+    dosage: null,
+    photoCount: 0,
+    hasAudio: false,
+    symptoms: [
+      {
+        symptomName: 'Kopfschmerzen',
+        bodyRegion: 'Kopf',
+        side: null,
+        symptomType: null,
+        intensity: 5,
+      },
+    ],
+    ...overrides,
+  }
+  // Recompute symptoms when overrides change symptom fields, unless explicitly provided
+  if (!('symptoms' in overrides)) {
+    const et = base.eventType
+    if (et === 'medication') {
+      base.symptoms = []
+    } else if (base.symptomName) {
+      base.symptoms = [
+        {
+          symptomName: base.symptomName,
+          bodyRegion: base.bodyRegion,
+          side: base.side,
+          symptomType: base.symptomType,
+          intensity: base.intensity,
+        },
+      ]
+    } else {
+      base.symptoms = []
+    }
+  }
+  return base
+}
 
 describe('DoctorTimeline', () => {
   it('rendert Events nach Tag gruppiert', async () => {
@@ -100,10 +131,9 @@ describe('DoctorTimeline', () => {
       <DoctorTimeline events={[]} dateFrom="2026-03-01" dateTo="2026-03-15" />,
     )
 
-    // Check that dates are displayed in some format
-    expect(
-      screen.getByText(/Keine erfassten Symptome oder Medikamente/),
-    ).toBeInTheDocument()
+    const el = screen.getByText(/Keine erfassten Symptome oder Medikamente/)
+    expect(el.textContent).toMatch(/März 2026/)
+    expect(el.textContent).toContain('–')
   })
 
   it('zeigt Monats-Separator bei Monatswechsel', async () => {

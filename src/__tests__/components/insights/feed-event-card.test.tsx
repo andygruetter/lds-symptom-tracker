@@ -23,6 +23,15 @@ const symptomEvent: FeedEvent = {
   dosage: null,
   photoCount: 2,
   hasAudio: false,
+  symptoms: [
+    {
+      symptomName: 'Rückenschmerzen',
+      bodyRegion: 'Rücken',
+      side: 'links',
+      symptomType: 'stechend',
+      intensity: 7,
+    },
+  ],
 }
 
 const medicationEvent: FeedEvent = {
@@ -41,6 +50,7 @@ const medicationEvent: FeedEvent = {
   dosage: '1g',
   photoCount: 0,
   hasAudio: true,
+  symptoms: [],
 }
 
 describe('FeedEventCard', () => {

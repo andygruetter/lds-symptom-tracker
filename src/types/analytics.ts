@@ -13,6 +13,14 @@ export type MonthTimeline = {
   totalEvents: number
 }
 
+export type FeedSymptomGroup = {
+  symptomName: string | null
+  bodyRegion: string | null
+  side: string | null
+  symptomType: string | null
+  intensity: number | null
+}
+
 export type FeedEvent = {
   id: string
   eventType: 'symptom' | 'medication'
@@ -29,6 +37,8 @@ export type FeedEvent = {
   dosage: string | null
   photoCount: number
   hasAudio: boolean
+  /** Multi-symptom groups (empty for medication or single-symptom) */
+  symptoms: FeedSymptomGroup[]
 }
 
 export type FeedFilter = {
