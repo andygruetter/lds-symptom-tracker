@@ -9,14 +9,14 @@ export class EventEditPage {
 
   constructor(page: Page) {
     this.page = page
-    this.backButton = page.getByRole('button', { name: 'Zurück' })
+    this.backButton = page.getByRole('button', { name: 'Schliessen' })
     this.heading = page.getByRole('heading', { name: 'Symptom bearbeiten' })
     this.originalMessage = page.getByText('Ursprüngliche Meldung')
     this.correctionHistoryToggle = page.getByText(/\d+ Änderung/)
   }
 
   async goto(eventId: string) {
-    await this.page.goto(`/event/${eventId}`)
+    await this.page.goto(`/event/${eventId}/edit`)
   }
 
   async waitForForm() {

@@ -25,7 +25,7 @@ import type {
 import type { ActionResult } from '@/types/common'
 
 const loadMoreFeedEventsSchema = z.object({
-  cursor: z.string().datetime(),
+  cursor: z.string().datetime({ offset: true }),
   limit: z.number().int().min(1).max(50).default(20),
 })
 

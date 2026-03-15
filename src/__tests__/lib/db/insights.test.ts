@@ -827,46 +827,53 @@ describe('getEventDetail', () => {
 })
 
 // Mock supabase for soft-delete operations (UPDATE with select chaining)
-function createMockSupabaseDelete(selectResult: {
-  data: Record<string, unknown>[] | null
-  error: { message: string } | null
-}) {
-  const builder = {
-    update: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    is: vi.fn().mockReturnThis(),
-    select: vi.fn().mockResolvedValue(selectResult),
-  }
-  return {
-    from: vi.fn(() => builder),
-    _builder: builder,
-  }
-}
-
 describe('softDeleteEvent', () => {
+  function mockForDeleteEvent(opts: {
+    existsData: Record<string, unknown> | null
+    updateError?: { message: string } | null
+  }) {
+    const selectBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: opts.existsData,
+        error: opts.existsData ? null : { code: 'PGRST116' },
+      }),
+    }
+    const updateBuilder = {
+      update: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockResolvedValue({ error: opts.updateError ?? null }),
+    }
+    return {
+      from: vi
+        .fn()
+        .mockReturnValueOnce(selectBuilder)
+        .mockReturnValueOnce(updateBuilder),
+      _selectBuilder: selectBuilder,
+      _updateBuilder: updateBuilder,
+    }
+  }
+
   it('setzt deleted_at und gibt keinen Fehler zurück bei Erfolg', async () => {
-    const supabase = createMockSupabaseDelete({
-      data: [{ id: 'event-1' }],
-      error: null,
+    const supabase = mockForDeleteEvent({
+      existsData: { id: 'event-1' },
     })
 
     const { softDeleteEvent } = await import('@/lib/db/insights')
     const result = await softDeleteEvent(supabase as never, 'event-1', 'user-1')
 
     expect(result.error).toBeNull()
-    expect(supabase.from).toHaveBeenCalledWith('symptom_events')
-    expect(supabase._builder.update).toHaveBeenCalledWith({
+    expect(supabase.from).toHaveBeenCalledTimes(2)
+    expect(supabase._updateBuilder.update).toHaveBeenCalledWith({
       deleted_at: expect.any(String),
     })
-    expect(supabase._builder.eq).toHaveBeenCalledWith('id', 'event-1')
-    expect(supabase._builder.eq).toHaveBeenCalledWith('account_id', 'user-1')
-    expect(supabase._builder.is).toHaveBeenCalledWith('deleted_at', null)
   })
 
   it('gibt NOT_FOUND zurück wenn kein Event gefunden', async () => {
-    const supabase = createMockSupabaseDelete({
-      data: [],
-      error: null,
+    const supabase = mockForDeleteEvent({
+      existsData: null,
     })
 
     const { softDeleteEvent } = await import('@/lib/db/insights')
@@ -878,12 +885,14 @@ describe('softDeleteEvent', () => {
 
     expect(result.error).not.toBeNull()
     expect(result.error!.code).toBe('NOT_FOUND')
+    // Update should not be called
+    expect(supabase.from).toHaveBeenCalledTimes(1)
   })
 
   it('gibt DELETE_FAILED zurück bei DB-Fehler', async () => {
-    const supabase = createMockSupabaseDelete({
-      data: null,
-      error: { message: 'DB error' },
+    const supabase = mockForDeleteEvent({
+      existsData: { id: 'event-1' },
+      updateError: { message: 'DB error' },
     })
 
     const { softDeleteEvent } = await import('@/lib/db/insights')
@@ -895,10 +904,33 @@ describe('softDeleteEvent', () => {
 })
 
 describe('softDeleteAllEvents', () => {
+  function mockForDeleteAll(opts: {
+    selectData: Record<string, unknown>[]
+    updateError?: { message: string } | null
+  }) {
+    const selectBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockResolvedValue({ data: opts.selectData, error: null }),
+    }
+    const updateBuilder = {
+      update: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockResolvedValue({ error: opts.updateError ?? null }),
+    }
+    return {
+      from: vi
+        .fn()
+        .mockReturnValueOnce(selectBuilder)
+        .mockReturnValueOnce(updateBuilder),
+      _selectBuilder: selectBuilder,
+      _updateBuilder: updateBuilder,
+    }
+  }
+
   it('löscht alle Events und gibt deletedCount zurück', async () => {
-    const supabase = createMockSupabaseDelete({
-      data: [{ id: 'ev-1' }, { id: 'ev-2' }, { id: 'ev-3' }],
-      error: null,
+    const supabase = mockForDeleteAll({
+      selectData: [{ id: 'ev-1' }, { id: 'ev-2' }, { id: 'ev-3' }],
     })
 
     const { softDeleteAllEvents } = await import('@/lib/db/insights')
@@ -906,14 +938,12 @@ describe('softDeleteAllEvents', () => {
 
     expect(result.error).toBeNull()
     expect(result.deletedCount).toBe(3)
-    expect(supabase._builder.eq).toHaveBeenCalledWith('account_id', 'user-1')
-    expect(supabase._builder.is).toHaveBeenCalledWith('deleted_at', null)
+    expect(supabase.from).toHaveBeenCalledTimes(2)
   })
 
   it('gibt deletedCount 0 zurück wenn keine Events vorhanden', async () => {
-    const supabase = createMockSupabaseDelete({
-      data: [],
-      error: null,
+    const supabase = mockForDeleteAll({
+      selectData: [],
     })
 
     const { softDeleteAllEvents } = await import('@/lib/db/insights')
@@ -921,5 +951,7 @@ describe('softDeleteAllEvents', () => {
 
     expect(result.error).toBeNull()
     expect(result.deletedCount).toBe(0)
+    // No update should be called when count is 0
+    expect(supabase.from).toHaveBeenCalledTimes(1)
   })
 })

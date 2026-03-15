@@ -618,23 +618,33 @@ export async function softDeleteEvent(
   eventId: string,
   accountId: string,
 ): Promise<{ error: AppError | null }> {
-  const { data, error } = await supabase
+  // Pre-check: verify event exists and belongs to user
+  // (SELECT policy requires deleted_at IS NULL, so we check before updating)
+  const { data: exists } = await supabase
+    .from('symptom_events')
+    .select('id')
+    .eq('id', eventId)
+    .eq('account_id', accountId)
+    .is('deleted_at', null)
+    .single()
+
+  if (!exists) {
+    return { error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' } }
+  }
+
+  // Update without .select() — RLS SELECT policy blocks reading soft-deleted rows
+  const { error } = await supabase
     .from('symptom_events')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', eventId)
     .eq('account_id', accountId)
     .is('deleted_at', null)
-    .select('id')
 
   if (error) {
     console.error('[Insights] Event soft-delete fehlgeschlagen:', error.message)
     return {
       error: { error: 'Löschung fehlgeschlagen', code: 'DELETE_FAILED' },
     }
-  }
-
-  if (!data || data.length === 0) {
-    return { error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' } }
   }
 
   return { error: null }
@@ -644,12 +654,26 @@ export async function softDeleteAllEvents(
   supabase: SupabaseClient<Database>,
   accountId: string,
 ): Promise<{ deletedCount: number; error: AppError | null }> {
-  const { data, error } = await supabase
+  // Count matching events before update
+  // (SELECT policy requires deleted_at IS NULL, so we count before soft-deleting)
+  const { data: events } = await supabase
+    .from('symptom_events')
+    .select('id')
+    .eq('account_id', accountId)
+    .is('deleted_at', null)
+
+  const count = events?.length ?? 0
+
+  if (count === 0) {
+    return { deletedCount: 0, error: null }
+  }
+
+  // Update without .select() — RLS SELECT policy blocks reading soft-deleted rows
+  const { error } = await supabase
     .from('symptom_events')
     .update({ deleted_at: new Date().toISOString() })
     .eq('account_id', accountId)
     .is('deleted_at', null)
-    .select('id')
 
   if (error) {
     console.error(
@@ -662,5 +686,5 @@ export async function softDeleteAllEvents(
     }
   }
 
-  return { deletedCount: data?.length ?? 0, error: null }
+  return { deletedCount: count, error: null }
 }
