@@ -1,6 +1,6 @@
 # Story 4.3: Symptom-Häufigkeits-Ranking mit Trendlinien
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -445,6 +445,23 @@ Neue Dateien:
 - `src/__tests__/components/insights/symptom-ranking.test.tsx`
 - `src/__tests__/components/insights/symptom-ranking-card.test.tsx`
 
+### Senior Developer Review (AI)
+
+**Reviewer:** claude-opus-4-6 | **Datum:** 2026-03-15 | **Ergebnis:** PASS
+
+| Severity | Count |
+|----------|-------|
+| High | 0 |
+| Medium | 0 |
+| Low | 2 |
+
+**L1 — Ungenutzter Import (Fixed):** `userEvent` in `symptom-ranking.test.tsx` importiert aber nie verwendet. Import entfernt.
+
+**L2 — Dünne Interaktionstests (Akzeptiert):** Keine Tests für Card-Toggle-Expansion, Zeitraum-Wechsel-Loading oder Error-State. Rendering-Tests decken die spezifizierten ACs ab.
+
+**Positiv-Befunde:** Timezone-Safety konsistent, lineare Regression korrekt implementiert, saubere SVG-Sparklines, alle Typen in bestehender `analytics.ts` erweitert, `aria-expanded` und 44px Touch-Targets vorhanden.
+
 ### Change Log
 
+- 2026-03-15: Code Review (claude-opus-4-6) — PASS, 0 High/Medium, 2 Low (1 fixed), Status → done
 - 2026-03-14: Story 4.3 implementiert — Symptom-Häufigkeits-Ranking mit Trendlinien, Sparklines, Zeitraum-Filter, Inline-Expansion, dritter Tab "Ranking" auf Auswertung-Seite
