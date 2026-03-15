@@ -30,11 +30,38 @@ interface ClarificationTemplate {
 // Dynamische Optionen basierend auf extrahiertem Wert
 const BODY_REGION_SUBOPTIONS: Record<string, string[]> = {
   kopf: ['Stirn', 'Schläfe', 'Hinterkopf', 'Scheitel'],
-  rücken: ['Oberer Rücken', 'Unterer Rücken', 'Schulterblatt', 'Lendenbereich'],
+  rücken: [
+    'Oberer Rücken',
+    'Zwischen Schulterblättern',
+    'Unterer Rücken',
+    'Lendenbereich',
+    'Kreuzbein',
+  ],
   bauch: ['Oberbauch', 'Unterbauch', 'Links', 'Rechts'],
-  bein: ['Oberschenkel', 'Knie', 'Unterschenkel', 'Wade', 'Fuss'],
-  arm: ['Oberarm', 'Unterarm', 'Ellbogen', 'Hand'],
+  brust: ['Brustbein', 'Herz-Bereich', 'Seitlich', 'Überall'],
+  bein: [
+    'Oberschenkel',
+    'Knie',
+    'Unterschenkel',
+    'Wade',
+    'Sprunggelenk',
+    'Fuss',
+  ],
+  arm: ['Oberarm', 'Unterarm', 'Ellbogen', 'Handgelenk', 'Hand'],
   schulter: ['Vorne', 'Hinten', 'Seitlich'],
+  gelenk: [
+    'Schulter',
+    'Knie',
+    'Handgelenk',
+    'Sprunggelenk',
+    'Hüfte',
+    'Kiefergelenk',
+  ],
+  fuss: ['Fusssohle', 'Fussrücken', 'Sprunggelenk', 'Zehen'],
+  auge: ['Beide Augen', 'Nur ein Auge', 'Hinter dem Auge'],
+  hals: ['Nacken', 'Halsschlagader', 'Halswirbelsäule', 'Kehlkopf'],
+  nacken: ['Oberer Nacken', 'Unterer Nacken', 'Halswirbelsäule', 'Seitlich'],
+  ohr: ['Im Ohr', 'Hinter dem Ohr', 'Rauschen/Pulsierend', 'Pfeifen/Sausen'],
 }
 
 function getBodyRegionOptions(extractedValue?: string): string[] {
@@ -46,8 +73,10 @@ function getBodyRegionOptions(extractedValue?: string): string[] {
       'Rücken',
       'Brust',
       'Bauch',
+      'Gelenk',
       'Bein',
       'Arm',
+      'Auge',
     ]
   }
 
@@ -67,10 +96,14 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
     options: [
       'Kopfschmerzen',
       'Rückenschmerzen',
-      'Übelkeit',
+      'Gelenkschmerzen',
+      'Brustschmerzen',
       'Schwindel',
-      'Müdigkeit',
       'Herzrasen',
+      'Müdigkeit',
+      'Atemnot',
+      'Sehstörungen',
+      'Ohrgeräusche',
     ],
   },
   symptom_time: {
@@ -107,8 +140,10 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       'Ziehend',
       'Dumpf',
       'Brennend',
-      'Kribbelnd',
       'Pochend',
+      'Reissend',
+      'Drückend',
+      'Kribbelnd',
     ],
   },
   duration: {
@@ -129,6 +164,8 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       'Nach dem Essen',
       'Beim Aufstehen',
       'In Ruhe',
+      'Wetterwechsel',
+      'Stress',
     ],
   },
   frequency: {

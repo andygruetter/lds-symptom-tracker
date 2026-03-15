@@ -12,6 +12,7 @@ const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 // Standardisierte Taxonomie für konsistente Extraktion
 const SYMPTOM_TAXONOMY = {
   symptomNames: [
+    // Allgemeine Symptome
     'Kopfschmerzen',
     'Migräne',
     'Rückenschmerzen',
@@ -44,9 +45,52 @@ const SYMPTOM_TAXONOMY = {
     'Durchfall',
     'Sodbrennen',
     'Blähungen',
+    // Kardiovaskulär (LDS/Marfan-kritisch)
+    'Aortenschmerzen',
+    'Blutdruckschwankungen',
+    'Synkope',
+    'Belastungsdyspnoe',
+    // Zerebrovaskulär (Kopfgefäss-Dissektion/Aneurysma)
+    'Ohrgeräusche',
+    'Pulsierendes Rauschen',
+    'Vernichtungskopfschmerz',
+    'Sprachstörungen',
+    'Schluckstörungen',
+    'Sehverlust',
+    'Gesichtsfeldausfall',
+    'Hängendes Augenlid',
+    'Gesichtstaubheit',
+    // Muskuloskelettal (Bindegewebserkrankungen)
+    'Gelenkinstabilität',
+    'Subluxation',
+    'Gelenküberbeweglichkeit',
+    'Fussschmerzen',
+    'Kieferschmerzen',
+    'Hüftschmerzen',
+    'Handgelenkschmerzen',
+    'Muskelkrämpfe',
+    // Okulär (Marfan/LDS)
+    'Sehstörungen',
+    'Lichtempfindlichkeit',
+    'Mouches volantes',
+    'Augenflimmern',
+    'Doppeltsehen',
+    // Allergisch/Entzündlich (LDS-typisch)
+    'Asthmaanfall',
+    'Ekzem',
+    'allergische Reaktion',
+    'Nahrungsmittelunverträglichkeit',
+    // Haut (Bindegewebe)
+    'Dehnungsstreifen',
+    'Hämatome',
+    'Wundheilungsstörung',
+    // Allgemein
+    'Belastungsintoleranz',
+    'Ohnmacht',
   ],
   // Synonym → kanonischer Term: Verschiedene Bezeichnungen auf einen einheitlichen Wert normalisieren
   synonyms: [
+    // Allgemein
     ['Rhythmusstörungen', 'Herzrhythmusstörungen'],
     ['Arrhythmie', 'Herzrhythmusstörungen'],
     ['Herzstolpern', 'Herzrhythmusstörungen'],
@@ -72,6 +116,88 @@ const SYMPTOM_TAXONOMY = {
     ['Fatigue', 'Erschöpfung'],
     ['Abgeschlagenheit', 'Erschöpfung'],
     ['Mattigkeit', 'Müdigkeit'],
+    // Kardiovaskulär (LDS/Marfan)
+    ['Herzstechen', 'Brustschmerzen'],
+    ['Engegefühl in der Brust', 'Brustschmerzen'],
+    ['Beklemmung', 'Brustschmerzen'],
+    ['Kreislaufkollaps', 'Synkope'],
+    ['umgekippt', 'Synkope'],
+    ['schwarz vor Augen', 'Synkope'],
+    ['Atemnot bei Belastung', 'Belastungsdyspnoe'],
+    ['Blutdruck schwankt', 'Blutdruckschwankungen'],
+    ['Blutdruck hoch', 'Blutdruckschwankungen'],
+    ['Blutdruck niedrig', 'Blutdruckschwankungen'],
+    // Zerebrovaskulär (Kopfgefäss-Dissektion/Aneurysma)
+    ['Rauschen im Kopf', 'Pulsierendes Rauschen'],
+    ['Rauschen im Ohr', 'Pulsierendes Rauschen'],
+    ['pulsierender Tinnitus', 'Pulsierendes Rauschen'],
+    ['Whoosh im Ohr', 'Pulsierendes Rauschen'],
+    ['Herzschlag im Ohr', 'Pulsierendes Rauschen'],
+    ['Puls im Ohr hören', 'Pulsierendes Rauschen'],
+    ['Ohrensausen', 'Ohrgeräusche'],
+    ['Tinnitus', 'Ohrgeräusche'],
+    ['Pfeifen im Ohr', 'Ohrgeräusche'],
+    ['Donnerschlagkopfschmerz', 'Vernichtungskopfschmerz'],
+    ['schlimmster Kopfschmerz meines Lebens', 'Vernichtungskopfschmerz'],
+    ['explosionsartiger Kopfschmerz', 'Vernichtungskopfschmerz'],
+    ['plötzlich extremer Kopfschmerz', 'Vernichtungskopfschmerz'],
+    ['kann nicht mehr sprechen', 'Sprachstörungen'],
+    ['Wörter finden schwer', 'Sprachstörungen'],
+    ['undeutliche Sprache', 'Sprachstörungen'],
+    ['lallen', 'Sprachstörungen'],
+    ['kann nicht schlucken', 'Schluckstörungen'],
+    ['Schlucken tut weh', 'Schluckstörungen'],
+    ['sehe nichts mehr', 'Sehverlust'],
+    ['Auge blind', 'Sehverlust'],
+    ['halbes Bild fehlt', 'Gesichtsfeldausfall'],
+    ['Sehen nur halb', 'Gesichtsfeldausfall'],
+    ['Augenlid hängt', 'Hängendes Augenlid'],
+    ['Lid hängt', 'Hängendes Augenlid'],
+    ['Pupille klein', 'Hängendes Augenlid'],
+    ['Gesicht taub', 'Gesichtstaubheit'],
+    ['Gesicht fühlt sich komisch an', 'Gesichtstaubheit'],
+    ['halbes Gesicht taub', 'Gesichtstaubheit'],
+    // Muskuloskelettal (Bindegewebe)
+    ['Gelenk ausgerenkt', 'Subluxation'],
+    ['ausgekugelt', 'Subluxation'],
+    ['Gelenk rausgesprungen', 'Subluxation'],
+    ['Gelenk rutscht raus', 'Subluxation'],
+    ['überbeweglich', 'Gelenküberbeweglichkeit'],
+    ['überdehnt', 'Gelenküberbeweglichkeit'],
+    ['Hypermobilität', 'Gelenküberbeweglichkeit'],
+    ['Plattfüsse', 'Fussschmerzen'],
+    ['Senkfüsse', 'Fussschmerzen'],
+    ['Kieferknacken', 'Kieferschmerzen'],
+    ['Kiefer blockiert', 'Kieferschmerzen'],
+    // Okulär (Marfan/LDS)
+    ['verschwommen sehen', 'Sehstörungen'],
+    ['Sehen unscharf', 'Sehstörungen'],
+    ['Blitze sehen', 'Sehstörungen'],
+    ['Punkte sehen', 'Mouches volantes'],
+    ['Fäden sehen', 'Mouches volantes'],
+    ['fliegende Mücken', 'Mouches volantes'],
+    ['Lichtblitze', 'Augenflimmern'],
+    ['lichtempfindlich', 'Lichtempfindlichkeit'],
+    ['Photophobie', 'Lichtempfindlichkeit'],
+    // Allergisch/Entzündlich (LDS)
+    ['Atmanfall', 'Asthmaanfall'],
+    ['Atemnot pfeifend', 'Asthmaanfall'],
+    ['Giemen', 'Asthmaanfall'],
+    ['Neurodermitis', 'Ekzem'],
+    ['Allergie', 'allergische Reaktion'],
+    ['Lebensmittelallergie', 'Nahrungsmittelunverträglichkeit'],
+    ['Essen nicht vertragen', 'Nahrungsmittelunverträglichkeit'],
+    // Haut (Bindegewebe)
+    ['blaue Flecken', 'Hämatome'],
+    ['Bluterguss', 'Hämatome'],
+    ['Striae', 'Dehnungsstreifen'],
+    ['Schwangerschaftsstreifen', 'Dehnungsstreifen'],
+    ['Wunde heilt nicht', 'Wundheilungsstörung'],
+    ['Narbe aufgegangen', 'Wundheilungsstörung'],
+    // Allgemein
+    ['kann mich nicht belasten', 'Belastungsintoleranz'],
+    ['halte Belastung nicht aus', 'Belastungsintoleranz'],
+    ['in Ohnmacht gefallen', 'Ohnmacht'],
   ],
   bodyRegions: [
     'Kopf',
@@ -81,31 +207,47 @@ const SYMPTOM_TAXONOMY = {
     'Scheitel',
     'Nacken',
     'Halswirbelsäule',
+    'Halsschlagader',
     'Schulter',
     'Oberarm',
     'Unterarm',
+    'Ellbogen',
+    'Handgelenk',
     'Hand',
     'Finger',
     'oberer Rücken',
+    'zwischen Schulterblättern',
     'unterer Rücken',
     'Lendenbereich',
+    'Kreuzbein',
     'Brustwirbelsäule',
+    'Wirbelsäule',
     'Brust',
+    'Brustbein',
     'Bauch',
     'Oberbauch',
     'Unterbauch',
     'Hüfte',
+    'Becken',
     'Leiste',
     'Oberschenkel',
     'Knie',
     'Unterschenkel',
     'Wade',
+    'Sprunggelenk',
     'Fuss',
+    'Fusssohle',
     'Zehen',
     'Auge',
     'Ohr',
     'Kiefer',
+    'Kiefergelenk',
     'Hals',
+    // Kardiovaskulär-spezifisch
+    'Aorta',
+    'Herz',
+    // Haut (Bindegewebe)
+    'Haut allgemein',
   ],
   symptomTypes: [
     'stechend',
@@ -120,6 +262,15 @@ const SYMPTOM_TAXONOMY = {
     'schneidend',
     'bohrend',
     'wellenförmig',
+    // LDS/Marfan-kritische Schmerzqualitäten
+    'reissend',
+    'zerreissend',
+    'ausstrahlend',
+    'wandernd',
+    'plötzlich einsetzend',
+    'einschnürend',
+    'instabil',
+    'nachgebend',
   ],
 }
 
@@ -222,6 +373,47 @@ Eingabe: "Hab um 8 Ibuprofen 400 genommen gegen die Kopfschmerzen"
   - action: "eingenommen" (95)
   - dosage: "400mg" (90)
   - reason: "Kopfschmerzen" (90)
+
+## Krankheitskontext: Loeys-Dietz-Syndrom (LDS) / Marfan-Syndrom
+
+Die App wird von Patienten mit Bindegewebserkrankungen (LDS, Marfan, Ehlers-Danlos) genutzt. Achte besonders auf folgende krankheitstypische Muster:
+
+### Kardiovaskuläre Symptome (hohe klinische Relevanz!)
+- Brustschmerzen/Rückenschmerzen zwischen den Schulterblättern → immer body_region genau extrahieren
+- "Reissender"/"zerreissender" Schmerz in Brust oder Rücken → kann Aortendissektion signalisieren → symptom_type präzise als "reissend" oder "zerreissend" erfassen
+- Herzstolpern, Herzrasen, unregelmässiger Herzschlag → Herzrhythmusstörungen (Mitralklappenprolaps-typisch)
+- Schwindel, Ohnmacht, "schwarz vor Augen" → Synkope (kann vaskulär bedingt sein)
+- Atemnot bei Belastung → als "Belastungsdyspnoe" extrahieren, Trigger genau erfassen
+
+### Zerebrovaskuläre Symptome (Kopfgefäss-Dissektion/Aneurysma — LDS-kritisch!)
+LDS-Patienten haben erhöhtes Risiko für Karotis- und Vertebralisdissektionen. Achte besonders auf:
+- "Rauschen im Kopf/Ohr", "Herzschlag im Ohr hören", "Puls im Ohr" → "Pulsierendes Rauschen" (pulsatiler Tinnitus — Warnsignal für Karotisdissektion!)
+- UNTERSCHEIDE: pulsierendes/rhythmisches Rauschen ("Pulsierendes Rauschen") vs. konstantes Pfeifen/Sausen ("Ohrgeräusche")
+- Plötzlicher extremer Kopfschmerz ("schlimmster Kopfschmerz meines Lebens") → "Vernichtungskopfschmerz" (kann Aneurysmaruptur/Subarachnoidalblutung signalisieren!)
+- Plötzlicher einseitiger Nackenschmerz/Kopfschmerz hinter dem Auge → kann Karotisdissektion sein → body_region + side genau erfassen
+- Hängendes Augenlid + enge Pupille (Horner-Syndrom) → "Hängendes Augenlid" (Karotisdissektion-Warnsignal)
+- Sprachstörungen, Schluckstörungen, einseitige Taubheit/Gesichtstaubheit → können auf Schlaganfall durch Dissektion hinweisen
+- Sehverlust, Gesichtsfeldausfall → dringend, kann ischämisch bedingt sein
+
+### Muskuloskelettale Symptome (Bindegewebsschwäche)
+- Gelenke, die "rausspringen", "ausrenken", "überdehnen" → "Subluxation" + betroffenes Gelenk als body_region
+- Häufige Regionen: Schulter, Knie, Handgelenk, Sprunggelenk, Kiefergelenk, Hüfte
+- Rückenschmerzen im Lendenbereich/Kreuzbein → kann auf durale Ektasie hinweisen
+- Fussschmerzen, Plattfüsse → "Fussschmerzen" mit body_region "Fuss" oder "Fusssohle"
+
+### Okuläre Symptome (besonders Marfan)
+- "Verschwommen sehen", "Punkte/Fäden sehen", "Blitze" → genau differenzieren: Sehstörungen vs. Mouches volantes vs. Augenflimmern
+- Lichtempfindlichkeit → eigenständiges Symptom erfassen
+
+### Allergisch/Entzündliche Symptome (LDS-typisch!)
+- Asthma-Symptome (pfeifende Atmung, Atemnot) → "Asthmaanfall", nicht mit kardialer Atemnot verwechseln
+- Ekzem, Hautausschlag, Juckreiz → differenzieren ob allergisch oder bindegewebsbedingt
+- Nahrungsmittelunverträglichkeiten → als eigenes Symptom erfassen
+
+### Haut-Symptome (Bindegewebsschwäche)
+- Leicht blaue Flecken, Hämatome ohne Trauma → "Hämatome"
+- Dehnungsstreifen (auch ohne Schwangerschaft/Gewichtszunahme) → "Dehnungsstreifen"
+- Verzögerte Wundheilung → "Wundheilungsstörung"
 
 Sprache: Der Patient schreibt auf Deutsch (möglicherweise Schweizerdeutsch).
 Übersetze Dialekt-Ausdrücke ins Hochdeutsche.`

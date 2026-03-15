@@ -182,9 +182,10 @@ describe('generateClarificationQuestions', () => {
     const result = generateClarificationQuestions(fields)
     expect(result[0].options).toEqual([
       'Oberer Rücken',
+      'Zwischen Schulterblättern',
       'Unterer Rücken',
-      'Schulterblatt',
       'Lendenbereich',
+      'Kreuzbein',
     ])
   })
 
@@ -193,7 +194,7 @@ describe('generateClarificationQuestions', () => {
       makeField({
         field_name: 'body_region',
         confidence: 40,
-        value: 'Hals',
+        value: 'Leiste',
       }),
     ]
 
@@ -204,6 +205,24 @@ describe('generateClarificationQuestions', () => {
       'Links',
       'Rechts',
       'Mitte',
+    ])
+  })
+
+  it('gibt Hals-Suboptionen wenn body_region "Hals" enthält', () => {
+    const fields = [
+      makeField({
+        field_name: 'body_region',
+        confidence: 40,
+        value: 'Hals',
+      }),
+    ]
+
+    const result = generateClarificationQuestions(fields)
+    expect(result[0].options).toEqual([
+      'Nacken',
+      'Halsschlagader',
+      'Halswirbelsäule',
+      'Kehlkopf',
     ])
   })
 
@@ -224,8 +243,10 @@ describe('generateClarificationQuestions', () => {
       'Rücken',
       'Brust',
       'Bauch',
+      'Gelenk',
       'Bein',
       'Arm',
+      'Auge',
     ])
   })
 
@@ -273,6 +294,8 @@ describe('generateClarificationQuestions', () => {
       'Nach dem Essen',
       'Beim Aufstehen',
       'In Ruhe',
+      'Wetterwechsel',
+      'Stress',
     ])
   })
 
