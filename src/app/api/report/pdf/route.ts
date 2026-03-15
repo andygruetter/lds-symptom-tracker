@@ -1,17 +1,19 @@
+import React from 'react'
+
 import { cookies } from 'next/headers'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
-import React from 'react'
 
-import { createServerClient, createServiceClient } from '@/lib/db/client'
+import { renderToBuffer } from '@react-pdf/renderer'
+
 import { trackSharingAccess } from '@/lib/db/audit'
+import { createServerClient, createServiceClient } from '@/lib/db/client'
 import { validateSharingLinkById } from '@/lib/db/sharing'
-import { parseSharingSession } from '@/lib/sharing/session'
 import { aggregatePdfData } from '@/lib/pdf/pdf-data'
 import { SymptomReportDocument } from '@/lib/pdf/symptom-report'
-import type { SharingLinkData } from '@/types/sharing'
+import { parseSharingSession } from '@/lib/sharing/session'
 import type { PdfReportData } from '@/types/report'
+import type { SharingLinkData } from '@/types/sharing'
 
 type AuthResult = {
   accountId: string
@@ -120,11 +122,21 @@ export async function GET(request: NextRequest) {
     const buffer = await renderToBuffer(element)
 
     // Audit-Log (best-effort, blockiert nicht)
+    const auditMeta = {
+      dateFrom,
+      dateTo,
+      eventCount: data.metadata.totalEvents,
+    }
     if (sharingLink) {
-      void trackSharingAccess(request, sharingLink, 'pdf_download', {
-        dateFrom,
-        dateTo,
-        eventCount: data.metadata.totalEvents,
+      void trackSharingAccess(request, sharingLink, 'pdf_download', auditMeta)
+    } else {
+      // Patient-Download: DB audit_log erfordert sharing_link_id (NOT NULL) —
+      // bis zur Migration (sharing_link_id nullable) loggen wir server-seitig.
+      // TODO: Migration erstellen um sharing_link_id nullable zu machen, dann hier insertAuditEntry nutzen
+      console.info('[PDF] Patient-Download audit:', {
+        accountId,
+        action: 'pdf_download',
+        ...auditMeta,
       })
     }
 
