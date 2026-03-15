@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/db/client'
 import { hashIpAddress } from '@/lib/utils/crypto'
 import type { AuditAction, AuditLogListItem } from '@/types/audit'
-import type { Database } from '@/types/database'
+import type { Database, Json } from '@/types/database'
 
 type DbClient = SupabaseClient<Database>
 
@@ -35,7 +35,7 @@ export async function insertAuditEntry(
     sharing_link_id: params.sharingLinkId,
     action: params.action,
     ip_address_hash: params.ipAddressHash ?? null,
-    metadata: params.metadata ?? null,
+    metadata: (params.metadata as Json) ?? null,
   })
 
   if (error) {

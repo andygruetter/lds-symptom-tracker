@@ -21,7 +21,7 @@ export const InsertAuditEntrySchema = z.object({
   sharingLinkId: z.string().uuid(),
   action: AuditActionSchema,
   ipAddressHash: z.string().nullable().optional(),
-  metadata: z.record(z.unknown()).nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 })
 
 export type InsertAuditEntryInput = z.infer<typeof InsertAuditEntrySchema>
