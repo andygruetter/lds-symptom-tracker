@@ -39,6 +39,7 @@ export function useSymptomEvents() {
     const { data } = await supabaseRef.current
       .from('symptom_events')
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
     if (data) {
@@ -138,6 +139,11 @@ export function useSymptomEvents() {
           }
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as SymptomEvent
+            // Soft-deleted Events aus dem Feed entfernen
+            if (updated.deleted_at) {
+              setEvents((prev) => prev.filter((e) => e.id !== updated.id))
+              return
+            }
             setEvents((prev) =>
               prev.map((e) => (e.id === updated.id ? updated : e)),
             )

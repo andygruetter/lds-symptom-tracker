@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { ClarificationBubble } from '@/components/capture/clarification-bubble'
+import { ClarificationInline } from '@/components/capture/clarification-inline'
 import { ConfidenceIndicator } from '@/components/capture/confidence-indicator'
 import { SymptomTag } from '@/components/capture/symptom-tag'
 import type { ClarificationQuestion, ExtractedData } from '@/types/ai'
@@ -64,13 +64,24 @@ export function ReviewBubble({
     }
   }
 
+  // Find the first unanswered clarification question
+  const firstUnanswered = clarificationQuestions.find(
+    (q) => !(q.fieldName in answers),
+  )
+
+  // Filter out <UNKNOWN> fields — they provide no value to the user
+  const visibleFields = extractedFields.filter(
+    (f) => f.value !== '<UNKNOWN>' && f.value !== 'UNKNOWN',
+  )
+  const hasVisibleFields = visibleFields.length > 0
+
   return (
-    <>
-      {/* Tags + ConfidenceIndicator Bubble */}
-      <div className="flex justify-start">
-        <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-card px-4 py-2.5 text-card-foreground shadow-sm">
+    <div className="flex justify-start">
+      <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-card px-4 py-2.5 text-card-foreground shadow-sm">
+        {/* Extracted fields as tags (UNKNOWN values hidden) */}
+        {hasVisibleFields ? (
           <div className="flex flex-wrap gap-1.5">
-            {extractedFields.map((field) => (
+            {visibleFields.map((field) => (
               <SymptomTag
                 key={field.id}
                 label={field.field_name}
@@ -84,66 +95,69 @@ export function ReviewBubble({
               />
             ))}
           </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Konnte nicht erkannt werden — bitte ergänze die Angaben unten.
+          </p>
+        )}
 
-          <div className="mt-2">
-            <ConfidenceIndicator score={avgConfidence} />
-          </div>
-
-          {/* Buttons only shown when all clarifications are answered */}
-          {allClarificationsAnswered && (
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={() => onConfirm(eventId)}
-                disabled={isConfirming}
-                className="min-h-[48px] min-w-[48px] rounded-full bg-[#3A856F] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
-                {isConfirming ? 'Wird bestätigt...' : 'Bestätigen'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const firstUnconfirmed = extractedFields.find(
-                    (f) => !f.confirmed,
-                  )
-                  if (firstUnconfirmed) {
-                    setEditingField(firstUnconfirmed.id)
-                  }
-                }}
-                className="min-h-[48px] min-w-[48px] rounded-full bg-muted px-4 py-2 text-sm font-medium text-foreground"
-              >
-                Ändern
-              </button>
-            </div>
-          )}
+        <div className="mt-2">
+          <ConfidenceIndicator score={avgConfidence} />
         </div>
-      </div>
 
-      {/* Clarification questions — sequential, answer-based */}
-      {(() => {
-        const firstUnanswered = clarificationQuestions.find(
-          (q) => !(q.fieldName in answers),
-        )
-        return clarificationQuestions.map((q) => {
-          const isAnswered = q.fieldName in answers
-          // Show answered questions + the first unanswered one
-          if (
-            !isAnswered &&
-            firstUnanswered &&
-            q.fieldName !== firstUnanswered.fieldName
-          )
-            return null
-          return (
-            <ClarificationBubble
-              key={q.fieldName}
-              question={q}
-              onAnswer={handleClarificationAnswer}
-              isAnswered={isAnswered}
-              answeredValue={answers[q.fieldName]}
-            />
-          )
-        })
-      })()}
-    </>
+        {/* Clarification questions — inline, sequential */}
+        {hasClarifications && (
+          <div className="mt-3 space-y-3 border-t border-border pt-3">
+            {clarificationQuestions.map((q) => {
+              const isAnswered = q.fieldName in answers
+              // Show answered questions + the first unanswered one
+              if (
+                !isAnswered &&
+                firstUnanswered &&
+                q.fieldName !== firstUnanswered.fieldName
+              )
+                return null
+              return (
+                <ClarificationInline
+                  key={q.fieldName}
+                  question={q}
+                  onAnswer={handleClarificationAnswer}
+                  isAnswered={isAnswered}
+                  answeredValue={answers[q.fieldName]}
+                />
+              )
+            })}
+          </div>
+        )}
+
+        {/* Action buttons — shown when all clarifications are answered */}
+        {allClarificationsAnswered && (
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => onConfirm(eventId)}
+              disabled={isConfirming}
+              className="min-h-[48px] min-w-[48px] rounded-full bg-[#3A856F] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {isConfirming ? 'Wird bestätigt...' : 'Bestätigen'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const firstUnconfirmed = extractedFields.find(
+                  (f) => !f.confirmed,
+                )
+                if (firstUnconfirmed) {
+                  setEditingField(firstUnconfirmed.id)
+                }
+              }}
+              className="min-h-[48px] min-w-[48px] rounded-full bg-muted px-4 py-2 text-sm font-medium text-foreground"
+            >
+              Ändern
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

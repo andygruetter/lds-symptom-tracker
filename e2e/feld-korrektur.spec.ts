@@ -52,7 +52,7 @@ test.describe('Feld-Korrektur', () => {
     ])
 
     await capturePage.goto()
-    await page.getByRole('button', { name: 'symptom_name ändern' }).click()
+    await page.getByRole('button', { name: 'Symptom ändern' }).click()
 
     const editInput = page.locator('input[type="text"]').last()
     await editInput.fill('Schulterschmerzen')
@@ -75,7 +75,7 @@ test.describe('Feld-Korrektur', () => {
     ])
 
     await capturePage.goto()
-    await page.getByRole('button', { name: 'symptom_name ändern' }).click()
+    await page.getByRole('button', { name: 'Symptom ändern' }).click()
 
     const editInput = page.locator('input[type="text"]').last()
     await editInput.fill('Neuer Wert')

@@ -400,7 +400,7 @@ export function EventEditForm({
   return (
     <div className="flex h-dvh flex-col bg-background">
       {/* Header */}
-      <div className="flex shrink-0 items-center border-b border-border px-4 py-3">
+      <div className="flex shrink-0 items-center border-b border-border px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <button
           type="button"
           onClick={handleBack}

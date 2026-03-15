@@ -25,6 +25,17 @@ interface ClarificationTemplate {
 }
 
 const clarificationTemplates: Record<string, ClarificationTemplate> = {
+  symptom_name: {
+    question: 'Welches Symptom hast du?',
+    options: [
+      'Kopfschmerzen',
+      'Rückenschmerzen',
+      'Übelkeit',
+      'Schwindel',
+      'Müdigkeit',
+      'Herzrasen',
+    ],
+  },
   symptom_time: {
     question: 'Wann genau ist das Symptom aufgetreten?',
     options: ['Gerade eben', 'Vor 1 Stunde', 'Heute Morgen', 'Gestern'],
