@@ -26,16 +26,52 @@ const FIELD_LABELS: Record<string, string> = {
   dosage: 'Dosierung',
 }
 
-const SYMPTOM_FIELDS = [
+/** Per-symptom fields (shown per group in multi-symptom) */
+const PER_SYMPTOM_FIELDS = ['body_region', 'side', 'symptom_type', 'intensity']
+
+/** Shared fields (shown once for the whole event) */
+const SHARED_FIELDS = ['symptom_time', 'duration']
+
+const ALL_SYMPTOM_FIELDS = [
   'symptom_name',
-  'body_region',
-  'side',
-  'symptom_type',
-  'intensity',
-  'symptom_time',
-  'duration',
+  ...PER_SYMPTOM_FIELDS,
+  ...SHARED_FIELDS,
 ]
 const MEDICATION_FIELDS = ['medication', 'dosage']
+
+function groupBySymptomIndex(
+  fields: ExtractedField[],
+): Map<number, ExtractedField[]> {
+  const groups = new Map<number, ExtractedField[]>()
+  for (const field of fields) {
+    const idx = field.symptomIndex ?? 0
+    if (!groups.has(idx)) groups.set(idx, [])
+    groups.get(idx)!.push(field)
+  }
+  return groups
+}
+
+function formatSymptomTimestamp(isoString: string): string {
+  const date = new Date(isoString)
+  if (isNaN(date.getTime())) return isoString
+  return new Intl.DateTimeFormat('de-CH', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+function formatDurationMinutes(minutesStr: string): string | null {
+  const minutes = parseInt(minutesStr, 10)
+  if (isNaN(minutes) || minutes <= 0) return null
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0 && mins > 0) return `${hours} Std. ${mins} Min.`
+  if (hours > 0) return `${hours} Std.`
+  return `${minutes} Min.`
+}
 
 function getConfidenceColor(confidence: number): string {
   if (confidence >= 85) return 'bg-green-500'
@@ -56,6 +92,10 @@ function formatDateTime(isoString: string): string {
 function formatFieldValue(field: ExtractedField): string {
   if (!field.value) return 'Nicht erfasst'
   if (field.fieldName === 'intensity') return `${field.value}/10`
+  if (field.fieldName === 'symptom_time')
+    return formatSymptomTimestamp(field.value)
+  if (field.fieldName === 'duration')
+    return formatDurationMinutes(field.value) ?? field.value
   return field.value
 }
 
@@ -76,8 +116,19 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
   }
 
   const isMedication = detail.eventType === 'medication'
-  const relevantFieldNames = isMedication ? MEDICATION_FIELDS : SYMPTOM_FIELDS
+  const relevantFieldNames = isMedication
+    ? MEDICATION_FIELDS
+    : ALL_SYMPTOM_FIELDS
 
+  const symptomGroups = isMedication
+    ? null
+    : groupBySymptomIndex(detail.extractedFields)
+  const sortedGroupKeys = symptomGroups
+    ? [...symptomGroups.keys()].sort((a, b) => a - b)
+    : []
+  const isMultiSymptom = sortedGroupKeys.length > 1
+
+  // For medication or single-symptom fallback
   const fieldMap = new Map(detail.extractedFields.map((f) => [f.fieldName, f]))
 
   const displayFields = relevantFieldNames.map((name) => {
@@ -88,6 +139,7 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
         value: null,
         confidence: null,
         confirmed: false,
+        symptomIndex: 0,
       }
     )
   })
@@ -186,38 +238,156 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
           <h2 className="mb-3 text-sm font-semibold text-foreground">
             Extrahierte Daten
           </h2>
-          <div className="flex flex-col divide-y divide-border rounded-xl border border-border">
-            {displayFields.map((field) => (
-              <div
-                key={field.fieldName}
-                className="flex items-center justify-between px-4 py-3"
-              >
-                <span className="text-sm text-muted-foreground">
-                  {FIELD_LABELS[field.fieldName] ?? field.fieldName}
-                </span>
-                <div className="flex items-center gap-2">
-                  {field.confidence !== null && (
-                    <span
-                      className={cn(
-                        'size-2 rounded-full',
-                        getConfidenceColor(field.confidence),
-                      )}
-                      title={`Konfidenz: ${Math.round(field.confidence)}%`}
-                      aria-label={`Konfidenz ${Math.round(field.confidence)}%`}
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      'text-sm',
-                      field.value ? 'text-foreground' : 'text-muted-foreground',
-                    )}
+          {isMultiSymptom ? (
+            <div className="space-y-4">
+              {/* Per-symptom cards */}
+              {sortedGroupKeys.map((groupIdx, i) => {
+                const groupFields = symptomGroups!.get(groupIdx)!
+                const groupFieldMap = new Map(
+                  groupFields.map((f) => [f.fieldName, f]),
+                )
+                const symptomName =
+                  groupFieldMap.get('symptom_name')?.value ?? `Symptom ${i + 1}`
+                const symptomNameConf =
+                  groupFieldMap.get('symptom_name')?.confidence ?? null
+
+                // Only show per-symptom fields that have values
+                const filledFields = PER_SYMPTOM_FIELDS.map((name) =>
+                  groupFieldMap.get(name),
+                ).filter((f): f is ExtractedField => !!f && !!f.value)
+
+                return (
+                  <div
+                    key={groupIdx}
+                    className="rounded-xl border border-border"
                   >
-                    {formatFieldValue(field)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+                    {/* Symptom header */}
+                    <div className="flex items-center gap-2 px-4 py-3">
+                      <span className="inline-flex size-5 items-center justify-center rounded-full bg-[#C06A3C]/10 text-xs font-semibold text-[#C06A3C]">
+                        {i + 1}
+                      </span>
+                      <span className="text-sm font-semibold text-foreground">
+                        {symptomName}
+                      </span>
+                      {symptomNameConf !== null && (
+                        <span
+                          className={cn(
+                            'size-2 rounded-full',
+                            getConfidenceColor(symptomNameConf),
+                          )}
+                          title={`Konfidenz: ${Math.round(symptomNameConf)}%`}
+                          aria-label={`Konfidenz ${Math.round(symptomNameConf)}%`}
+                        />
+                      )}
+                    </div>
+                    {/* Detail fields — only filled ones */}
+                    {filledFields.length > 0 && (
+                      <div className="divide-y divide-border border-t border-border">
+                        {filledFields.map((field) => (
+                          <div
+                            key={`${groupIdx}-${field.fieldName}`}
+                            className="flex items-center justify-between px-4 py-2.5"
+                          >
+                            <span className="text-xs text-muted-foreground">
+                              {FIELD_LABELS[field.fieldName] ?? field.fieldName}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {field.confidence !== null && (
+                                <span
+                                  className={cn(
+                                    'size-2 rounded-full',
+                                    getConfidenceColor(field.confidence),
+                                  )}
+                                  title={`Konfidenz: ${Math.round(field.confidence)}%`}
+                                  aria-label={`Konfidenz ${Math.round(field.confidence)}%`}
+                                />
+                              )}
+                              <span className="text-sm text-foreground">
+                                {formatFieldValue(field)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+
+              {/* Shared fields: Zeitpunkt & Dauer (once for the event) */}
+              {(() => {
+                const firstGroup = symptomGroups!.get(sortedGroupKeys[0])!
+                const sharedFieldMap = new Map(
+                  firstGroup.map((f) => [f.fieldName, f]),
+                )
+                const filledShared = SHARED_FIELDS.map((name) =>
+                  sharedFieldMap.get(name),
+                ).filter((f): f is ExtractedField => !!f && !!f.value)
+
+                if (filledShared.length === 0) return null
+
+                return (
+                  <div className="flex flex-col divide-y divide-border rounded-xl border border-border">
+                    {filledShared.map((field) => (
+                      <div
+                        key={field.fieldName}
+                        className="flex items-center justify-between px-4 py-3"
+                      >
+                        <span className="text-sm text-muted-foreground">
+                          {FIELD_LABELS[field.fieldName] ?? field.fieldName}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {field.confidence !== null && (
+                            <span
+                              className={cn(
+                                'size-2 rounded-full',
+                                getConfidenceColor(field.confidence),
+                              )}
+                              title={`Konfidenz: ${Math.round(field.confidence)}%`}
+                              aria-label={`Konfidenz ${Math.round(field.confidence)}%`}
+                            />
+                          )}
+                          <span className="text-sm text-foreground">
+                            {formatFieldValue(field)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
+          ) : (
+            <div className="flex flex-col divide-y divide-border rounded-xl border border-border">
+              {displayFields
+                .filter((f) => !!f.value)
+                .map((field) => (
+                  <div
+                    key={field.fieldName}
+                    className="flex items-center justify-between px-4 py-3"
+                  >
+                    <span className="text-sm text-muted-foreground">
+                      {FIELD_LABELS[field.fieldName] ?? field.fieldName}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {field.confidence !== null && (
+                        <span
+                          className={cn(
+                            'size-2 rounded-full',
+                            getConfidenceColor(field.confidence),
+                          )}
+                          title={`Konfidenz: ${Math.round(field.confidence)}%`}
+                          aria-label={`Konfidenz ${Math.round(field.confidence)}%`}
+                        />
+                      )}
+                      <span className="text-sm text-foreground">
+                        {formatFieldValue(field)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
 
         {/* Bearbeiten-Link — nur für Symptom-Events */}

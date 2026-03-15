@@ -395,25 +395,37 @@ describe('correctExtractedField', () => {
       data: { user: { id: 'user-1' } },
     })
 
-    // Mock: select().eq().eq().single() returns existing field
-    mockEq.mockReturnValue({
+    // Ownership-Check: select('id').eq().eq().single()
+    mockEq.mockReturnValueOnce({
       eq: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({
-          data: {
-            id: 'field-1',
-            symptom_event_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
-            field_name: 'Körperteil',
-            value: 'Schulterblatt',
-            confidence: 75,
-            confirmed: false,
-            created_at: '2026-03-02T10:00:00Z',
-          },
+          data: { id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d' },
           error: null,
         }),
       }),
     })
 
-    // Mock: update().eq().eq().select().single() for the field update
+    // Field-Lookup: select().eq().eq().eq().single()
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'field-1',
+              symptom_event_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+              field_name: 'Körperteil',
+              value: 'Schulterblatt',
+              confidence: 75,
+              confirmed: false,
+              created_at: '2026-03-02T10:00:00Z',
+            },
+            error: null,
+          }),
+        }),
+      }),
+    })
+
+    // Mock: update().eq().eq().eq().select().single() for the field update
     const updatedField = {
       id: 'field-1',
       symptom_event_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
@@ -428,9 +440,14 @@ describe('correctExtractedField', () => {
       error: null,
     })
     const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
-    const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
+    const updateEqSymptomIndex = vi
+      .fn()
+      .mockReturnValue({ select: updateSelect })
+    const updateEqFieldName = vi
+      .fn()
+      .mockReturnValue({ eq: updateEqSymptomIndex })
     mockUpdate.mockReturnValue({
-      eq: vi.fn().mockReturnValue({ eq: updateEqInner }),
+      eq: vi.fn().mockReturnValue({ eq: updateEqFieldName }),
     })
 
     // Mock: insert for corrections table
@@ -461,19 +478,32 @@ describe('correctExtractedField', () => {
       data: { user: { id: 'user-1' } },
     })
 
-    mockEq.mockReturnValue({
+    // Ownership-Check
+    mockEq.mockReturnValueOnce({
       eq: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({
-          data: {
-            id: 'field-1',
-            symptom_event_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
-            field_name: 'body_region',
-            value: 'Schulterblatt',
-            confidence: 75,
-            confirmed: false,
-            created_at: '2026-03-02T10:00:00Z',
-          },
+          data: { id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d' },
           error: null,
+        }),
+      }),
+    })
+
+    // Field-Lookup: select().eq().eq().eq().single()
+    mockEq.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'field-1',
+              symptom_event_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+              field_name: 'body_region',
+              value: 'Schulterblatt',
+              confidence: 75,
+              confirmed: false,
+              created_at: '2026-03-02T10:00:00Z',
+            },
+            error: null,
+          }),
         }),
       }),
     })
@@ -492,9 +522,14 @@ describe('correctExtractedField', () => {
       error: null,
     })
     const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
-    const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
+    const updateEqSymptomIndex = vi
+      .fn()
+      .mockReturnValue({ select: updateSelect })
+    const updateEqFieldName = vi
+      .fn()
+      .mockReturnValue({ eq: updateEqSymptomIndex })
     mockUpdate.mockReturnValue({
-      eq: vi.fn().mockReturnValue({ eq: updateEqInner }),
+      eq: vi.fn().mockReturnValue({ eq: updateEqFieldName }),
     })
     mockInsert.mockResolvedValue({ error: null })
 
@@ -532,10 +567,12 @@ describe('correctExtractedField', () => {
       }),
     })
 
-    // Field-Lookup: Kein vorhandenes Feld → INSERT-Pfad
+    // Field-Lookup: Kein vorhandenes Feld → INSERT-Pfad (3 eq levels)
     mockEq.mockReturnValueOnce({
       eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
       }),
     })
 
@@ -591,20 +628,22 @@ describe('correctExtractedField', () => {
       }),
     })
 
-    // Field-Lookup: bestehendes symptom_time Feld
+    // Field-Lookup: bestehendes symptom_time Feld (3 eq levels)
     mockEq.mockReturnValueOnce({
       eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({
-          data: {
-            id: 'f-time',
-            symptom_event_id: eventId,
-            field_name: 'symptom_time',
-            value: '2026-03-09T06:00:00.000Z',
-            confidence: 75,
-            confirmed: false,
-            created_at: '2026-03-11T10:00:00Z',
-          },
-          error: null,
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'f-time',
+              symptom_event_id: eventId,
+              field_name: 'symptom_time',
+              value: '2026-03-09T06:00:00.000Z',
+              confidence: 75,
+              confirmed: false,
+              created_at: '2026-03-11T10:00:00Z',
+            },
+            error: null,
+          }),
         }),
       }),
     })
@@ -616,13 +655,18 @@ describe('correctExtractedField', () => {
       error: null,
     })
     const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
-    const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
+    const updateEqSymptomIndex = vi
+      .fn()
+      .mockReturnValue({ select: updateSelect })
+    const updateEqFieldName = vi
+      .fn()
+      .mockReturnValue({ eq: updateEqSymptomIndex })
     const syncEq = vi.fn().mockResolvedValue({ error: null })
 
     mockUpdate.mockImplementation(() => {
       updateCallCount++
       if (updateCallCount === 1) {
-        return { eq: vi.fn().mockReturnValue({ eq: updateEqInner }) }
+        return { eq: vi.fn().mockReturnValue({ eq: updateEqFieldName }) }
       }
       return { eq: syncEq }
     })
@@ -658,17 +702,19 @@ describe('correctExtractedField', () => {
     })
     mockEq.mockReturnValueOnce({
       eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({
-          data: {
-            id: 'f-time',
-            symptom_event_id: eventId,
-            field_name: 'symptom_time',
-            value: '2026-03-09T06:00:00.000Z',
-            confidence: 75,
-            confirmed: false,
-            created_at: '2026-03-11T10:00:00Z',
-          },
-          error: null,
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'f-time',
+              symptom_event_id: eventId,
+              field_name: 'symptom_time',
+              value: '2026-03-09T06:00:00.000Z',
+              confidence: 75,
+              confirmed: false,
+              created_at: '2026-03-11T10:00:00Z',
+            },
+            error: null,
+          }),
         }),
       }),
     })
@@ -679,10 +725,15 @@ describe('correctExtractedField', () => {
       error: null,
     })
     const updateSelect = vi.fn().mockReturnValue({ single: updateSingle })
-    const updateEqInner = vi.fn().mockReturnValue({ select: updateSelect })
+    const updateEqSymptomIndex = vi
+      .fn()
+      .mockReturnValue({ select: updateSelect })
+    const updateEqFieldName = vi
+      .fn()
+      .mockReturnValue({ eq: updateEqSymptomIndex })
     mockUpdate.mockImplementation(() => {
       updateCallCount++
-      return { eq: vi.fn().mockReturnValue({ eq: updateEqInner }) }
+      return { eq: vi.fn().mockReturnValue({ eq: updateEqFieldName }) }
     })
 
     mockInsert.mockResolvedValue({ error: null })

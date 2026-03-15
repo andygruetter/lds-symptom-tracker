@@ -37,6 +37,7 @@ describe('whisperProvider', () => {
       file: expect.anything(),
       model: 'gpt-4o-transcribe',
       language: 'de',
+      temperature: 0,
       prompt: expect.stringContaining('Hochdeutsch'),
     })
     expect(result).toEqual({ text: 'Ich habe Kopfschmerzen' })
@@ -84,5 +85,65 @@ describe('whisperProvider', () => {
     expect(mockToFile).toHaveBeenCalledWith(buffer, 'audio.webm', {
       type: 'audio/webm;codecs=opus',
     })
+  })
+
+  it('leitet TranscriptionContext an buildWhisperPrompt weiter', async () => {
+    const { whisperProvider } = await import('@/lib/ai/providers/whisper')
+
+    const buffer = Buffer.from('audio')
+    const context = { vocabularyTerms: ['Triptane', 'Sumatriptan'] }
+    await whisperProvider.transcribe(buffer, 'audio/webm', context)
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('Triptane'),
+      }),
+    )
+  })
+})
+
+describe('buildWhisperPrompt', () => {
+  it('enthält Basis-Prompt und medizinische Domain-Begriffe', async () => {
+    const { buildWhisperPrompt } = await import('@/lib/ai/providers/whisper')
+
+    const prompt = buildWhisperPrompt()
+
+    expect(prompt).toContain('Hochdeutsch')
+    expect(prompt).toContain('Kopfschmerzen')
+    expect(prompt).toContain('Ibuprofen')
+    expect(prompt).toContain('Medizinische Begriffe:')
+  })
+
+  it('fügt patientenspezifisches Vokabular hinzu', async () => {
+    const { buildWhisperPrompt } = await import('@/lib/ai/providers/whisper')
+
+    const prompt = buildWhisperPrompt({
+      vocabularyTerms: ['Triptane', 'Sumatriptan'],
+    })
+
+    expect(prompt).toContain('Triptane')
+    expect(prompt).toContain('Sumatriptan')
+  })
+
+  it('dedupliziert gegen bestehende Domain-Begriffe', async () => {
+    const { buildWhisperPrompt } = await import('@/lib/ai/providers/whisper')
+
+    const prompt = buildWhisperPrompt({
+      vocabularyTerms: ['Kopfschmerzen', 'Triptane'],
+    })
+
+    // Kopfschmerzen sollte nur einmal vorkommen (bereits in Domain-Begriffen)
+    const matches = prompt.match(/Kopfschmerzen/g)
+    expect(matches).toHaveLength(2) // einmal in Basis-Prompt, einmal in Domain-Begriffe
+    expect(prompt).toContain('Triptane')
+  })
+
+  it('funktioniert mit leerem vocabularyTerms Array', async () => {
+    const { buildWhisperPrompt } = await import('@/lib/ai/providers/whisper')
+
+    const promptWithEmpty = buildWhisperPrompt({ vocabularyTerms: [] })
+    const promptWithout = buildWhisperPrompt()
+
+    expect(promptWithEmpty).toBe(promptWithout)
   })
 })

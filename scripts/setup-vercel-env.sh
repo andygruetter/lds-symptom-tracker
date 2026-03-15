@@ -12,6 +12,9 @@
 #   preview    → .env.preview
 #   production → .env.production
 #
+# Vars werden immer fuer BEIDE Vercel-Targets (preview + production) gesetzt,
+# damit sie in allen Deployment-Typen des Projekts verfuegbar sind.
+#
 # Env-Dateien muessen enthalten:
 #   VERCEL_TOKEN=...    (Vercel API Token)
 #   VERCEL_PROJECT=...  (Vercel Projektname)
@@ -128,27 +131,30 @@ setup_target() {
       continue
     fi
 
-    # Pruefen ob Variable bereits existiert
-    local EXISTING_ID
-    EXISTING_ID=$(echo "$EXISTING_ENVS" | jq -r \
-      --arg key "$KEY" --arg target "$TARGET" \
-      '.envs[] | select(.key == $key and (.target[] == $target)) | .id' \
-      2>/dev/null | head -1 || true)
+    # Alle bestehenden Eintraege fuer diesen Key loeschen (alle Targets)
+    local EXISTING_IDS
+    EXISTING_IDS=$(echo "$EXISTING_ENVS" | jq -r \
+      --arg key "$KEY" \
+      '.envs[] | select(.key == $key) | .id' \
+      2>/dev/null || true)
 
-    # Falls vorhanden: loeschen
-    if [[ -n "$EXISTING_ID" ]]; then
-      echo "  Aktualisiere $KEY (loesche alte Version)..."
-      curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
-        "https://api.vercel.com/v9/projects/$PROJECT_ID/env/$EXISTING_ID$TEAM_PARAM" > /dev/null
+    if [[ -n "$EXISTING_IDS" ]]; then
+      echo "  Aktualisiere $KEY (loesche alte Version(en))..."
+      while IFS= read -r eid; do
+        [[ -z "$eid" ]] && continue
+        curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
+          "https://api.vercel.com/v9/projects/$PROJECT_ID/env/$eid$TEAM_PARAM" > /dev/null
+      done <<< "$EXISTING_IDS"
     fi
 
     # JSON-Payload mit jq erstellen (sicheres Escaping)
+    # Setzt fuer BEIDE Vercel-Targets (preview + production),
+    # damit Vars in allen Deployment-Typen des Projekts verfuegbar sind.
     local PAYLOAD
     PAYLOAD=$(jq -n \
       --arg key "$KEY" \
       --arg value "$VALUE" \
-      --arg target "$TARGET" \
-      '{key: $key, value: $value, target: [$target], type: "encrypted"}')
+      '{key: $key, value: $value, target: ["preview", "production"], type: "encrypted"}')
 
     # Neue Variable setzen
     echo "  Setze $KEY..."

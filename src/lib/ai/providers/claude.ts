@@ -9,36 +9,407 @@ import { extractionResultSchema } from '@/types/ai'
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 
+// Standardisierte Taxonomie für konsistente Extraktion
+const SYMPTOM_TAXONOMY = {
+  symptomNames: [
+    // Allgemeine Symptome
+    'Kopfschmerzen',
+    'Migräne',
+    'Rückenschmerzen',
+    'Nackenschmerzen',
+    'Schulterschmerzen',
+    'Gelenkschmerzen',
+    'Bauchschmerzen',
+    'Brustschmerzen',
+    'Schwindel',
+    'Übelkeit',
+    'Erbrechen',
+    'Müdigkeit',
+    'Erschöpfung',
+    'Schlafstörungen',
+    'Herzrhythmusstörungen',
+    'Herzrasen',
+    'Atemnot',
+    'Husten',
+    'Halsschmerzen',
+    'Ohrenschmerzen',
+    'Augenschmerzen',
+    'Zahnschmerzen',
+    'Fieber',
+    'Schüttelfrost',
+    'Hautausschlag',
+    'Juckreiz',
+    'Taubheitsgefühl',
+    'Kribbeln',
+    'Verstopfung',
+    'Durchfall',
+    'Sodbrennen',
+    'Blähungen',
+    // Kardiovaskulär (LDS/Marfan-kritisch)
+    'Aortenschmerzen',
+    'Blutdruckschwankungen',
+    'Synkope',
+    'Belastungsdyspnoe',
+    // Zerebrovaskulär (Kopfgefäss-Dissektion/Aneurysma)
+    'Ohrgeräusche',
+    'Pulsierendes Rauschen',
+    'Vernichtungskopfschmerz',
+    'Sprachstörungen',
+    'Schluckstörungen',
+    'Sehverlust',
+    'Gesichtsfeldausfall',
+    'Hängendes Augenlid',
+    'Gesichtstaubheit',
+    // Muskuloskelettal (Bindegewebserkrankungen)
+    'Gelenkinstabilität',
+    'Subluxation',
+    'Gelenküberbeweglichkeit',
+    'Fussschmerzen',
+    'Kieferschmerzen',
+    'Hüftschmerzen',
+    'Handgelenkschmerzen',
+    'Muskelkrämpfe',
+    // Okulär (Marfan/LDS)
+    'Sehstörungen',
+    'Lichtempfindlichkeit',
+    'Mouches volantes',
+    'Augenflimmern',
+    'Doppeltsehen',
+    // Allergisch/Entzündlich (LDS-typisch)
+    'Asthmaanfall',
+    'Ekzem',
+    'allergische Reaktion',
+    'Nahrungsmittelunverträglichkeit',
+    // Haut (Bindegewebe)
+    'Dehnungsstreifen',
+    'Hämatome',
+    'Wundheilungsstörung',
+    // Allgemein
+    'Belastungsintoleranz',
+    'Ohnmacht',
+  ],
+  // Synonym → kanonischer Term: Verschiedene Bezeichnungen auf einen einheitlichen Wert normalisieren
+  synonyms: [
+    // Allgemein
+    ['Rhythmusstörungen', 'Herzrhythmusstörungen'],
+    ['Arrhythmie', 'Herzrhythmusstörungen'],
+    ['Herzstolpern', 'Herzrhythmusstörungen'],
+    ['Palpitationen', 'Herzrasen'],
+    ['Herzklopfen', 'Herzrasen'],
+    ['Cephalgie', 'Kopfschmerzen'],
+    ['Kopfweh', 'Kopfschmerzen'],
+    ['Bauchweh', 'Bauchschmerzen'],
+    ['Magenschmerzen', 'Bauchschmerzen'],
+    ['Brechreiz', 'Übelkeit'],
+    ['Schlaflosigkeit', 'Schlafstörungen'],
+    ['Insomnie', 'Schlafstörungen'],
+    ['Vertigo', 'Schwindel'],
+    ['Benommenheit', 'Schwindel'],
+    ['Luftnot', 'Atemnot'],
+    ['Kurzatmigkeit', 'Atemnot'],
+    ['Obstipation', 'Verstopfung'],
+    ['Diarrhö', 'Durchfall'],
+    ['Reflux', 'Sodbrennen'],
+    ['Pruritus', 'Juckreiz'],
+    ['Exanthem', 'Hautausschlag'],
+    ['Parästhesie', 'Kribbeln'],
+    ['Fatigue', 'Erschöpfung'],
+    ['Abgeschlagenheit', 'Erschöpfung'],
+    ['Mattigkeit', 'Müdigkeit'],
+    // Kardiovaskulär (LDS/Marfan)
+    ['Herzstechen', 'Brustschmerzen'],
+    ['Engegefühl in der Brust', 'Brustschmerzen'],
+    ['Beklemmung', 'Brustschmerzen'],
+    ['Kreislaufkollaps', 'Synkope'],
+    ['umgekippt', 'Synkope'],
+    ['schwarz vor Augen', 'Synkope'],
+    ['Atemnot bei Belastung', 'Belastungsdyspnoe'],
+    ['Blutdruck schwankt', 'Blutdruckschwankungen'],
+    ['Blutdruck hoch', 'Blutdruckschwankungen'],
+    ['Blutdruck niedrig', 'Blutdruckschwankungen'],
+    // Zerebrovaskulär (Kopfgefäss-Dissektion/Aneurysma)
+    ['Rauschen im Kopf', 'Pulsierendes Rauschen'],
+    ['Rauschen im Ohr', 'Pulsierendes Rauschen'],
+    ['pulsierender Tinnitus', 'Pulsierendes Rauschen'],
+    ['Whoosh im Ohr', 'Pulsierendes Rauschen'],
+    ['Herzschlag im Ohr', 'Pulsierendes Rauschen'],
+    ['Puls im Ohr hören', 'Pulsierendes Rauschen'],
+    ['Ohrensausen', 'Ohrgeräusche'],
+    ['Tinnitus', 'Ohrgeräusche'],
+    ['Pfeifen im Ohr', 'Ohrgeräusche'],
+    ['Donnerschlagkopfschmerz', 'Vernichtungskopfschmerz'],
+    ['schlimmster Kopfschmerz meines Lebens', 'Vernichtungskopfschmerz'],
+    ['explosionsartiger Kopfschmerz', 'Vernichtungskopfschmerz'],
+    ['plötzlich extremer Kopfschmerz', 'Vernichtungskopfschmerz'],
+    ['kann nicht mehr sprechen', 'Sprachstörungen'],
+    ['Wörter finden schwer', 'Sprachstörungen'],
+    ['undeutliche Sprache', 'Sprachstörungen'],
+    ['lallen', 'Sprachstörungen'],
+    ['kann nicht schlucken', 'Schluckstörungen'],
+    ['Schlucken tut weh', 'Schluckstörungen'],
+    ['sehe nichts mehr', 'Sehverlust'],
+    ['Auge blind', 'Sehverlust'],
+    ['halbes Bild fehlt', 'Gesichtsfeldausfall'],
+    ['Sehen nur halb', 'Gesichtsfeldausfall'],
+    ['Augenlid hängt', 'Hängendes Augenlid'],
+    ['Lid hängt', 'Hängendes Augenlid'],
+    ['Pupille klein', 'Hängendes Augenlid'],
+    ['Gesicht taub', 'Gesichtstaubheit'],
+    ['Gesicht fühlt sich komisch an', 'Gesichtstaubheit'],
+    ['halbes Gesicht taub', 'Gesichtstaubheit'],
+    // Muskuloskelettal (Bindegewebe)
+    ['Gelenk ausgerenkt', 'Subluxation'],
+    ['ausgekugelt', 'Subluxation'],
+    ['Gelenk rausgesprungen', 'Subluxation'],
+    ['Gelenk rutscht raus', 'Subluxation'],
+    ['überbeweglich', 'Gelenküberbeweglichkeit'],
+    ['überdehnt', 'Gelenküberbeweglichkeit'],
+    ['Hypermobilität', 'Gelenküberbeweglichkeit'],
+    ['Plattfüsse', 'Fussschmerzen'],
+    ['Senkfüsse', 'Fussschmerzen'],
+    ['Kieferknacken', 'Kieferschmerzen'],
+    ['Kiefer blockiert', 'Kieferschmerzen'],
+    // Okulär (Marfan/LDS)
+    ['verschwommen sehen', 'Sehstörungen'],
+    ['Sehen unscharf', 'Sehstörungen'],
+    ['Blitze sehen', 'Sehstörungen'],
+    ['Punkte sehen', 'Mouches volantes'],
+    ['Fäden sehen', 'Mouches volantes'],
+    ['fliegende Mücken', 'Mouches volantes'],
+    ['Lichtblitze', 'Augenflimmern'],
+    ['lichtempfindlich', 'Lichtempfindlichkeit'],
+    ['Photophobie', 'Lichtempfindlichkeit'],
+    // Allergisch/Entzündlich (LDS)
+    ['Atmanfall', 'Asthmaanfall'],
+    ['Atemnot pfeifend', 'Asthmaanfall'],
+    ['Giemen', 'Asthmaanfall'],
+    ['Neurodermitis', 'Ekzem'],
+    ['Allergie', 'allergische Reaktion'],
+    ['Lebensmittelallergie', 'Nahrungsmittelunverträglichkeit'],
+    ['Essen nicht vertragen', 'Nahrungsmittelunverträglichkeit'],
+    // Haut (Bindegewebe)
+    ['blaue Flecken', 'Hämatome'],
+    ['Bluterguss', 'Hämatome'],
+    ['Striae', 'Dehnungsstreifen'],
+    ['Schwangerschaftsstreifen', 'Dehnungsstreifen'],
+    ['Wunde heilt nicht', 'Wundheilungsstörung'],
+    ['Narbe aufgegangen', 'Wundheilungsstörung'],
+    // Allgemein
+    ['kann mich nicht belasten', 'Belastungsintoleranz'],
+    ['halte Belastung nicht aus', 'Belastungsintoleranz'],
+    ['in Ohnmacht gefallen', 'Ohnmacht'],
+  ],
+  bodyRegions: [
+    'Kopf',
+    'Stirn',
+    'Schläfe',
+    'Hinterkopf',
+    'Scheitel',
+    'Nacken',
+    'Halswirbelsäule',
+    'Halsschlagader',
+    'Schulter',
+    'Oberarm',
+    'Unterarm',
+    'Ellbogen',
+    'Handgelenk',
+    'Hand',
+    'Finger',
+    'oberer Rücken',
+    'zwischen Schulterblättern',
+    'unterer Rücken',
+    'Lendenbereich',
+    'Kreuzbein',
+    'Brustwirbelsäule',
+    'Wirbelsäule',
+    'Brust',
+    'Brustbein',
+    'Bauch',
+    'Oberbauch',
+    'Unterbauch',
+    'Hüfte',
+    'Becken',
+    'Leiste',
+    'Oberschenkel',
+    'Knie',
+    'Unterschenkel',
+    'Wade',
+    'Sprunggelenk',
+    'Fuss',
+    'Fusssohle',
+    'Zehen',
+    'Auge',
+    'Ohr',
+    'Kiefer',
+    'Kiefergelenk',
+    'Hals',
+    // Kardiovaskulär-spezifisch
+    'Aorta',
+    'Herz',
+    // Haut (Bindegewebe)
+    'Haut allgemein',
+  ],
+  symptomTypes: [
+    'stechend',
+    'ziehend',
+    'dumpf',
+    'brennend',
+    'kribbelnd',
+    'pochend',
+    'pulsierend',
+    'drückend',
+    'krampfartig',
+    'schneidend',
+    'bohrend',
+    'wellenförmig',
+    // LDS/Marfan-kritische Schmerzqualitäten
+    'reissend',
+    'zerreissend',
+    'ausstrahlend',
+    'wandernd',
+    'plötzlich einsetzend',
+    'einschnürend',
+    'instabil',
+    'nachgebend',
+  ],
+}
+
 const systemPrompt = `Du bist ein medizinischer Daten-Extraktor. Analysiere die Patienteneingabe und extrahiere strukturierte Daten.
 
-Entscheide zuerst ob es sich um ein Symptom oder ein Medikament handelt.
+## Schritt 1: Event-Typ bestimmen
+Entscheide ob es sich um ein Symptom oder ein Medikament handelt.
 
-Bei Symptomen extrahiere:
-- symptom_name: Bezeichnung des Symptoms (z.B. "Rückenschmerzen")
-- body_region: Körperregion (z.B. "Rücken", "Kopf", "Schulter")
+## Schritt 2: Felder extrahieren
+
+### Bei Symptomen extrahiere:
+- symptom_name: Bezeichnung des Symptoms. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.symptomNames.join(', ')}
+- body_region: Körperregion. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.bodyRegions.join(', ')}
 - side: "links", "rechts", "beidseits" oder null
-- symptom_type: Art des Symptoms (z.B. "stechend", "ziehend", "dumpf")
+- symptom_type: Art des Symptoms. Bevorzuge: ${SYMPTOM_TAXONOMY.symptomTypes.join(', ')}
 - intensity: Intensität 1-10 (falls erwähnt, sonst null)
-
-Bei allen Symptom-Events extrahiere zusätzlich:
 - symptom_time: ISO-8601 Zeitpunkt wann das Symptom aufgetreten ist. Nutze den mitgelieferten "Referenzzeitpunkt der Meldung" als Basis für relative Zeitangaben ("gestern morgen" → Vortag ~08:00, "vor 2 Stunden" → Referenzzeit minus 2h). Wenn keine Zeitangabe vorhanden → null (Fallback auf Erfassungszeit). Beispiel: "2026-03-10T08:00:00+01:00"
-- duration: Dauer des Symptoms in Minuten als ganze Zahl. Nur wenn explizit genannt oder klar ableitbar (z.B. "zwei Stunden" → 120, "einen halben Tag" → 720). Sonst null.
+- duration: Dauer in Minuten als ganze Zahl. Nur wenn explizit genannt oder klar ableitbar (z.B. "zwei Stunden" → 120). Sonst null.
+- status: Aktueller Symptom-Status. Nur setzen wenn aus dem Text ableitbar:
+  - "active" — Symptom ist aktuell vorhanden (Standard wenn nichts anderes erkennbar)
+  - "resolved" — Symptom ist vorbei ("kein X mehr", "X ist weg", "X hat aufgehört")
+  - "improving" — Symptom wird besser ("X wird besser", "X lässt nach")
+  - "worsening" — Symptom verschlechtert sich ("X wird schlimmer", "X nimmt zu")
+  Null wenn nicht bestimmbar.
+- trigger: Auslöser oder Kontext ("nach dem Sport", "bei Stress", "nach dem Essen", "beim Aufstehen"). Null wenn nicht erwähnt.
+- frequency: Häufigkeitsmuster ("erstmalig", "täglich", "gelegentlich", "jede Nacht", "seit 3 Wochen"). Null wenn nicht erwähnt.
 
-Bei Medikamenten extrahiere:
+### Bei Medikamenten extrahiere:
 - medication_name: Name des Medikaments
 - action: "eingenommen" oder "vergessen"
 - dosage: Dosis (falls erwähnt)
 - reason: Grund der Einnahme (falls erwähnt)
 
-Konfidenz-Regeln für symptom_time:
-- 85-100: Exakter Zeitpunkt genannt ("gestern um 14 Uhr", "heute 08:30")
-- 70-84: Tageszeit-Schätzung möglich ("gestern Morgen" → ~08:00, "nach dem Abendessen" → ~19:00)
+## Negationen und Status erkennen
+WICHTIG: Erkenne ob der Patient über ein AKTUELLES oder VERGANGENES Symptom spricht:
+- "Ich habe Kopfschmerzen" → status: "active"
+- "Meine Kopfschmerzen sind weg" → status: "resolved"
+- "Kein Schwindel mehr seit heute Morgen" → status: "resolved"
+- "Die Rückenschmerzen werden langsam besser" → status: "improving"
+- "Wird immer schlimmer" → status: "worsening"
+Bei "resolved" extrahiere trotzdem alle Felder — der Status zeigt an, dass es vorbei ist.
+
+## Mehrere Symptome
+Wenn der Patient MEHRERE Symptome in einer Eingabe beschreibt (z.B. "Kopfweh und Übelkeit"):
+- Extrahiere JEDES Symptom als eigene Feld-Gruppe
+- Verwende symptomIndex 0 für das Hauptsymptom, 1 für das zweite, 2 für das dritte usw.
+- Jedes Symptom bekommt seine eigenen Felder (symptom_name, body_region, etc.)
+
+## Konfidenz-Regeln
+
+Für symptom_time:
+- 85-100: Exakter Zeitpunkt ("gestern um 14 Uhr", "heute 08:30")
+- 70-84: Tageszeit-Schätzung ("gestern Morgen" → ~08:00, "nach dem Abendessen" → ~19:00)
 - 50-69: Sehr vage ("neulich", "vor ein paar Tagen")
 
-Setze confidence pro Feld:
+Für alle anderen Felder:
 - 85-100: Explizit genannt
 - 70-84: Aus Kontext ableitbar
 - <70: Geschätzt/unsicher
+
+## Beispiele
+
+Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T14:30:00+01:00\\n\\nHab seit gestern Morgen so ein Stechen im unteren Rücken links, so 6 von 10"
+→ eventType: "symptom", symptomIndex: 0
+  - symptom_name: "Rückenschmerzen" (95)
+  - body_region: "unterer Rücken" (95)
+  - side: "links" (95)
+  - symptom_type: "stechend" (90)
+  - intensity: "6" (95)
+  - symptom_time: "2026-03-09T08:00:00+01:00" (75)
+  - status: "active" (90)
+
+Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T20:00:00+01:00\\n\\nKopfweh und Übelkeit nach dem Joggen, wird schlimmer"
+→ eventType: "symptom"
+  symptomIndex 0:
+  - symptom_name: "Kopfschmerzen" (95)
+  - body_region: "Kopf" (90)
+  - symptom_type: null
+  - status: "worsening" (85)
+  - trigger: "nach dem Joggen" (90)
+  symptomIndex 1:
+  - symptom_name: "Übelkeit" (90)
+  - status: "worsening" (75)
+  - trigger: "nach dem Joggen" (85)
+
+Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T09:00:00+01:00\\n\\nMeine Rückenschmerzen sind seit heute Morgen weg"
+→ eventType: "symptom", symptomIndex: 0
+  - symptom_name: "Rückenschmerzen" (95)
+  - body_region: "Rücken" (80)
+  - status: "resolved" (95)
+  - symptom_time: "2026-03-10T07:00:00+01:00" (70)
+
+Eingabe: "Hab um 8 Ibuprofen 400 genommen gegen die Kopfschmerzen"
+→ eventType: "medication"
+  - medication_name: "Ibuprofen" (95)
+  - action: "eingenommen" (95)
+  - dosage: "400mg" (90)
+  - reason: "Kopfschmerzen" (90)
+
+## Krankheitskontext: Loeys-Dietz-Syndrom (LDS) / Marfan-Syndrom
+
+Die App wird von Patienten mit Bindegewebserkrankungen (LDS, Marfan, Ehlers-Danlos) genutzt. Achte besonders auf folgende krankheitstypische Muster:
+
+### Kardiovaskuläre Symptome (hohe klinische Relevanz!)
+- Brustschmerzen/Rückenschmerzen zwischen den Schulterblättern → immer body_region genau extrahieren
+- "Reissender"/"zerreissender" Schmerz in Brust oder Rücken → kann Aortendissektion signalisieren → symptom_type präzise als "reissend" oder "zerreissend" erfassen
+- Herzstolpern, Herzrasen, unregelmässiger Herzschlag → Herzrhythmusstörungen (Mitralklappenprolaps-typisch)
+- Schwindel, Ohnmacht, "schwarz vor Augen" → Synkope (kann vaskulär bedingt sein)
+- Atemnot bei Belastung → als "Belastungsdyspnoe" extrahieren, Trigger genau erfassen
+
+### Zerebrovaskuläre Symptome (Kopfgefäss-Dissektion/Aneurysma — LDS-kritisch!)
+LDS-Patienten haben erhöhtes Risiko für Karotis- und Vertebralisdissektionen. Achte besonders auf:
+- "Rauschen im Kopf/Ohr", "Herzschlag im Ohr hören", "Puls im Ohr" → "Pulsierendes Rauschen" (pulsatiler Tinnitus — Warnsignal für Karotisdissektion!)
+- UNTERSCHEIDE: pulsierendes/rhythmisches Rauschen ("Pulsierendes Rauschen") vs. konstantes Pfeifen/Sausen ("Ohrgeräusche")
+- Plötzlicher extremer Kopfschmerz ("schlimmster Kopfschmerz meines Lebens") → "Vernichtungskopfschmerz" (kann Aneurysmaruptur/Subarachnoidalblutung signalisieren!)
+- Plötzlicher einseitiger Nackenschmerz/Kopfschmerz hinter dem Auge → kann Karotisdissektion sein → body_region + side genau erfassen
+- Hängendes Augenlid + enge Pupille (Horner-Syndrom) → "Hängendes Augenlid" (Karotisdissektion-Warnsignal)
+- Sprachstörungen, Schluckstörungen, einseitige Taubheit/Gesichtstaubheit → können auf Schlaganfall durch Dissektion hinweisen
+- Sehverlust, Gesichtsfeldausfall → dringend, kann ischämisch bedingt sein
+
+### Muskuloskelettale Symptome (Bindegewebsschwäche)
+- Gelenke, die "rausspringen", "ausrenken", "überdehnen" → "Subluxation" + betroffenes Gelenk als body_region
+- Häufige Regionen: Schulter, Knie, Handgelenk, Sprunggelenk, Kiefergelenk, Hüfte
+- Rückenschmerzen im Lendenbereich/Kreuzbein → kann auf durale Ektasie hinweisen
+- Fussschmerzen, Plattfüsse → "Fussschmerzen" mit body_region "Fuss" oder "Fusssohle"
+
+### Okuläre Symptome (besonders Marfan)
+- "Verschwommen sehen", "Punkte/Fäden sehen", "Blitze" → genau differenzieren: Sehstörungen vs. Mouches volantes vs. Augenflimmern
+- Lichtempfindlichkeit → eigenständiges Symptom erfassen
+
+### Allergisch/Entzündliche Symptome (LDS-typisch!)
+- Asthma-Symptome (pfeifende Atmung, Atemnot) → "Asthmaanfall", nicht mit kardialer Atemnot verwechseln
+- Ekzem, Hautausschlag, Juckreiz → differenzieren ob allergisch oder bindegewebsbedingt
+- Nahrungsmittelunverträglichkeiten → als eigenes Symptom erfassen
+
+### Haut-Symptome (Bindegewebsschwäche)
+- Leicht blaue Flecken, Hämatome ohne Trauma → "Hämatome"
+- Dehnungsstreifen (auch ohne Schwangerschaft/Gewichtszunahme) → "Dehnungsstreifen"
+- Verzögerte Wundheilung → "Wundheilungsstörung"
 
 Sprache: Der Patient schreibt auf Deutsch (möglicherweise Schweizerdeutsch).
 Übersetze Dialekt-Ausdrücke ins Hochdeutsche.`
@@ -46,7 +417,7 @@ Sprache: Der Patient schreibt auf Deutsch (möglicherweise Schweizerdeutsch).
 const extractionTool: Anthropic.Messages.Tool = {
   name: 'extract_symptom_data',
   description:
-    'Extrahiert strukturierte medizinische Daten aus Freitext, inklusive Symptomzeitpunkt (symptom_time als ISO-8601) und Dauer (duration in Minuten)',
+    'Extrahiert strukturierte medizinische Daten aus Freitext. Unterstützt mehrere Symptome pro Eingabe via symptomIndex.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -63,7 +434,7 @@ const extractionTool: Anthropic.Messages.Tool = {
             fieldName: {
               type: 'string',
               description:
-                'Name des extrahierten Feldes. Für Symptome: symptom_name, body_region, side, symptom_type, intensity, symptom_time, duration. Für Medikamente: medication_name, action, dosage, reason.',
+                'Name des extrahierten Feldes. Für Symptome: symptom_name, body_region, side, symptom_type, intensity, symptom_time, duration, status, trigger, frequency. Für Medikamente: medication_name, action, dosage, reason.',
             },
             value: {
               type: 'string',
@@ -75,6 +446,13 @@ const extractionTool: Anthropic.Messages.Tool = {
               maximum: 100,
               description: 'Konfidenz-Score 0-100',
             },
+            symptomIndex: {
+              type: 'integer',
+              minimum: 0,
+              description:
+                'Index des Symptoms bei Multi-Symptom-Eingaben. 0 = Hauptsymptom (Standard), 1+ = weitere Symptome.',
+              default: 0,
+            },
           },
           required: ['fieldName', 'value', 'confidence'],
         },
@@ -83,6 +461,17 @@ const extractionTool: Anthropic.Messages.Tool = {
     },
     required: ['eventType', 'fields'],
   },
+}
+
+// Synonym-Lookup für Post-Processing-Normalisierung (case-insensitive)
+const synonymLookup = new Map<string, string>(
+  SYMPTOM_TAXONOMY.synonyms.map(([from, to]) => [from.toLowerCase(), to]),
+)
+
+/** Normalisiert extrahierte Werte anhand der Synonym-Tabelle */
+function normalizeExtractedValue(fieldName: string, value: string): string {
+  if (fieldName !== 'symptom_name') return value
+  return synonymLookup.get(value.toLowerCase()) ?? value
 }
 
 function createClient(): Anthropic {
@@ -131,6 +520,13 @@ export const claudeProvider: ExtractionProvider = {
       throw new Error(`Invalid extraction result: ${parsed.error.message}`)
     }
 
-    return parsed.data
+    // Post-Processing: Synonyme normalisieren
+    const result = parsed.data
+    result.fields = result.fields.map((field) => ({
+      ...field,
+      value: normalizeExtractedValue(field.fieldName, field.value),
+    }))
+
+    return result
   },
 }

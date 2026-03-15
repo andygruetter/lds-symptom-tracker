@@ -16,9 +16,24 @@ export const mockProvider: ExtractionProvider = {
       return {
         eventType: 'medication',
         fields: [
-          { fieldName: 'medication_name', value: 'Ibuprofen', confidence: 95 },
-          { fieldName: 'action', value: 'eingenommen', confidence: 90 },
-          { fieldName: 'dosage', value: '400mg', confidence: 80 },
+          {
+            fieldName: 'medication_name',
+            value: 'Ibuprofen',
+            confidence: 95,
+            symptomIndex: 0,
+          },
+          {
+            fieldName: 'action',
+            value: 'eingenommen',
+            confidence: 90,
+            symptomIndex: 0,
+          },
+          {
+            fieldName: 'dosage',
+            value: '400mg',
+            confidence: 80,
+            symptomIndex: 0,
+          },
         ],
       }
     }
@@ -26,10 +41,36 @@ export const mockProvider: ExtractionProvider = {
     return {
       eventType: 'symptom',
       fields: [
-        { fieldName: 'symptom_name', value: 'Kopfschmerzen', confidence: 95 },
-        { fieldName: 'Körperregion', value: 'Kopf', confidence: 90 },
-        { fieldName: 'Seite', value: 'rechts', confidence: 75 },
-        { fieldName: 'Symptomtyp', value: 'stechend', confidence: 60 },
+        {
+          fieldName: 'symptom_name',
+          value: 'Kopfschmerzen',
+          confidence: 95,
+          symptomIndex: 0,
+        },
+        {
+          fieldName: 'body_region',
+          value: 'Kopf',
+          confidence: 90,
+          symptomIndex: 0,
+        },
+        {
+          fieldName: 'side',
+          value: 'rechts',
+          confidence: 75,
+          symptomIndex: 0,
+        },
+        {
+          fieldName: 'symptom_type',
+          value: 'stechend',
+          confidence: 60,
+          symptomIndex: 0,
+        },
+        {
+          fieldName: 'status',
+          value: 'active',
+          confidence: 90,
+          symptomIndex: 0,
+        },
       ],
     }
   },

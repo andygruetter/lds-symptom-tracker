@@ -497,7 +497,7 @@ export async function getEventDetail(
   const [{ data: extractedRows }, { data: photoRows }] = await Promise.all([
     supabase
       .from('extracted_data')
-      .select('field_name, value, confidence, confirmed')
+      .select('field_name, value, confidence, confirmed, symptom_index')
       .eq('symptom_event_id', eventId),
     supabase
       .from('event_photos')
@@ -535,6 +535,7 @@ export async function getEventDetail(
     value: r.value,
     confidence: r.confidence,
     confirmed: r.confirmed ?? false,
+    symptomIndex: r.symptom_index ?? 0,
   }))
 
   const eventType = event.event_type === 'medication' ? 'medication' : 'symptom'

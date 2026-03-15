@@ -78,6 +78,7 @@ export type ExtractedField = {
   value: string | null
   confidence: number | null
   confirmed: boolean
+  symptomIndex: number
 }
 
 export type EventPhoto = {
