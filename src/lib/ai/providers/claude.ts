@@ -26,6 +26,7 @@ const SYMPTOM_TAXONOMY = {
     'Müdigkeit',
     'Erschöpfung',
     'Schlafstörungen',
+    'Herzrhythmusstörungen',
     'Herzrasen',
     'Atemnot',
     'Husten',
@@ -43,6 +44,34 @@ const SYMPTOM_TAXONOMY = {
     'Durchfall',
     'Sodbrennen',
     'Blähungen',
+  ],
+  // Synonym → kanonischer Term: Verschiedene Bezeichnungen auf einen einheitlichen Wert normalisieren
+  synonyms: [
+    ['Rhythmusstörungen', 'Herzrhythmusstörungen'],
+    ['Arrhythmie', 'Herzrhythmusstörungen'],
+    ['Herzstolpern', 'Herzrhythmusstörungen'],
+    ['Palpitationen', 'Herzrasen'],
+    ['Herzklopfen', 'Herzrasen'],
+    ['Cephalgie', 'Kopfschmerzen'],
+    ['Kopfweh', 'Kopfschmerzen'],
+    ['Bauchweh', 'Bauchschmerzen'],
+    ['Magenschmerzen', 'Bauchschmerzen'],
+    ['Brechreiz', 'Übelkeit'],
+    ['Schlaflosigkeit', 'Schlafstörungen'],
+    ['Insomnie', 'Schlafstörungen'],
+    ['Vertigo', 'Schwindel'],
+    ['Benommenheit', 'Schwindel'],
+    ['Luftnot', 'Atemnot'],
+    ['Kurzatmigkeit', 'Atemnot'],
+    ['Obstipation', 'Verstopfung'],
+    ['Diarrhö', 'Durchfall'],
+    ['Reflux', 'Sodbrennen'],
+    ['Pruritus', 'Juckreiz'],
+    ['Exanthem', 'Hautausschlag'],
+    ['Parästhesie', 'Kribbeln'],
+    ['Fatigue', 'Erschöpfung'],
+    ['Abgeschlagenheit', 'Erschöpfung'],
+    ['Mattigkeit', 'Müdigkeit'],
   ],
   bodyRegions: [
     'Kopf',
@@ -103,6 +132,10 @@ Entscheide ob es sich um ein Symptom oder ein Medikament handelt.
 
 ### Bei Symptomen extrahiere:
 - symptom_name: Standardisierter Name. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.symptomNames.join(', ')}
+
+## Synonym-Normalisierung
+WICHTIG: Verwende IMMER den kanonischen Begriff, auch wenn der Patient ein Synonym verwendet:
+${SYMPTOM_TAXONOMY.synonyms.map(([from, to]) => `- "${from}" → "${to}"`).join('\n')}
 - body_region: Körperregion. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.bodyRegions.join(', ')}
 - side: "links", "rechts", "beidseits" oder null
 - symptom_type: Art des Symptoms. Bevorzuge: ${SYMPTOM_TAXONOMY.symptomTypes.join(', ')}
