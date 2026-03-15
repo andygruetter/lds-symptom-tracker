@@ -71,13 +71,13 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Patienten-Auswertung
-  epic-4: in-progress
+  epic-4: done
   4-1-chronologischer-feed: done
   4-2-timeline-ansicht: done
   4-3-symptom-ranking-trendlinien: done
   4-4-event-detail-ansicht: done
   4-5-events-daten-loeschen: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
 
   # Epic 5: Sharing-System & Daten-Souveränität
   epic-5: backlog
