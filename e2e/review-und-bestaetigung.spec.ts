@@ -38,7 +38,7 @@ test.describe('Review und Bestätigung', () => {
 
     // SymptomTag buttons have aria-label like "fieldName ändern"
     await expect(
-      page.getByRole('button', { name: 'symptom_name ändern' }),
+      page.getByRole('button', { name: 'Symptom ändern' }),
     ).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'Körperregion ändern' }),
