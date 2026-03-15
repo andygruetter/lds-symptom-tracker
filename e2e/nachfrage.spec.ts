@@ -135,8 +135,12 @@ test.describe('Nachfragen bei unsicheren Feldern', () => {
 
     await capturePage.goto()
 
-    // Erste Nachfrage: body_region (Priorität 1)
-    await expect(page.getByText('Welche Region genauer?')).toBeVisible({
+    // Erste Nachfrage: body_region (Priorität 1) — dynamische Frage mit Wert '?'
+    await expect(
+      page.getByText(
+        "Du hast '?' gesagt — kannst du die Region genauer eingrenzen?",
+      ),
+    ).toBeVisible({
       timeout: 15_000,
     })
   })
