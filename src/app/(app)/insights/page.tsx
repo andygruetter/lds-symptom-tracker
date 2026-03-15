@@ -35,7 +35,7 @@ export default async function InsightsPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="sticky top-0 z-10 border-b border-border bg-background px-4 py-3">
+      <div className="sticky top-0 z-10 border-b border-border bg-background px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <h1 className="text-xl font-semibold">Auswertung</h1>
       </div>
 
