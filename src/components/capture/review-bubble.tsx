@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 
+import { Clock, MapPin } from 'lucide-react'
+
 import { ClarificationInline } from '@/components/capture/clarification-inline'
-import { ConfidenceIndicator } from '@/components/capture/confidence-indicator'
 import { SymptomTag } from '@/components/capture/symptom-tag'
+import { cn } from '@/lib/utils'
 import type { ClarificationQuestion, ExtractedData } from '@/types/ai'
 
 interface ReviewBubbleProps {
@@ -25,6 +27,101 @@ function getAverageConfidence(fields: ExtractedData[]): number {
   if (fields.length === 0) return 0
   const sum = fields.reduce((acc, f) => acc + f.confidence, 0)
   return Math.round(sum / fields.length)
+}
+
+function getConfidenceLabel(score: number): {
+  label: string
+  colorClass: string
+  dotClass: string
+} {
+  if (score >= 85)
+    return {
+      label: 'sicher erkannt',
+      colorClass: 'text-[#3A856F]',
+      dotClass: 'bg-[#3A856F]',
+    }
+  if (score >= 70)
+    return {
+      label: 'relativ sicher',
+      colorClass: 'text-[#B8913A]',
+      dotClass: 'bg-[#B8913A]',
+    }
+  return {
+    label: 'unsicher, bitte prüfen',
+    colorClass: 'text-[#C06A3C]',
+    dotClass: 'bg-[#C06A3C]',
+  }
+}
+
+function formatSymptomTimestamp(isoString: string): string {
+  const date = new Date(isoString)
+  if (isNaN(date.getTime())) return isoString
+  const weekday = date.toLocaleDateString('de-CH', { weekday: 'short' })
+  const day = date.getDate()
+  const month = date.toLocaleDateString('de-CH', { month: 'short' })
+  const time = date.toLocaleTimeString('de-CH', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return `${weekday} ${day}. ${month}, ${time}`
+}
+
+function formatDurationMinutes(minutesStr: string): string | null {
+  const minutes = parseInt(minutesStr, 10)
+  if (isNaN(minutes) || minutes <= 0) return null
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0 && mins > 0) return `${hours} Std. ${mins} Min.`
+  if (hours > 0) return `${hours} Std.`
+  return `${minutes} Min.`
+}
+
+function getSeverityInfo(value: string): {
+  label: string
+  colorClass: string
+} {
+  const num = parseInt(value, 10)
+  if (!isNaN(num)) {
+    if (num >= 7) return { label: `stark (${num})`, colorClass: 'bg-red-500' }
+    if (num >= 4)
+      return { label: `mittel (${num})`, colorClass: 'bg-yellow-500' }
+    return { label: `leicht (${num})`, colorClass: 'bg-green-500' }
+  }
+  const lower = value.toLowerCase()
+  if (['stark', 'sehr stark', 'unerträglich'].some((s) => lower.includes(s)))
+    return { label: value, colorClass: 'bg-red-500' }
+  if (['mittel', 'mässig', 'moderat'].some((s) => lower.includes(s)))
+    return { label: value, colorClass: 'bg-yellow-500' }
+  if (['leicht', 'schwach', 'gering'].some((s) => lower.includes(s)))
+    return { label: value, colorClass: 'bg-green-500' }
+  return { label: value, colorClass: 'bg-yellow-500' }
+}
+
+/** Fields rendered in the structured layout (not as generic tags) */
+const STRUCTURED_FIELDS = new Set([
+  'symptom_name',
+  'body_region',
+  'side',
+  'symptom_type',
+  'intensity',
+  'symptom_time',
+  'duration',
+])
+
+function getFieldValue(
+  fields: ExtractedData[],
+  name: string,
+): string | undefined {
+  const f = fields.find((f) => f.field_name === name)
+  if (!f || f.value === '<UNKNOWN>' || f.value === 'UNKNOWN') return undefined
+  return f.value
+}
+
+function getField(
+  fields: ExtractedData[],
+  name: string,
+): ExtractedData | undefined {
+  return fields.find((f) => f.field_name === name)
 }
 
 export function ReviewBubble({
@@ -55,7 +152,6 @@ export function ReviewBubble({
     try {
       await onAnswerClarification?.(eventId, fieldName, answer)
     } catch {
-      // Rollback on error
       setAnswers((prev) => {
         const next = { ...prev }
         delete next[fieldName]
@@ -64,36 +160,147 @@ export function ReviewBubble({
     }
   }
 
-  // Find the first unanswered clarification question
   const firstUnanswered = clarificationQuestions.find(
     (q) => !(q.fieldName in answers),
   )
 
-  // Filter out <UNKNOWN> fields — they provide no value to the user
   const visibleFields = extractedFields.filter(
     (f) => f.value !== '<UNKNOWN>' && f.value !== 'UNKNOWN',
   )
   const hasVisibleFields = visibleFields.length > 0
 
+  // Structured field values
+  const symptomName = getFieldValue(extractedFields, 'symptom_name')
+  const bodyRegion = getFieldValue(extractedFields, 'body_region')
+  const side = getFieldValue(extractedFields, 'side')
+  const symptomType = getFieldValue(extractedFields, 'symptom_type')
+  const intensity = getFieldValue(extractedFields, 'intensity')
+  const symptomTime = getFieldValue(extractedFields, 'symptom_time')
+  const duration = getFieldValue(extractedFields, 'duration')
+
+  const locationParts = [bodyRegion, side].filter(Boolean)
+  if (symptomType) locationParts.push(symptomType)
+  const severityInfo = intensity ? getSeverityInfo(intensity) : null
+  const formattedTime = symptomTime ? formatSymptomTimestamp(symptomTime) : null
+  const formattedDuration = duration ? formatDurationMinutes(duration) : null
+
+  // Extra fields not handled by the structured layout
+  const extraFields = visibleFields.filter(
+    (f) => !STRUCTURED_FIELDS.has(f.field_name),
+  )
+
+  const confidenceInfo = getConfidenceLabel(avgConfidence)
+
+  // Render a field as SymptomTag when editing, otherwise as structured text
+  function renderEditableField(
+    fieldName: string,
+    displayContent: React.ReactNode,
+  ) {
+    const field = getField(extractedFields, fieldName)
+    if (!field) return null
+
+    if (editingField === field.id) {
+      return (
+        <SymptomTag
+          label={field.field_name}
+          value={field.value}
+          confidence={field.confidence}
+          editable={!field.confirmed}
+          isEditing
+          onStartEdit={() => setEditingField(field.id)}
+          onEdit={(newValue) => handleEdit(field.field_name, newValue)}
+          onCancelEdit={() => setEditingField(null)}
+        />
+      )
+    }
+
+    if (field.confirmed) {
+      return displayContent
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => setEditingField(field.id)}
+        className="min-h-[44px] w-full text-left active:opacity-60"
+        aria-label={`${fieldName} ändern`}
+      >
+        {displayContent}
+      </button>
+    )
+  }
+
   return (
     <div className="flex justify-start">
-      <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-card px-4 py-2.5 text-card-foreground shadow-sm">
-        {/* Extracted fields as tags (UNKNOWN values hidden) */}
+      <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-card px-4 py-3 text-card-foreground shadow-sm">
         {hasVisibleFields ? (
-          <div className="flex flex-wrap gap-1.5">
-            {visibleFields.map((field) => (
-              <SymptomTag
-                key={field.id}
-                label={field.field_name}
-                value={field.value}
-                confidence={field.confidence}
-                editable={!field.confirmed}
-                isEditing={editingField === field.id}
-                onStartEdit={() => setEditingField(field.id)}
-                onEdit={(newValue) => handleEdit(field.field_name, newValue)}
-                onCancelEdit={() => setEditingField(null)}
-              />
-            ))}
+          <div className="space-y-1.5">
+            {/* Primary: Symptom name */}
+            {symptomName &&
+              renderEditableField(
+                'symptom_name',
+                <p className="text-sm font-semibold text-foreground">
+                  {symptomName}
+                </p>,
+              )}
+
+            {/* Secondary: Location, type, intensity */}
+            {(locationParts.length > 0 || severityInfo) && (
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+                {locationParts.length > 0 && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="size-3 shrink-0" aria-hidden="true" />
+                    <span className="break-words">
+                      {locationParts.join(' · ')}
+                    </span>
+                  </span>
+                )}
+                {locationParts.length > 0 && severityInfo && (
+                  <span aria-hidden="true">·</span>
+                )}
+                {severityInfo && (
+                  <span className="inline-flex items-center gap-1">
+                    <span
+                      className={cn(
+                        'inline-block size-2 shrink-0 rounded-full',
+                        severityInfo.colorClass,
+                      )}
+                      aria-hidden="true"
+                    />
+                    {severityInfo.label}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Tertiary: Time + Duration */}
+            {(formattedTime || formattedDuration) && (
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="size-3 shrink-0" aria-hidden="true" />
+                {[formattedTime, formattedDuration].filter(Boolean).join(' · ')}
+              </p>
+            )}
+
+            {/* Extra fields as tags */}
+            {extraFields.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {extraFields.map((field) => (
+                  <SymptomTag
+                    key={field.id}
+                    label={field.field_name}
+                    value={field.value}
+                    confidence={field.confidence}
+                    editable={!field.confirmed}
+                    isEditing={editingField === field.id}
+                    onStartEdit={() => setEditingField(field.id)}
+                    onEdit={(newValue) =>
+                      handleEdit(field.field_name, newValue)
+                    }
+                    onCancelEdit={() => setEditingField(null)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -101,16 +308,25 @@ export function ReviewBubble({
           </p>
         )}
 
-        <div className="mt-2">
-          <ConfidenceIndicator score={avgConfidence} />
+        {/* Confidence — text only, no percentage */}
+        <div className="mt-2 flex items-center gap-1.5 text-xs">
+          <span
+            className={cn(
+              'inline-block size-2 rounded-full',
+              confidenceInfo.dotClass,
+            )}
+            aria-hidden="true"
+          />
+          <span className={confidenceInfo.colorClass}>
+            {confidenceInfo.label}
+          </span>
         </div>
 
-        {/* Clarification questions — inline, sequential */}
+        {/* Clarification questions */}
         {hasClarifications && (
           <div className="mt-3 space-y-3 border-t border-border pt-3">
             {clarificationQuestions.map((q) => {
               const isAnswered = q.fieldName in answers
-              // Show answered questions + the first unanswered one
               if (
                 !isAnswered &&
                 firstUnanswered &&
@@ -130,7 +346,7 @@ export function ReviewBubble({
           </div>
         )}
 
-        {/* Action buttons — shown when all clarifications are answered */}
+        {/* Action buttons */}
         {allClarificationsAnswered && (
           <div className="mt-3 flex gap-2">
             <button
