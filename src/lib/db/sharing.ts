@@ -2,9 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { createServiceClient } from '@/lib/db/client'
 import {
-  calculateTrend,
+  aggregateRankingFromRows,
   mapRowToFeedEvent,
-  pivotExtractedData,
   type RawFeedRow,
   type TimelineRawRow,
 } from '@/lib/db/insights'
@@ -16,10 +15,7 @@ import type {
   EventPhoto,
   ExtractedField,
   FeedEvent,
-  MedicationRankingEntry,
-  MonthlyCount,
   SymptomRanking,
-  SymptomRankingEntry,
 } from '@/types/analytics'
 import type { ActionResult } from '@/types/common'
 import type { Database } from '@/types/database'
@@ -504,109 +500,8 @@ export async function getSharedSymptomRanking(
   }
 
   const rows = data as unknown as TimelineRawRow[]
-
-  // Aggregation-Maps: name → monatliche Counts + Intensitäten
-  const symptomMap = new Map<
-    string,
-    { monthlyCounts: Map<string, number>; intensities: number[] }
-  >()
-  const medicationMap = new Map<
-    string,
-    { monthlyCounts: Map<string, number> }
-  >()
-
-  for (const row of rows) {
-    const localKey = toLocalDateKey(new Date(row.occurred_at))
-
-    // Puffer-Events die ausserhalb des Zielzeitraums fallen ignorieren
-    if (localKey < dateFrom || localKey > dateTo) continue
-
-    const extracted = pivotExtractedData(row.extracted_data)
-    const isMedication = row.event_type === 'medication'
-    const [yearStr, monthStr] = localKey.split('-')
-    const year = parseInt(yearStr, 10)
-    const month = parseInt(monthStr, 10)
-    const monthKey = `${year}-${String(month).padStart(2, '0')}`
-
-    if (isMedication) {
-      const name = extracted.medication ?? 'Unbekannt'
-      let entry = medicationMap.get(name)
-      if (!entry) {
-        entry = { monthlyCounts: new Map() }
-        medicationMap.set(name, entry)
-      }
-      entry.monthlyCounts.set(
-        monthKey,
-        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
-      )
-    } else {
-      const name = extracted.symptomName ?? 'Unbekannt'
-      let entry = symptomMap.get(name)
-      if (!entry) {
-        entry = { monthlyCounts: new Map(), intensities: [] }
-        symptomMap.set(name, entry)
-      }
-      entry.monthlyCounts.set(
-        monthKey,
-        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
-      )
-      if (extracted.intensity !== null) {
-        entry.intensities.push(extracted.intensity)
-      }
-    }
-  }
-
-  function toSortedMonthlyCounts(
-    countsMap: Map<string, number>,
-  ): MonthlyCount[] {
-    return Array.from(countsMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, count]) => {
-        const [y, m] = key.split('-').map(Number)
-        return { year: y, month: m, count }
-      })
-  }
-
-  const symptoms: SymptomRankingEntry[] = Array.from(symptomMap.entries())
-    .map(([name, { monthlyCounts, intensities }]) => {
-      const counts = toSortedMonthlyCounts(monthlyCounts)
-      const totalCount = counts.reduce((s, c) => s + c.count, 0)
-      const avgIntensity =
-        intensities.length > 0
-          ? intensities.reduce((s, v) => s + v, 0) / intensities.length
-          : null
-      return {
-        name,
-        totalCount,
-        monthlyCounts: counts,
-        trend: calculateTrend(counts),
-        avgIntensity,
-      }
-    })
-    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
-
-  const medications: MedicationRankingEntry[] = Array.from(
-    medicationMap.entries(),
-  )
-    .map(([name, { monthlyCounts }]) => {
-      const counts = toSortedMonthlyCounts(monthlyCounts)
-      const totalCount = counts.reduce((s, c) => s + c.count, 0)
-      return {
-        name,
-        totalCount,
-        monthlyCounts: counts,
-        trend: calculateTrend(counts),
-      }
-    })
-    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
-
-  return {
-    symptoms,
-    medications,
-    timeRange: 'all',
-    totalSymptomEvents: symptoms.reduce((s, e) => s + e.totalCount, 0),
-    totalMedicationEvents: medications.reduce((s, e) => s + e.totalCount, 0),
-  }
+  const result = aggregateRankingFromRows(rows, dateFrom, dateTo)
+  return { ...result, timeRange: 'all' }
 }
 
 /**

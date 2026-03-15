@@ -321,44 +321,22 @@ function getTimeRangeStart(timeRange: TimeRange): Date {
   return new Date('2020-01-01')
 }
 
-export async function getSymptomRanking(
-  supabase: SupabaseClient<Database>,
-  accountId: string,
-  timeRange: TimeRange,
-): Promise<SymptomRanking> {
-  const startDate = getTimeRangeStart(timeRange)
-  // +1 Tag Puffer für Timezone-Safety
-  const bufferStart = new Date(startDate)
-  bufferStart.setDate(bufferStart.getDate() - 1)
-
-  const { data, error } = await supabase
-    .from('symptom_events')
-    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
-    .eq('account_id', accountId)
-    .eq('status', 'confirmed')
-    .is('deleted_at', null)
-    .gte('occurred_at', bufferStart.toISOString())
-    .order('occurred_at', { ascending: false })
-
-  if (error || !data) {
-    if (error) {
-      console.error('[Insights] Ranking-Abfrage fehlgeschlagen:', error.message)
-    }
-    return {
-      symptoms: [],
-      medications: [],
-      timeRange,
-      totalSymptomEvents: 0,
-      totalMedicationEvents: 0,
-    }
-  }
-
-  const rows = data as unknown as TimelineRawRow[]
-
-  // Filter auf echten Zeitraum (Timezone-safe: lokale Zeit nutzen)
-  const cutoffKey = toLocalDateKey(startDate)
-
-  // Aggregation-Maps: symptomName/medication → monatliche Counts + Intensitäten
+/**
+ * Aggregiert TimelineRawRow[] zu Symptom- und Medikamenten-Rankings.
+ * @param rows - Rohdaten aus der DB (bereits als TimelineRawRow gecasted)
+ * @param dateFrom - Untere Datumsgrenze (YYYY-MM-DD), inklusive. Muss ein gültiges Datum sein.
+ * @param dateTo - Obere Datumsgrenze (YYYY-MM-DD), inklusive. Wenn nicht angegeben, kein oberes Limit.
+ */
+export function aggregateRankingFromRows(
+  rows: TimelineRawRow[],
+  dateFrom: string,
+  dateTo?: string,
+): {
+  symptoms: SymptomRankingEntry[]
+  medications: MedicationRankingEntry[]
+  totalSymptomEvents: number
+  totalMedicationEvents: number
+} {
   const symptomMap = new Map<
     string,
     { monthlyCounts: Map<string, number>; intensities: number[] }
@@ -370,8 +348,8 @@ export async function getSymptomRanking(
 
   for (const row of rows) {
     const localKey = toLocalDateKey(new Date(row.occurred_at))
-    // Events vor dem Zeitraum verwerfen (Puffer-Events)
-    if (localKey < cutoffKey) continue
+    if (localKey < dateFrom) continue
+    if (dateTo && localKey > dateTo) continue
 
     const extracted = pivotExtractedData(row.extracted_data)
     const isMedication = row.event_type === 'medication'
@@ -455,10 +433,47 @@ export async function getSymptomRanking(
   return {
     symptoms,
     medications,
-    timeRange,
     totalSymptomEvents: symptoms.reduce((s, e) => s + e.totalCount, 0),
     totalMedicationEvents: medications.reduce((s, e) => s + e.totalCount, 0),
   }
+}
+
+export async function getSymptomRanking(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+  timeRange: TimeRange,
+): Promise<SymptomRanking> {
+  const startDate = getTimeRangeStart(timeRange)
+  // +1 Tag Puffer für Timezone-Safety
+  const bufferStart = new Date(startDate)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .eq('account_id', accountId)
+    .eq('status', 'confirmed')
+    .is('deleted_at', null)
+    .gte('occurred_at', bufferStart.toISOString())
+    .order('occurred_at', { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error('[Insights] Ranking-Abfrage fehlgeschlagen:', error.message)
+    }
+    return {
+      symptoms: [],
+      medications: [],
+      timeRange,
+      totalSymptomEvents: 0,
+      totalMedicationEvents: 0,
+    }
+  }
+
+  const rows = data as unknown as TimelineRawRow[]
+  const cutoffKey = toLocalDateKey(startDate)
+  const result = aggregateRankingFromRows(rows, cutoffKey)
+  return { ...result, timeRange }
 }
 
 /**
@@ -504,106 +519,8 @@ export async function getSymptomRankingByAccount(
   }
 
   const rows = data as unknown as TimelineRawRow[]
-  const cutoffKey = dateFrom
-  const endKey = dateTo
-
-  const symptomMap = new Map<
-    string,
-    { monthlyCounts: Map<string, number>; intensities: number[] }
-  >()
-  const medicationMap = new Map<
-    string,
-    { monthlyCounts: Map<string, number> }
-  >()
-
-  for (const row of rows) {
-    const localKey = toLocalDateKey(new Date(row.occurred_at))
-    if (localKey < cutoffKey || localKey > endKey) continue
-
-    const extracted = pivotExtractedData(row.extracted_data)
-    const isMedication = row.event_type === 'medication'
-    const [yearStr, monthStr] = localKey.split('-')
-    const monthKey = `${yearStr}-${monthStr}`
-
-    if (isMedication) {
-      const name = extracted.medication ?? 'Unbekannt'
-      let entry = medicationMap.get(name)
-      if (!entry) {
-        entry = { monthlyCounts: new Map() }
-        medicationMap.set(name, entry)
-      }
-      entry.monthlyCounts.set(
-        monthKey,
-        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
-      )
-    } else {
-      const name = extracted.symptomName ?? 'Unbekannt'
-      let entry = symptomMap.get(name)
-      if (!entry) {
-        entry = { monthlyCounts: new Map(), intensities: [] }
-        symptomMap.set(name, entry)
-      }
-      entry.monthlyCounts.set(
-        monthKey,
-        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
-      )
-      if (extracted.intensity !== null) {
-        entry.intensities.push(extracted.intensity)
-      }
-    }
-  }
-
-  function toSortedMonthlyCountsByAccount(
-    countsMap: Map<string, number>,
-  ): MonthlyCount[] {
-    return Array.from(countsMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, count]) => {
-        const [y, m] = key.split('-').map(Number)
-        return { year: y, month: m, count }
-      })
-  }
-
-  const symptoms: SymptomRankingEntry[] = Array.from(symptomMap.entries())
-    .map(([name, { monthlyCounts, intensities }]) => {
-      const counts = toSortedMonthlyCountsByAccount(monthlyCounts)
-      const totalCount = counts.reduce((s, c) => s + c.count, 0)
-      const avgIntensity =
-        intensities.length > 0
-          ? intensities.reduce((s, v) => s + v, 0) / intensities.length
-          : null
-      return {
-        name,
-        totalCount,
-        monthlyCounts: counts,
-        trend: calculateTrend(counts),
-        avgIntensity,
-      }
-    })
-    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
-
-  const medications: MedicationRankingEntry[] = Array.from(
-    medicationMap.entries(),
-  )
-    .map(([name, { monthlyCounts }]) => {
-      const counts = toSortedMonthlyCountsByAccount(monthlyCounts)
-      const totalCount = counts.reduce((s, c) => s + c.count, 0)
-      return {
-        name,
-        totalCount,
-        monthlyCounts: counts,
-        trend: calculateTrend(counts),
-      }
-    })
-    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
-
-  return {
-    symptoms,
-    medications,
-    timeRange: '30d',
-    totalSymptomEvents: symptoms.reduce((s, e) => s + e.totalCount, 0),
-    totalMedicationEvents: medications.reduce((s, e) => s + e.totalCount, 0),
-  }
+  const result = aggregateRankingFromRows(rows, dateFrom, dateTo)
+  return { ...result, timeRange: '30d' }
 }
 
 /**
