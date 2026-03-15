@@ -31,7 +31,6 @@ export function DayDrillDown({ date, onClose }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setError(null)
     startTransition(async () => {
       const result = await loadDayEvents(date)
       if (result.data) {
