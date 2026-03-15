@@ -1,14 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { generateSummary } from '@/lib/ai/summarize'
 import {
   getMonthlyTimelinesByRange,
   getSymptomRankingByAccount,
   pivotExtractedData,
 } from '@/lib/db/insights'
-import { generateSummary } from '@/lib/ai/summarize'
 import type { Database } from '@/types/database'
-import type { SummaryEventData } from '@/types/summary'
 import type { PdfEventDetail, PdfReportData } from '@/types/report'
+import type { SummaryEventData } from '@/types/summary'
 
 type DbClient = SupabaseClient<Database>
 
