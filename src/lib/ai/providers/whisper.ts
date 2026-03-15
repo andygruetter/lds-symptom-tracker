@@ -24,6 +24,7 @@ export const whisperProvider: TranscriptionProvider = {
     const result = await client.audio.transcriptions.create({
       file,
       model: WHISPER_MODEL,
+      language: 'de',
       prompt:
         'Falls Deutsch oder Schweizerdeutsch gesprochen wird, bitte in Hochdeutsch transkribieren.',
     })

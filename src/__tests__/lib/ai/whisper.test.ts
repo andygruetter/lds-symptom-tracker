@@ -36,6 +36,7 @@ describe('whisperProvider', () => {
     expect(mockCreate).toHaveBeenCalledWith({
       file: expect.anything(),
       model: 'gpt-4o-transcribe',
+      language: 'de',
       prompt: expect.stringContaining('Hochdeutsch'),
     })
     expect(result).toEqual({ text: 'Ich habe Kopfschmerzen' })

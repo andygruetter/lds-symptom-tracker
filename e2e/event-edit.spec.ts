@@ -44,11 +44,16 @@ test.describe('Event Edit-Screen', () => {
     // Warte auf den bestätigten Bubble
     await page.getByText('Gespeichert ✓').waitFor({ timeout: 15_000 })
 
-    // Klick auf den Bubble navigiert zum Edit-Screen
+    // Klick auf den Bubble navigiert zur Detail-Ansicht
     await page.getByText('Gespeichert ✓').click()
+    await page
+      .getByRole('heading', { name: 'Event-Details' })
+      .waitFor({ timeout: 10_000 })
 
+    // Von der Detail-Ansicht zum Edit-Screen via "Bearbeiten"-Link
+    await page.getByText('Bearbeiten').click()
     await eventEditPage.waitForForm()
-    expect(page.url()).toContain(`/event/${event.id}`)
+    expect(page.url()).toContain(`/event/${event.id}/edit`)
   })
 
   test('Alle Felder sichtbar inkl. leere Felder', async ({ page }) => {

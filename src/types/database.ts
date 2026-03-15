@@ -1,7 +1,3 @@
-// AUTO-GENERIERT via: npx supabase gen types typescript --project-id "$PROJECT_ID" > src/types/database.ts
-// Dieser Placeholder wird durch den generierten Output ersetzt sobald ein Supabase-Projekt verbunden ist.
-// NIE manuell editieren nach der ersten echten Generierung!
-
 export type Json =
   | string
   | number
@@ -10,227 +6,381 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      event_photos: {
+      accounts: {
         Row: {
-          id: string
-          symptom_event_id: string
-          storage_path: string
           created_at: string
+          deleted_at: string | null
+          disclaimer_accepted_at: string | null
+          id: string
         }
         Insert: {
-          id?: string
-          symptom_event_id: string
-          storage_path: string
           created_at?: string
+          deleted_at?: string | null
+          disclaimer_accepted_at?: string | null
+          id: string
         }
         Update: {
-          id?: string
-          symptom_event_id?: string
-          storage_path?: string
           created_at?: string
+          deleted_at?: string | null
+          disclaimer_accepted_at?: string | null
+          id?: string
         }
         Relationships: []
       }
       corrections: {
         Row: {
-          id: string
           account_id: string
-          symptom_event_id: string
-          field_name: string
-          original_value: string | null
           corrected_value: string
           created_at: string
+          field_name: string
+          id: string
+          original_value: string | null
+          symptom_event_id: string
         }
         Insert: {
-          id?: string
           account_id: string
-          symptom_event_id: string
-          field_name: string
-          original_value: string | null
           corrected_value: string
           created_at?: string
+          field_name: string
+          id?: string
+          original_value?: string | null
+          symptom_event_id: string
         }
         Update: {
-          id?: string
           account_id?: string
-          symptom_event_id?: string
-          field_name?: string
-          original_value?: string | null
           corrected_value?: string
           created_at?: string
+          field_name?: string
+          id?: string
+          original_value?: string | null
+          symptom_event_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'corrections_symptom_event_id_fkey'
+            columns: ['symptom_event_id']
+            isOneToOne: false
+            referencedRelation: 'symptom_events'
+            referencedColumns: ['id']
+          },
+        ]
       }
-      accounts: {
+      event_photos: {
         Row: {
+          created_at: string | null
           id: string
-          created_at: string
-          deleted_at: string | null
-          disclaimer_accepted_at: string | null
+          storage_path: string
+          symptom_event_id: string
         }
         Insert: {
-          id: string
-          created_at?: string
-          deleted_at?: string | null
-          disclaimer_accepted_at?: string | null
+          created_at?: string | null
+          id?: string
+          storage_path: string
+          symptom_event_id: string
         }
         Update: {
+          created_at?: string | null
           id?: string
-          created_at?: string
-          deleted_at?: string | null
-          disclaimer_accepted_at?: string | null
+          storage_path?: string
+          symptom_event_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'event_photos_symptom_event_id_fkey'
+            columns: ['symptom_event_id']
+            isOneToOne: false
+            referencedRelation: 'symptom_events'
+            referencedColumns: ['id']
+          },
+        ]
       }
       extracted_data: {
         Row: {
-          id: string
-          symptom_event_id: string
-          field_name: string
-          value: string
           confidence: number
           confirmed: boolean
           created_at: string
+          field_name: string
+          id: string
+          symptom_event_id: string
+          value: string
         }
         Insert: {
-          id?: string
-          symptom_event_id: string
-          field_name: string
-          value: string
           confidence: number
           confirmed?: boolean
           created_at?: string
+          field_name: string
+          id?: string
+          symptom_event_id: string
+          value: string
         }
         Update: {
-          id?: string
-          symptom_event_id?: string
-          field_name?: string
-          value?: string
           confidence?: number
           confirmed?: boolean
           created_at?: string
+          field_name?: string
+          id?: string
+          symptom_event_id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'extracted_data_symptom_event_id_fkey'
+            columns: ['symptom_event_id']
+            isOneToOne: false
+            referencedRelation: 'symptom_events'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      patient_vocabulary: {
+        Row: {
+          account_id: string
+          created_at: string
+          field_name: string
+          id: string
+          mapped_term: string
+          patient_term: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          field_name: string
+          id?: string
+          mapped_term: string
+          patient_term: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          field_name?: string
+          id?: string
+          mapped_term?: string
+          patient_term?: string
+          updated_at?: string
+          usage_count?: number
         }
         Relationships: []
       }
       push_subscriptions: {
         Row: {
-          id: string
           account_id: string
+          created_at: string
           endpoint: string
+          id: string
           keys_auth: string
           keys_p256dh: string
-          created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
           account_id: string
+          created_at?: string
           endpoint: string
+          id?: string
           keys_auth: string
           keys_p256dh: string
-          created_at?: string
           updated_at?: string
         }
         Update: {
-          id?: string
           account_id?: string
+          created_at?: string
           endpoint?: string
+          id?: string
           keys_auth?: string
           keys_p256dh?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      patient_vocabulary: {
-        Row: {
-          id: string
-          account_id: string
-          patient_term: string
-          mapped_term: string
-          field_name: string
-          usage_count: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          account_id: string
-          patient_term: string
-          mapped_term: string
-          field_name: string
-          usage_count?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          account_id?: string
-          patient_term?: string
-          mapped_term?: string
-          field_name?: string
-          usage_count?: number
-          created_at?: string
           updated_at?: string
         }
         Relationships: []
       }
       symptom_events: {
         Row: {
-          id: string
           account_id: string
-          event_type: string
-          raw_input: string | null
           audio_url: string | null
-          status: string
           created_at: string
-          ended_at: string | null
           deleted_at: string | null
+          ended_at: string | null
+          event_type: string
+          id: string
           occurred_at: string
+          raw_input: string | null
+          status: string
         }
         Insert: {
-          id?: string
           account_id: string
-          event_type?: string
-          raw_input?: string | null
           audio_url?: string | null
-          status?: string
           created_at?: string
-          ended_at?: string | null
           deleted_at?: string | null
+          ended_at?: string | null
+          event_type?: string
+          id?: string
           occurred_at?: string
+          raw_input?: string | null
+          status?: string
         }
         Update: {
-          id?: string
           account_id?: string
-          event_type?: string
-          raw_input?: string | null
           audio_url?: string | null
-          status?: string
           created_at?: string
-          ended_at?: string | null
           deleted_at?: string | null
+          ended_at?: string | null
+          event_type?: string
+          id?: string
           occurred_at?: string
+          raw_input?: string | null
+          status?: string
         }
         Relationships: []
       }
     }
-    Views: Record<string, never>
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
+      cleanup_deleted_accounts: { Args: never; Returns: undefined }
       upsert_vocabulary_entry: {
         Args: {
           p_account_id: string
-          p_patient_term: string
-          p_mapped_term: string
           p_field_name: string
+          p_mapped_term: string
+          p_patient_term: string
         }
         Returns: undefined
       }
     }
-    Enums: Record<string, never>
-    CompositeTypes: Record<string, never>
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
+
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema['CompositeTypes']
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

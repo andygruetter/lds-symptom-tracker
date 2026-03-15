@@ -5,6 +5,7 @@ export class MorePage {
   readonly heading: Locator
   readonly disclaimerButton: Locator
   readonly signOutButton: Locator
+  readonly deleteAllDataButton: Locator
   readonly deleteAccountButton: Locator
   readonly vokabularLink: Locator
 
@@ -13,6 +14,7 @@ export class MorePage {
     this.heading = page.getByRole('heading', { name: 'Mehr' })
     this.disclaimerButton = page.getByText('Disclaimer anzeigen')
     this.signOutButton = page.getByText('Abmelden')
+    this.deleteAllDataButton = page.getByText('Alle Daten löschen')
     this.deleteAccountButton = page.getByText('Account löschen')
     this.vokabularLink = page.getByText('Mein Vokabular')
   }
@@ -33,6 +35,25 @@ export class MorePage {
 
   async cancelDeleteAccount() {
     await this.page.getByRole('button', { name: 'Abbrechen' }).click()
+  }
+
+  async openDeleteAllDataDialog() {
+    await this.deleteAllDataButton.click()
+    await this.page.getByText('Alle Daten löschen?').waitFor()
+  }
+
+  async confirmDeleteAllData() {
+    await this.page
+      .getByRole('button', { name: 'Ja, alle Daten löschen' })
+      .click()
+  }
+
+  async cancelDeleteAllData() {
+    await this.page.getByRole('button', { name: 'Abbrechen' }).click()
+  }
+
+  getDeleteAllDataSuccessMessage() {
+    return this.page.getByText(/\d+ Events gelöscht/)
   }
 
   async signOut() {
