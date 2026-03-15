@@ -344,6 +344,13 @@ export async function getSharedSymptomEvents(
   dateTo: string,
 ): Promise<SharedSymptomEvent[]> {
   const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts/ranking)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
@@ -351,8 +358,8 @@ export async function getSharedSymptomEvents(
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
-    .gte('occurred_at', dateFrom)
-    .lte('occurred_at', dateTo)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
     .is('deleted_at', null)
     .order('occurred_at', { ascending: false })
 
@@ -391,6 +398,13 @@ export async function getSharedFeedEvents(
   dateTo: string,
 ): Promise<FeedEvent[]> {
   const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts/ranking)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
@@ -399,8 +413,8 @@ export async function getSharedFeedEvents(
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
     .is('deleted_at', null)
-    .gte('occurred_at', dateFrom)
-    .lte('occurred_at', dateTo)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
     .order('occurred_at', { ascending: false })
 
   if (error || !data) {
@@ -429,14 +443,21 @@ export async function getSharedEventsForSummary(
   dateTo: string,
 ): Promise<SummaryEventData[]> {
   const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts/ranking)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
       'id, event_type, occurred_at, ended_at, raw_input, extracted_data(field_name, value, confidence)',
     )
     .eq('account_id', accountId)
-    .gte('occurred_at', dateFrom)
-    .lte('occurred_at', dateTo)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
     .is('deleted_at', null)
     .order('occurred_at', { ascending: true })
 
@@ -518,6 +539,12 @@ export async function getSharedEventDetail(
 ): Promise<EventDetail | null> {
   const supabase = createServiceClient()
 
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts/ranking)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
   const { data: event, error: eventError } = await supabase
     .from('symptom_events')
     .select(
@@ -525,8 +552,8 @@ export async function getSharedEventDetail(
     )
     .eq('id', eventId)
     .eq('account_id', accountId)
-    .gte('occurred_at', dateFrom)
-    .lte('occurred_at', dateTo)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
     .is('deleted_at', null)
     .eq('status', 'confirmed')
     .single()

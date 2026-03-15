@@ -454,6 +454,7 @@ function createServiceQueryBuilder(singleResult: {
     is: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
     order: vi.fn().mockResolvedValue({ data: [], error: null }),
     single: vi.fn().mockResolvedValue(singleResult),
   }
@@ -591,6 +592,7 @@ describe('getSharedSymptomEvents', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: mockRows, error: null }),
     }
@@ -609,8 +611,8 @@ describe('getSharedSymptomEvents', () => {
     expect(result[1].audioUrl).toBe('path/to/audio.webm')
     expect(builder.eq).toHaveBeenCalledWith('account_id', 'user-1')
     expect(builder.eq).toHaveBeenCalledWith('status', 'confirmed')
-    expect(builder.gte).toHaveBeenCalledWith('occurred_at', '2026-01-01')
-    expect(builder.lte).toHaveBeenCalledWith('occurred_at', '2026-03-15')
+    expect(builder.gte).toHaveBeenCalledWith('occurred_at', expect.any(String))
+    expect(builder.lt).toHaveBeenCalledWith('occurred_at', expect.any(String))
     expect(builder.is).toHaveBeenCalledWith('deleted_at', null)
   })
 
@@ -620,6 +622,7 @@ describe('getSharedSymptomEvents', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
     }
@@ -642,6 +645,7 @@ describe('getSharedSymptomEvents', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi
         .fn()
@@ -665,6 +669,7 @@ describe('getSharedSymptomEvents', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
     }
@@ -702,6 +707,7 @@ describe('getSharedEventsForSummary', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: mockData, error: null }),
     }
@@ -742,6 +748,7 @@ describe('getSharedEventsForSummary', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: mockData, error: null }),
     }
@@ -763,6 +770,7 @@ describe('getSharedEventsForSummary', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi
         .fn()
@@ -1011,6 +1019,7 @@ describe('getSharedEventDetail', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: eventRow, error: eventError }),
     }
@@ -1236,8 +1245,14 @@ describe('getSharedEventDetail', () => {
     expect(mockServiceFrom).toHaveBeenCalledWith('symptom_events')
     expect(eventBuilder.eq).toHaveBeenCalledWith('account_id', 'user-1')
     expect(eventBuilder.eq).toHaveBeenCalledWith('id', 'event-uuid-1')
-    expect(eventBuilder.gte).toHaveBeenCalledWith('occurred_at', '2026-01-01')
-    expect(eventBuilder.lte).toHaveBeenCalledWith('occurred_at', '2026-03-15')
+    expect(eventBuilder.gte).toHaveBeenCalledWith(
+      'occurred_at',
+      expect.any(String),
+    )
+    expect(eventBuilder.lt).toHaveBeenCalledWith(
+      'occurred_at',
+      expect.any(String),
+    )
     expect(eventBuilder.is).toHaveBeenCalledWith('deleted_at', null)
     expect(eventBuilder.eq).toHaveBeenCalledWith('status', 'confirmed')
   })

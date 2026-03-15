@@ -76,13 +76,18 @@ export async function checkSummaryFreshness(
 
   if (summaryError || !summaryData) return false
 
-  // Neuestes Event im Zeitraum ermitteln
+  // Neuestes Event im Zeitraum ermitteln (+1 Tag Puffer für Timezone-Safety)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
   const { data: eventData, error: eventError } = await supabase
     .from('symptom_events')
     .select('created_at')
     .eq('account_id', accountId)
-    .gte('occurred_at', dateFrom)
-    .lte('occurred_at', dateTo)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(1)
