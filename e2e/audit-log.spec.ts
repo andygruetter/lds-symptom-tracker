@@ -98,7 +98,7 @@ test.describe('Audit-Log: Patient-Ansicht (Mehr-Seite)', () => {
       await expect(page.getByText('Zugriffsprotokolle')).toBeVisible()
 
       // Audit-Eintrag sichtbar
-      await expect(page.getByText('Dashboard angesehen')).toBeVisible()
+      await expect(page.getByText('Dashboard angesehen').first()).toBeVisible()
     },
   )
 

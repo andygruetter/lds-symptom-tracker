@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
-const FIELD_LABELS: Record<string, string> = {
+export const FIELD_LABELS: Record<string, string> = {
   symptom_name: 'Symptom',
   body_region: 'Körperregion',
   side: 'Seite',

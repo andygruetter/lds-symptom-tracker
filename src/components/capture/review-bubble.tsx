@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Clock, MapPin } from 'lucide-react'
 
 import { ClarificationInline } from '@/components/capture/clarification-inline'
-import { SymptomTag } from '@/components/capture/symptom-tag'
+import { FIELD_LABELS, SymptomTag } from '@/components/capture/symptom-tag'
 import { cn } from '@/lib/utils'
 import type { ClarificationQuestion, ExtractedData } from '@/types/ai'
 
@@ -223,7 +223,7 @@ export function ReviewBubble({
         type="button"
         onClick={() => setEditingField(field.id)}
         className="min-h-[44px] w-full text-left active:opacity-60"
-        aria-label={`${fieldName} ändern`}
+        aria-label={`${FIELD_LABELS[fieldName] ?? fieldName} ändern`}
       >
         {displayContent}
       </button>

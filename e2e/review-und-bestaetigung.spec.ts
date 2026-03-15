@@ -63,9 +63,7 @@ test.describe('Review und Bestätigung', () => {
 
     await capturePage.goto()
 
-    await expect(
-      page.locator('[role="img"][aria-label*="Konfidenz"]'),
-    ).toBeVisible()
+    await expect(page.getByText('sicher erkannt')).toBeVisible()
   })
 
   test('Bestätigen wechselt zu "Gespeichert" Status', async ({ page }) => {
