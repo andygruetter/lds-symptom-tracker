@@ -88,9 +88,9 @@ test.describe('Arzt-Dashboard KI-Zusammenfassung', () => {
     })
 
     // Verifiziere dass tatsächlicher Summary-Inhalt gerendert wird (nicht nur Heading)
-    await expect(
-      page.getByText(/Mock-Zusammenfassung|Events im Zeitraum|Events/),
-    ).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText(/Mock-Zusammenfassung/)).toBeVisible({
+      timeout: 10000,
+    })
   })
 
   test('9.4 — Zweiter Dashboard-Besuch lädt Summary sofort aus Cache', async ({
