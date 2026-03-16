@@ -82,7 +82,7 @@ export function pivotExtractedData(rows: ExtractedDataRow[] | null): {
   }
 }
 
-function groupExtractedBySymptomIndex(
+export function groupExtractedBySymptomIndex(
   rows: ExtractedDataRow[] | null,
 ): FeedSymptomGroup[] {
   if (!rows || rows.length === 0) return []

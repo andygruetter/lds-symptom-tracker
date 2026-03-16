@@ -4,6 +4,7 @@ import { generateSummary } from '@/lib/ai/summarize'
 import {
   getMonthlyTimelinesByRange,
   getSymptomRankingByAccount,
+  groupExtractedBySymptomIndex,
   pivotExtractedData,
 } from '@/lib/db/insights'
 import type { Database } from '@/types/database'
@@ -18,7 +19,9 @@ type RawEventRow = {
   occurred_at: string
   ended_at: string | null
   raw_input: string | null
-  extracted_data: { field_name: string; value: string }[] | null
+  extracted_data:
+    | { field_name: string; value: string; symptom_index: number | null }[]
+    | null
   event_photos: { id: string; storage_path: string }[] | null
 }
 
@@ -62,7 +65,7 @@ async function loadPdfEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, ended_at, raw_input, extracted_data(field_name, value), event_photos(id, storage_path)',
+      'id, event_type, occurred_at, ended_at, raw_input, extracted_data(field_name, value, symptom_index), event_photos(id, storage_path)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -106,10 +109,12 @@ async function loadPdfEvents(
   }
 
   return rows.map((row): PdfEventDetail => {
-    const extracted = pivotExtractedData(
-      row.extracted_data as { field_name: string; value: string }[] | null,
-    )
+    const extracted = pivotExtractedData(row.extracted_data)
     const eventType = row.event_type === 'medication' ? 'medication' : 'symptom'
+    const symptoms =
+      eventType === 'symptom'
+        ? groupExtractedBySymptomIndex(row.extracted_data)
+        : []
 
     return {
       id: row.id,
@@ -122,6 +127,7 @@ async function loadPdfEvents(
       side: extracted.side,
       intensity: extracted.intensity,
       rawInput: row.raw_input,
+      symptoms,
       photoBase64: photosByEventId.get(row.id) ?? [],
     }
   })

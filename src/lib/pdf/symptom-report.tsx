@@ -1,6 +1,10 @@
 import { Document, Image, Page, Text, View } from '@react-pdf/renderer'
 
-import type { MonthTimeline, SymptomRankingEntry } from '@/types/analytics'
+import type {
+  FeedSymptomGroup,
+  MonthTimeline,
+  SymptomRankingEntry,
+} from '@/types/analytics'
 import type { PdfEventDetail, PdfReportData } from '@/types/report'
 
 import { pdfStyles } from './pdf-styles'
@@ -181,32 +185,69 @@ function TimelineSection({ timeline }: { timeline: MonthTimeline[] }) {
 
 // ─── Event Detail Card ────────────────────────────────────────────────────────
 
+function SymptomGroupLine({ group }: { group: FeedSymptomGroup }) {
+  const metaParts: string[] = []
+  if (group.bodyRegion) metaParts.push(group.bodyRegion)
+  if (group.side) metaParts.push(group.side)
+  if (group.intensity !== null) metaParts.push(`${group.intensity}/10`)
+  if (group.symptomType) metaParts.push(group.symptomType)
+
+  return (
+    <View>
+      <Text style={pdfStyles.eventTitle}>{group.symptomName ?? 'Symptom'}</Text>
+      {metaParts.length > 0 && (
+        <Text style={pdfStyles.eventMeta}>{metaParts.join(' · ')}</Text>
+      )}
+    </View>
+  )
+}
+
 function EventCard({ event }: { event: PdfEventDetail }) {
-  const title =
+  const isMultiSymptom =
+    event.eventType === 'symptom' && event.symptoms.length > 1
+
+  const singleTitle =
     event.eventType === 'medication'
       ? (event.medication ?? 'Medikament')
       : (event.symptomName ?? 'Symptom')
 
-  const metaParts: string[] = []
-  if (event.bodyRegion) metaParts.push(event.bodyRegion)
-  if (event.side) metaParts.push(event.side)
-  if (event.intensity !== null)
-    metaParts.push(`Intensität: ${event.intensity}/10`)
+  const singleMetaParts: string[] = []
+  if (!isMultiSymptom) {
+    if (event.bodyRegion) singleMetaParts.push(event.bodyRegion)
+    if (event.side) singleMetaParts.push(event.side)
+    if (event.intensity !== null)
+      singleMetaParts.push(`Intensität: ${event.intensity}/10`)
+  }
   if (event.endedAt) {
     const durationMs =
       new Date(event.endedAt).getTime() - new Date(event.occurredAt).getTime()
     const durationMin = Math.round(durationMs / 60000)
-    if (durationMin > 0) metaParts.push(`Dauer: ${durationMin} Min.`)
+    if (durationMin > 0) singleMetaParts.push(`Dauer: ${durationMin} Min.`)
   }
 
   return (
     <View style={pdfStyles.eventCard}>
       <View style={pdfStyles.eventCardHeader}>
-        <Text style={pdfStyles.eventTitle}>{title}</Text>
+        {!isMultiSymptom && (
+          <Text style={pdfStyles.eventTitle}>{singleTitle}</Text>
+        )}
         <Text style={pdfStyles.eventDate}>{formatDate(event.occurredAt)}</Text>
       </View>
-      {metaParts.length > 0 && (
-        <Text style={pdfStyles.eventMeta}>{metaParts.join(' · ')}</Text>
+      {isMultiSymptom ? (
+        <View>
+          {event.symptoms.map((s, i) => (
+            <SymptomGroupLine key={i} group={s} />
+          ))}
+          {singleMetaParts.length > 0 && (
+            <Text style={pdfStyles.eventMeta}>
+              {singleMetaParts.join(' · ')}
+            </Text>
+          )}
+        </View>
+      ) : (
+        singleMetaParts.length > 0 && (
+          <Text style={pdfStyles.eventMeta}>{singleMetaParts.join(' · ')}</Text>
+        )
       )}
       {event.rawInput && (
         <Text style={pdfStyles.eventTranscription}>

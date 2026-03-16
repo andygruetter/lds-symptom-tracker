@@ -1,4 +1,8 @@
-import type { MonthTimeline, SymptomRankingEntry } from '@/types/analytics'
+import type {
+  FeedSymptomGroup,
+  MonthTimeline,
+  SymptomRankingEntry,
+} from '@/types/analytics'
 
 /** Detail eines einzelnen Events für den PDF-Report */
 export type PdfEventDetail = {
@@ -12,6 +16,8 @@ export type PdfEventDetail = {
   side: string | null
   intensity: number | null
   rawInput: string | null
+  /** Multi-Symptom-Gruppen (leer bei Medikament oder Einzel-Symptom) */
+  symptoms: FeedSymptomGroup[]
   /** Base64-kodierte Foto-Thumbnails (max 200px Breite) */
   photoBase64: string[]
 }
