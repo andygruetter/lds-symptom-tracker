@@ -24,7 +24,28 @@ type AuthResult = {
 }
 
 async function resolveAuth(request: NextRequest): Promise<AuthResult> {
-  // 1. Versuche Patient-Auth (Supabase Session)
+  // 1. Arzt-Auth zuerst prüfen (Sharing-Cookie) — hat Vorrang damit ein
+  //    eingeloggter Patient das Arzt-Dashboard trotzdem als Arzt exportieren kann.
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get('sharing_session')
+
+  if (sessionCookie?.value) {
+    const session = parseSharingSession(sessionCookie.value)
+    if (session) {
+      const link = await validateSharingLinkById(session.linkId)
+      if (link) {
+        return {
+          accountId: link.accountId,
+          dateFrom: link.dateFrom,
+          dateTo: link.dateTo,
+          authType: 'doctor',
+          sharingLink: link,
+        }
+      }
+    }
+  }
+
+  // 2. Fallback: Patient-Auth (Supabase Session) mit Datumsangabe in Query-Params
   const supabase = await createServerClient()
   const {
     data: { user },
@@ -55,26 +76,6 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult> {
       dateTo: endDate,
       authType: 'patient',
       sharingLink: null,
-    }
-  }
-
-  // 2. Fallback: Arzt-Auth (Sharing-Cookie)
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get('sharing_session')
-
-  if (sessionCookie?.value) {
-    const session = parseSharingSession(sessionCookie.value)
-    if (session) {
-      const link = await validateSharingLinkById(session.linkId)
-      if (link) {
-        return {
-          accountId: link.accountId,
-          dateFrom: link.dateFrom,
-          dateTo: link.dateTo,
-          authType: 'doctor',
-          sharingLink: link,
-        }
-      }
     }
   }
 
