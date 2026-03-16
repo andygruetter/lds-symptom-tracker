@@ -51,6 +51,7 @@ jobs:
       INTERNAL_API_SECRET: ci-internal-api-secret
       BYPASS_AUTH: 'true'
       E2E_MOCK_EXTRACTION: 'true'
+      E2E_MOCK_SUMMARY: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1

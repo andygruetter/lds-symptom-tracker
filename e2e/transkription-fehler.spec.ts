@@ -6,10 +6,7 @@ import {
   getTestUserId,
 } from './fixtures/test-data'
 
-// Requires migration 00010_transcription_status.sql to be applied
-// (adds 'transcription_failed' to status CHECK constraint).
-// Remove .fixme once the migration is live.
-test.describe.fixme('Transkription Fehler', () => {
+test.describe('Transkription Fehler', () => {
   let capturePage: CapturePage
   let userId: string
 

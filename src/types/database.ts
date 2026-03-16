@@ -319,6 +319,44 @@ export type Database = {
         }
         Relationships: []
       }
+      sharing_summaries: {
+        Row: {
+          created_at: string
+          event_count: number
+          generated_at: string
+          id: string
+          invalidated_at: string | null
+          sharing_link_id: string
+          summary_text: string
+        }
+        Insert: {
+          created_at?: string
+          event_count: number
+          generated_at?: string
+          id?: string
+          invalidated_at?: string | null
+          sharing_link_id: string
+          summary_text: string
+        }
+        Update: {
+          created_at?: string
+          event_count?: number
+          generated_at?: string
+          id?: string
+          invalidated_at?: string | null
+          sharing_link_id?: string
+          summary_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sharing_summaries_sharing_link_id_fkey'
+            columns: ['sharing_link_id']
+            isOneToOne: true
+            referencedRelation: 'sharing_links'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       symptom_events: {
         Row: {
           account_id: string

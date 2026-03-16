@@ -334,6 +334,48 @@ export async function cleanupTestAuditEntries(accountId: string) {
   await supabase.from('audit_log').delete().eq('account_id', accountId)
 }
 
+export async function createTestSharingSummary(
+  sharingLinkId: string,
+  overrides?: {
+    summary_text?: string
+    event_count?: number
+    invalidated_at?: string | null
+  },
+) {
+  const { data, error } = await supabase
+    .from('sharing_summaries')
+    .upsert(
+      {
+        sharing_link_id: sharingLinkId,
+        summary_text:
+          overrides?.summary_text ??
+          'Test-Zusammenfassung: 3 Events im Zeitraum.',
+        event_count: overrides?.event_count ?? 3,
+        invalidated_at: overrides?.invalidated_at ?? null,
+      },
+      { onConflict: 'sharing_link_id' },
+    )
+    .select()
+    .single()
+
+  if (error)
+    throw new Error(
+      `Sharing-Summary erstellen fehlgeschlagen: ${error.message}`,
+    )
+  return data
+}
+
+export async function getTestSharingSummary(sharingLinkId: string) {
+  const { data, error } = await supabase
+    .from('sharing_summaries')
+    .select('*')
+    .eq('sharing_link_id', sharingLinkId)
+    .single()
+
+  if (error) return null
+  return data
+}
+
 export async function cleanupTestData(accountId: string) {
   const { data: events } = await supabase
     .from('symptom_events')

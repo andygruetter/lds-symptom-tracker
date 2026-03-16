@@ -8,6 +8,7 @@ import type {
   EventPhoto,
   ExtractedField,
   FeedEvent,
+  FeedSymptomGroup,
   MedicationRankingEntry,
   MonthlyCount,
   MonthTimeline,
@@ -19,17 +20,21 @@ import type {
 import type { AppError } from '@/types/common'
 import type { Database } from '@/types/database'
 
-type ExtractedDataRow = { field_name: string; value: string }
-type PhotoRow = { id: string }
+export type ExtractedDataRow = {
+  field_name: string
+  value: string
+  symptom_index?: number
+}
+export type PhotoRow = { id: string }
 
-type TimelineRawRow = {
+export type TimelineRawRow = {
   id: string
   event_type: string
   occurred_at: string
   extracted_data: ExtractedDataRow[] | null
 }
 
-type RawFeedRow = {
+export type RawFeedRow = {
   id: string
   event_type: string
   occurred_at: string
@@ -41,7 +46,7 @@ type RawFeedRow = {
   event_photos: PhotoRow[] | null
 }
 
-function pivotExtractedData(rows: ExtractedDataRow[] | null): {
+export function pivotExtractedData(rows: ExtractedDataRow[] | null): {
   symptomName: string | null
   bodyRegion: string | null
   side: string | null
@@ -77,9 +82,40 @@ function pivotExtractedData(rows: ExtractedDataRow[] | null): {
   }
 }
 
-function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
+export function groupExtractedBySymptomIndex(
+  rows: ExtractedDataRow[] | null,
+): FeedSymptomGroup[] {
+  if (!rows || rows.length === 0) return []
+
+  const groups = new Map<number, Map<string, string>>()
+  for (const r of rows) {
+    const idx = r.symptom_index ?? 0
+    if (!groups.has(idx)) groups.set(idx, new Map())
+    groups.get(idx)!.set(r.field_name, r.value)
+  }
+
+  return [...groups.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, map]) => {
+      const intensityRaw = map.get('intensity')
+      return {
+        symptomName: map.get('symptom_name') ?? null,
+        bodyRegion: map.get('body_region') ?? null,
+        side: map.get('side') ?? null,
+        symptomType: map.get('symptom_type') ?? null,
+        intensity:
+          intensityRaw !== undefined ? parseFloat(intensityRaw) || null : null,
+      }
+    })
+}
+
+export function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
   const extracted = pivotExtractedData(row.extracted_data)
   const eventType = row.event_type === 'medication' ? 'medication' : 'symptom'
+  const symptoms =
+    eventType === 'symptom'
+      ? groupExtractedBySymptomIndex(row.extracted_data)
+      : []
 
   return {
     id: row.id,
@@ -91,6 +127,7 @@ function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
     ...extracted,
     photoCount: row.event_photos?.length ?? 0,
     hasAudio: row.audio_url !== null,
+    symptoms,
   }
 }
 
@@ -105,7 +142,7 @@ export async function getChronologicalFeed(
   let query = supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -284,44 +321,22 @@ function getTimeRangeStart(timeRange: TimeRange): Date {
   return new Date('2020-01-01')
 }
 
-export async function getSymptomRanking(
-  supabase: SupabaseClient<Database>,
-  accountId: string,
-  timeRange: TimeRange,
-): Promise<SymptomRanking> {
-  const startDate = getTimeRangeStart(timeRange)
-  // +1 Tag Puffer für Timezone-Safety
-  const bufferStart = new Date(startDate)
-  bufferStart.setDate(bufferStart.getDate() - 1)
-
-  const { data, error } = await supabase
-    .from('symptom_events')
-    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
-    .eq('account_id', accountId)
-    .eq('status', 'confirmed')
-    .is('deleted_at', null)
-    .gte('occurred_at', bufferStart.toISOString())
-    .order('occurred_at', { ascending: false })
-
-  if (error || !data) {
-    if (error) {
-      console.error('[Insights] Ranking-Abfrage fehlgeschlagen:', error.message)
-    }
-    return {
-      symptoms: [],
-      medications: [],
-      timeRange,
-      totalSymptomEvents: 0,
-      totalMedicationEvents: 0,
-    }
-  }
-
-  const rows = data as unknown as TimelineRawRow[]
-
-  // Filter auf echten Zeitraum (Timezone-safe: lokale Zeit nutzen)
-  const cutoffKey = toLocalDateKey(startDate)
-
-  // Aggregation-Maps: symptomName/medication → monatliche Counts + Intensitäten
+/**
+ * Aggregiert TimelineRawRow[] zu Symptom- und Medikamenten-Rankings.
+ * @param rows - Rohdaten aus der DB (bereits als TimelineRawRow gecasted)
+ * @param dateFrom - Untere Datumsgrenze (YYYY-MM-DD), inklusive. Muss ein gültiges Datum sein.
+ * @param dateTo - Obere Datumsgrenze (YYYY-MM-DD), inklusive. Wenn nicht angegeben, kein oberes Limit.
+ */
+export function aggregateRankingFromRows(
+  rows: TimelineRawRow[],
+  dateFrom: string,
+  dateTo?: string,
+): {
+  symptoms: SymptomRankingEntry[]
+  medications: MedicationRankingEntry[]
+  totalSymptomEvents: number
+  totalMedicationEvents: number
+} {
   const symptomMap = new Map<
     string,
     { monthlyCounts: Map<string, number>; intensities: number[] }
@@ -333,8 +348,8 @@ export async function getSymptomRanking(
 
   for (const row of rows) {
     const localKey = toLocalDateKey(new Date(row.occurred_at))
-    // Events vor dem Zeitraum verwerfen (Puffer-Events)
-    if (localKey < cutoffKey) continue
+    if (localKey < dateFrom) continue
+    if (dateTo && localKey > dateTo) continue
 
     const extracted = pivotExtractedData(row.extracted_data)
     const isMedication = row.event_type === 'medication'
@@ -418,10 +433,124 @@ export async function getSymptomRanking(
   return {
     symptoms,
     medications,
-    timeRange,
     totalSymptomEvents: symptoms.reduce((s, e) => s + e.totalCount, 0),
     totalMedicationEvents: medications.reduce((s, e) => s + e.totalCount, 0),
   }
+}
+
+export async function getSymptomRanking(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+  timeRange: TimeRange,
+): Promise<SymptomRanking> {
+  const startDate = getTimeRangeStart(timeRange)
+  // +1 Tag Puffer für Timezone-Safety
+  const bufferStart = new Date(startDate)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .eq('account_id', accountId)
+    .eq('status', 'confirmed')
+    .is('deleted_at', null)
+    .gte('occurred_at', bufferStart.toISOString())
+    .order('occurred_at', { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error('[Insights] Ranking-Abfrage fehlgeschlagen:', error.message)
+    }
+    return {
+      symptoms: [],
+      medications: [],
+      timeRange,
+      totalSymptomEvents: 0,
+      totalMedicationEvents: 0,
+    }
+  }
+
+  const rows = data as unknown as TimelineRawRow[]
+  const cutoffKey = toLocalDateKey(startDate)
+  const result = aggregateRankingFromRows(rows, cutoffKey)
+  return { ...result, timeRange }
+}
+
+/**
+ * Symptom-Ranking mit expliziten Datumsgrenzen (für PDF/Service-Client).
+ * Dependency-Injection: Supabase-Client als Parameter.
+ */
+export async function getSymptomRankingByAccount(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<SymptomRanking> {
+  // +1 Tag Puffer für Timezone-Safety
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .eq('account_id', accountId)
+    .eq('status', 'confirmed')
+    .is('deleted_at', null)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lte('occurred_at', bufferEnd.toISOString())
+    .order('occurred_at', { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error(
+        '[Insights] RankingByAccount-Abfrage fehlgeschlagen:',
+        error.message,
+      )
+    }
+    return {
+      symptoms: [],
+      medications: [],
+      timeRange: '30d',
+      totalSymptomEvents: 0,
+      totalMedicationEvents: 0,
+    }
+  }
+
+  const rows = data as unknown as TimelineRawRow[]
+  const result = aggregateRankingFromRows(rows, dateFrom, dateTo)
+  return { ...result, timeRange: '30d' }
+}
+
+/**
+ * Monatliche Timelines für einen Datumsbereich (für PDF/Service-Client).
+ * Gibt eine Timeline pro Monat im Zeitraum dateFrom–dateTo zurück.
+ */
+export async function getMonthlyTimelinesByRange(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<MonthTimeline[]> {
+  const from = new Date(dateFrom)
+  const to = new Date(dateTo)
+
+  const months: Array<{ year: number; month: number }> = []
+  const current = new Date(from.getFullYear(), from.getMonth(), 1)
+
+  while (current <= to) {
+    months.push({ year: current.getFullYear(), month: current.getMonth() + 1 })
+    current.setMonth(current.getMonth() + 1)
+  }
+
+  const timelines = await Promise.all(
+    months.map(({ year, month }) =>
+      getMonthlyTimeline(supabase, accountId, year, month),
+    ),
+  )
+
+  return timelines
 }
 
 export async function getSymptomEvents(
@@ -438,7 +567,7 @@ export async function getSymptomEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -592,7 +721,7 @@ export async function getDayEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')

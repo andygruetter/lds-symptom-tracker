@@ -4,6 +4,7 @@ import { z } from 'zod'
 export type AuditAction =
   | 'dashboard_view'
   | 'event_detail'
+  | 'event_drill_down'
   | 'audio_stream'
   | 'photo_view'
   | 'pdf_download'
@@ -11,6 +12,7 @@ export type AuditAction =
 export const AuditActionSchema = z.enum([
   'dashboard_view',
   'event_detail',
+  'event_drill_down',
   'audio_stream',
   'photo_view',
   'pdf_download',
@@ -52,6 +54,7 @@ export type AuditLogListItem = {
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   dashboard_view: 'Dashboard angesehen',
   event_detail: 'Symptom-Detail angesehen',
+  event_drill_down: 'Event-Detail angesehen (Drill-Down)',
   audio_stream: 'Audio abgespielt',
   photo_view: 'Foto angesehen',
   pdf_download: 'PDF heruntergeladen',

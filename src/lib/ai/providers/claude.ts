@@ -6,6 +6,7 @@ import type {
   ExtractionResult,
 } from '@/types/ai'
 import { extractionResultSchema } from '@/types/ai'
+import type { SummaryEventData, SummaryProvider } from '@/types/summary'
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 
@@ -478,6 +479,68 @@ function createClient(): Anthropic {
   return new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
   })
+}
+
+const summarySystemPrompt = `Du bist ein medizinischer Assistent, der strukturierte Patientendaten in eine prägnante ärztliche Zusammenfassung auf Deutsch umwandelt.
+
+Erstelle eine professionelle Zusammenfassung mit folgender Struktur (2-4 Absätze):
+
+**Abschnitt 1 — Gesamtüberblick:**
+Gib eine kurze Übersicht über den Zeitraum: Anzahl der Symptom-Events und Medikamenten-Events, grobe zeitliche Verteilung.
+
+**Abschnitt 2 — Häufigste Beschwerden:**
+Liste die Top-3 bis 5 häufigsten Symptome auf, mit durchschnittlicher Intensität (falls vorhanden) und Häufigkeit.
+
+**Abschnitt 3 — Zeitliche Muster:**
+Beschreibe erkennbare Trends: zunehmend, abnehmend, stabil, Cluster-Muster, Tageszeit-Abhängigkeiten.
+
+**Abschnitt 4 — LDS/Marfan-relevante Marker (nur wenn vorhanden):**
+Hebe kardiovaskuläre (Aorta, Herzrhythmus, Synkope), zerebrovaskuläre (pulsierendes Rauschen, Vernichtungskopfschmerz, Sprachstörungen) oder muskuloskelettale Auffälligkeiten besonders hervor.
+
+Schreibe in medizinisch-professionellem Deutsch. Keine Diagnosen stellen. Nur beobachtbare Muster beschreiben.
+Wenn keine Events vorhanden sind: Schreibe "Im gewählten Zeitraum wurden keine Symptom-Events erfasst."
+`
+
+function formatEventsForSummary(events: SummaryEventData[]): string {
+  if (events.length === 0) return 'Keine Events im Zeitraum erfasst.'
+
+  const lines = events.map((event) => {
+    const fields = event.extractedFields
+      .map((f) => `${f.fieldName}: ${f.value} (Konfidenz: ${f.confidence}%)`)
+      .join(', ')
+    return `- [${event.eventType.toUpperCase()}] ${event.occurredAt}${event.rawInput ? ` | Input: "${event.rawInput}"` : ''}${fields ? ` | Extrahiert: ${fields}` : ''}`
+  })
+
+  return `Events (${events.length} total, chronologisch):\n${lines.join('\n')}`
+}
+
+export const claudeSummaryProvider: SummaryProvider = {
+  async summarize(events: SummaryEventData[]): Promise<string> {
+    const client = createClient()
+    const eventsText = formatEventsForSummary(events)
+
+    const response = await client.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 2048,
+      system: summarySystemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: eventsText,
+        },
+      ],
+    })
+
+    const textBlock = response.content.find(
+      (block): block is Anthropic.Messages.TextBlock => block.type === 'text',
+    )
+
+    if (!textBlock) {
+      throw new Error('Claude returned no text response for summary')
+    }
+
+    return textBlock.text
+  },
 }
 
 export const claudeProvider: ExtractionProvider = {

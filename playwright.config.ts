@@ -47,6 +47,7 @@ export default defineConfig({
     env: {
       BYPASS_AUTH: 'true',
       E2E_MOCK_EXTRACTION: 'true',
+      E2E_MOCK_SUMMARY: 'true',
       SHARING_HMAC_SECRET:
         process.env.SHARING_HMAC_SECRET ||
         'e2e-test-hmac-secret-not-for-production',

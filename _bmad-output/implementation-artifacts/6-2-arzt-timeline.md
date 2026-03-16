@@ -1,6 +1,6 @@
 # Story 6.2: Arzt-Timeline mit allen Events
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,60 +22,60 @@ So that ich den zeitlichen Verlauf der Beschwerden nachvollziehen kann (FR28).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: DB-Funktion `getSharedFeedEvents()` erstellen (AC: #1, #3, #5)
-  - [ ] 1.1 Neue Funktion `getSharedFeedEvents(accountId, dateFrom, dateTo)` in `src/lib/db/sharing.ts`
-  - [ ] 1.2 Query analog `getChronologicalFeed()` aus `insights.ts` — SELECT mit JOIN auf `extracted_data(field_name, value)` und `event_photos(id)`
-  - [ ] 1.3 Verwende `createServiceClient()` (Arzt hat keine Auth-Session, RLS würde Query blocken)
-  - [ ] 1.4 Filter: `account_id`, `occurred_at` BETWEEN `dateFrom` und `dateTo`, `deleted_at IS NULL`, `status = 'confirmed'`
-  - [ ] 1.5 Mapping via `mapRowToFeedEvent()` (importiert aus `insights.ts` — NICHT duplizieren, ggf. exportieren)
-  - [ ] 1.6 Return-Typ: `FeedEvent[]` (aus `@/types/analytics`)
+- [x] Task 1: DB-Funktion `getSharedFeedEvents()` erstellen (AC: #1, #3, #5)
+  - [x] 1.1 Neue Funktion `getSharedFeedEvents(accountId, dateFrom, dateTo)` in `src/lib/db/sharing.ts`
+  - [x] 1.2 Query analog `getChronologicalFeed()` aus `insights.ts` — SELECT mit JOIN auf `extracted_data(field_name, value)` und `event_photos(id)`
+  - [x] 1.3 Verwende `createServiceClient()` (Arzt hat keine Auth-Session, RLS würde Query blocken)
+  - [x] 1.4 Filter: `account_id`, `occurred_at` BETWEEN `dateFrom` und `dateTo`, `deleted_at IS NULL`, `status = 'confirmed'`
+  - [x] 1.5 Mapping via `mapRowToFeedEvent()` (importiert aus `insights.ts` — NICHT duplizieren, ggf. exportieren)
+  - [x] 1.6 Return-Typ: `FeedEvent[]` (aus `@/types/analytics`)
 
-- [ ] Task 2: `mapRowToFeedEvent()` und Hilfs-Funktionen exportieren (AC: #5)
-  - [ ] 2.1 In `src/lib/db/insights.ts`: `mapRowToFeedEvent`, `pivotExtractedData`, `RawFeedRow`, `ExtractedDataRow` und `PhotoRow` Typen exportieren (alle werden für den Import in `sharing.ts` benötigt)
-  - [ ] 2.2 Bestehende interne Nutzung bleibt unverändert
+- [x] Task 2: `mapRowToFeedEvent()` und Hilfs-Funktionen exportieren (AC: #5)
+  - [x] 2.1 In `src/lib/db/insights.ts`: `mapRowToFeedEvent`, `pivotExtractedData`, `RawFeedRow`, `ExtractedDataRow` und `PhotoRow` Typen exportieren (alle werden für den Import in `sharing.ts` benötigt)
+  - [x] 2.2 Bestehende interne Nutzung bleibt unverändert
 
-- [ ] Task 3: `DoctorEventCard`-Komponente erstellen (AC: #2, #3, #7)
-  - [ ] 3.1 Neue Datei `src/components/sharing/doctor-event-card.tsx`
-  - [ ] 3.2 Layout analog `FeedEventCard`: linke Farbkante, Uhrzeit, Typ-Badge, Symptomname/Medikament, Intensität, Dauer, Körperregion
-  - [ ] 3.3 KEIN `useRouter` oder `onClick`-Navigation (read-only, kein Drill-Down)
-  - [ ] 3.4 KEIN `ChevronRight`-Icon (kein klickbares Element)
-  - [ ] 3.5 Props: `event: FeedEvent` — gleicher Typ wie Patient-Card
-  - [ ] 3.6 Media-Indikatoren (Audio/Foto-Icons) anzeigen als Hinweis
+- [x] Task 3: `DoctorEventCard`-Komponente erstellen (AC: #2, #3, #7)
+  - [x] 3.1 Neue Datei `src/components/sharing/doctor-event-card.tsx`
+  - [x] 3.2 Layout analog `FeedEventCard`: linke Farbkante, Uhrzeit, Typ-Badge, Symptomname/Medikament, Intensität, Dauer, Körperregion
+  - [x] 3.3 KEIN `useRouter` oder `onClick`-Navigation (read-only, kein Drill-Down)
+  - [x] 3.4 KEIN `ChevronRight`-Icon (kein klickbares Element)
+  - [x] 3.5 Props: `event: FeedEvent` — gleicher Typ wie Patient-Card
+  - [x] 3.6 Media-Indikatoren (Audio/Foto-Icons) anzeigen als Hinweis
 
-- [ ] Task 4: `DoctorTimeline`-Komponente erstellen (AC: #1, #4, #6)
-  - [ ] 4.1 Neue Datei `src/components/sharing/doctor-timeline.tsx`
-  - [ ] 4.2 Server Component (kein 'use client' — Daten werden serverseitig übergeben)
-  - [ ] 4.3 Props: `events: FeedEvent[]`, `dateFrom: string`, `dateTo: string`
-  - [ ] 4.4 Events nach Tag gruppieren via `groupEventsByDay()` (importiert aus `symptom-feed.tsx` — direkter Import funktioniert trotz `'use client'`, da die Funktion reine JS-Logik ohne Hooks ist)
-  - [ ] 4.5 Tages-Header formatieren mit `Intl.DateTimeFormat('de-CH', { day: 'numeric', month: 'long', year: 'numeric' })`
-  - [ ] 4.6 Monats-Separatoren einfügen: bei Monatswechsel zwischen Tagesgruppen einen dezenten Separator mit Monatsname rendern (z.B. `<div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Februar 2026</div>`) — verbessert Orientierung bei längeren Zeiträumen
-  - [ ] 4.7 Jede Tagesgruppe rendert `DoctorEventCard` pro Event
-  - [ ] 4.8 Empty-State: "Keine erfassten Symptome oder Medikamente im Zeitraum {dateFrom} – {dateTo}." (formatiert mit `Intl.DateTimeFormat('de-CH')`) bei leerer Liste
+- [x] Task 4: `DoctorTimeline`-Komponente erstellen (AC: #1, #4, #6)
+  - [x] 4.1 Neue Datei `src/components/sharing/doctor-timeline.tsx`
+  - [x] 4.2 Server Component (kein 'use client' — Daten werden serverseitig übergeben)
+  - [x] 4.3 Props: `events: FeedEvent[]`, `dateFrom: string`, `dateTo: string`
+  - [x] 4.4 Events nach Tag gruppieren via `groupEventsByDay()` (importiert aus `symptom-feed.tsx` — direkter Import funktioniert trotz `'use client'`, da die Funktion reine JS-Logik ohne Hooks ist)
+  - [x] 4.5 Tages-Header formatieren mit `Intl.DateTimeFormat('de-CH', { day: 'numeric', month: 'long', year: 'numeric' })`
+  - [x] 4.6 Monats-Separatoren einfügen: bei Monatswechsel zwischen Tagesgruppen einen dezenten Separator mit Monatsname rendern (z.B. `<div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Februar 2026</div>`) — verbessert Orientierung bei längeren Zeiträumen
+  - [x] 4.7 Jede Tagesgruppe rendert `DoctorEventCard` pro Event
+  - [x] 4.8 Empty-State: "Keine erfassten Symptome oder Medikamente im Zeitraum {dateFrom} – {dateTo}." (formatiert mit `Intl.DateTimeFormat('de-CH')`) bei leerer Liste
 
-- [ ] Task 5: `groupEventsByDay()` nutzen (AC: #5)
-  - [ ] 5.1 `groupEventsByDay()` ist bereits als `export function` in `src/components/insights/symptom-feed.tsx` definiert — direkter Import in `doctor-timeline.tsx` funktioniert (reine JS-Logik, keine Client-Hooks)
+- [x] Task 5: `groupEventsByDay()` nutzen (AC: #5)
+  - [x] 5.1 `groupEventsByDay()` ist bereits als `export function` in `src/components/insights/symptom-feed.tsx` definiert — direkter Import in `doctor-timeline.tsx` funktioniert (reine JS-Logik, keine Client-Hooks)
 
-- [ ] Task 6: Dashboard-Page aktualisieren (AC: #1, #4)
-  - [ ] 6.1 In `src/app/share/dashboard/page.tsx`: Timeline-Platzhalter durch `<DoctorTimeline>` ersetzen
-  - [ ] 6.2 `getSharedSymptomEvents()` durch `getSharedFeedEvents()` ersetzen — liefert `FeedEvent[]` mit allen Details; `events.length` für Event-Count in KI-Zusammenfassung-Card nutzen (kein zweiter DB-Call nötig)
-  - [ ] 6.3 `dateFrom`/`dateTo` aus `linkData` an `<DoctorTimeline>` Props durchreichen (für Empty-State-Anzeige)
-  - [ ] 6.4 Skeleton-Loading via `<Suspense fallback={<TimelineSkeleton />}>` (Next.js Server Component Pattern)
+- [x] Task 6: Dashboard-Page aktualisieren (AC: #1, #4)
+  - [x] 6.1 In `src/app/share/dashboard/page.tsx`: Timeline-Platzhalter durch `<DoctorTimeline>` ersetzen
+  - [x] 6.2 `getSharedSymptomEvents()` durch `getSharedFeedEvents()` ersetzen — liefert `FeedEvent[]` mit allen Details; `events.length` für Event-Count in KI-Zusammenfassung-Card nutzen (kein zweiter DB-Call nötig)
+  - [x] 6.3 `dateFrom`/`dateTo` aus `linkData` an `<DoctorTimeline>` Props durchreichen (für Empty-State-Anzeige)
+  - [x] 6.4 Skeleton-Loading via `<Suspense fallback={<TimelineSkeleton />}>` (Next.js Server Component Pattern)
 
-- [ ] Task 7: `TimelineSkeleton`-Komponente (AC: #4)
-  - [ ] 7.1 Skeleton-Platzhalter für Tagesgruppen mit Event-Cards
-  - [ ] 7.2 Nutze `@/components/ui/skeleton` (shadcn/ui)
-  - [ ] 7.3 3-4 Skeleton-Cards als Platzhalter
+- [x] Task 7: `TimelineSkeleton`-Komponente (AC: #4)
+  - [x] 7.1 Skeleton-Platzhalter für Tagesgruppen mit Event-Cards
+  - [x] 7.2 Nutze `@/components/ui/skeleton` (shadcn/ui)
+  - [x] 7.3 3-4 Skeleton-Cards als Platzhalter
 
-- [ ] Task 8: Unit-Tests (AC: #1-#7)
-  - [ ] 8.1 `src/__tests__/lib/db/sharing-feed.test.ts`: Tests für `getSharedFeedEvents()` — Mock Supabase, prüfe Query-Logik, Mapping
-  - [ ] 8.2 `src/__tests__/components/sharing/doctor-event-card.test.tsx`: Render-Tests (Symptom vs. Medikament, Farbkante, kein Chevron, kein onClick)
-  - [ ] 8.3 `src/__tests__/components/sharing/doctor-timeline.test.tsx`: Tagesgruppierung, Empty-State, Event-Count
-  - [ ] 8.4 Sicherstellen: keine Regression in bestehenden Tests (`npm test`)
+- [x] Task 8: Unit-Tests (AC: #1-#7)
+  - [x] 8.1 `src/__tests__/lib/db/sharing-feed.test.ts`: Tests für `getSharedFeedEvents()` — Mock Supabase, prüfe Query-Logik, Mapping
+  - [x] 8.2 `src/__tests__/components/sharing/doctor-event-card.test.tsx`: Render-Tests (Symptom vs. Medikament, Farbkante, kein Chevron, kein onClick)
+  - [x] 8.3 `src/__tests__/components/sharing/doctor-timeline.test.tsx`: Tagesgruppierung, Empty-State, Event-Count
+  - [x] 8.4 Sicherstellen: keine Regression in bestehenden Tests (`npm test`)
 
-- [ ] Task 9: Prettier + Lint + Type-Check (AC: alle)
-  - [ ] 9.1 `npx prettier --write` auf alle geänderten/neuen Dateien
-  - [ ] 9.2 `npm run lint` ohne Fehler
-  - [ ] 9.3 `npx tsc --noEmit` ohne Fehler
+- [x] Task 9: Prettier + Lint + Type-Check (AC: alle)
+  - [x] 9.1 `npx prettier --write` auf alle geänderten/neuen Dateien
+  - [x] 9.2 `npm run lint` ohne Fehler
+  - [x] 9.3 `npx tsc --noEmit` ohne Fehler (bestehende Fehler in anderen Test-Dateien, keine neuen)
 
 ## Dev Notes
 
@@ -239,10 +239,42 @@ Keine Migration nötig — alle benötigten Tabellen/Spalten existieren bereits.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+- JSDOM konvertiert Hex-Farbcodes zu RGB in style-Attributen — Tests auf `rgb(192, 106, 60)` statt `#C06A3C` angepasst
+- Dashboard-Page hat parallele Änderungen von Story 6.1 (AISummaryCard) und 6.3 (DoctorRanking) — Timeline ergänzend integriert, beide DB-Calls via `Promise.all` parallelisiert
+
 ### Completion Notes List
 
+- ✅ `getSharedFeedEvents()` erstellt mit vollem JOIN auf `extracted_data` + `event_photos`, nutzt `mapRowToFeedEvent()` aus insights.ts (kein Code dupliziert)
+- ✅ `mapRowToFeedEvent`, `pivotExtractedData`, `RawFeedRow`, `ExtractedDataRow`, `PhotoRow` aus insights.ts exportiert — bestehende interne Nutzung unverändert
+- ✅ `DoctorEventCard` als read-only Variante von `FeedEventCard` — kein `useRouter`, kein `onClick`, kein `ChevronRight`
+- ✅ `DoctorTimeline` als Server Component — gruppiert Events nach Tag, Monats-Separatoren bei Monatswechsel, Empty-State mit Zeitraum-Anzeige
+- ✅ `groupEventsByDay()` aus `symptom-feed.tsx` direkt importiert (reine JS-Logik, kein Client-Hook)
+- ✅ Dashboard-Page: Timeline-Platzhalter durch `<DoctorTimeline>` ersetzt, `getSharedFeedEvents()` statt `getSharedSymptomEvents()`
+- ✅ `TimelineSkeleton` mit shadcn/ui Skeleton-Komponente (3 Tagesgruppen)
+- ✅ 24 neue Tests: 5 DB-Tests, 13 DoctorEventCard-Tests, 6 DoctorTimeline-Tests — alle bestehen
+- ✅ Prettier, Lint (0 Fehler), TypeScript type-check (keine neuen Fehler)
+
+### Change Log
+
+- 2026-03-15: Story 6.2 implementiert — Arzt-Timeline mit chronologischen Events, Tagesgruppierung, Monats-Separatoren, Empty-State, Skeleton-Loading
+- 2026-03-15: Code Review Fixes — Wirkungslose Suspense um DoctorTimeline entfernt (Daten bereits awaited), Duplikat-Test korrigiert (prüft jetzt Datum-Formatierung), File List korrigiert (sharing.ts → Geänderte Dateien)
+
 ### File List
+
+**Neue Dateien:**
+- `src/components/sharing/doctor-event-card.tsx` — Read-only Event-Karte
+- `src/components/sharing/doctor-timeline.tsx` — Chronologische Tagesgruppen-Liste
+- `src/components/sharing/timeline-skeleton.tsx` — Skeleton für Timeline-Loading
+- `src/__tests__/lib/db/sharing-feed.test.ts` — 5 Tests für getSharedFeedEvents
+- `src/__tests__/components/sharing/doctor-event-card.test.tsx` — 13 Tests für DoctorEventCard
+- `src/__tests__/components/sharing/doctor-timeline.test.tsx` — 6 Tests für DoctorTimeline
+
+**Geänderte Dateien:**
+- `src/lib/db/sharing.ts` — `getSharedFeedEvents()` hinzugefügt
+- `src/lib/db/insights.ts` — Export von `mapRowToFeedEvent`, `pivotExtractedData`, `RawFeedRow`, `ExtractedDataRow`, `PhotoRow`
+- `src/app/share/dashboard/page.tsx` — Timeline integriert, `getSharedFeedEvents()` statt `getSharedSymptomEvents()`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — Status: ready-for-dev → in-progress → review

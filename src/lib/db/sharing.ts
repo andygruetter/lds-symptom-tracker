@@ -1,8 +1,22 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { createServiceClient } from '@/lib/db/client'
+import {
+  aggregateRankingFromRows,
+  mapRowToFeedEvent,
+  type RawFeedRow,
+  type TimelineRawRow,
+} from '@/lib/db/insights'
+import { getSignedMediaUrl } from '@/lib/db/media'
 import { generateSharingToken } from '@/lib/utils/crypto'
 import { toLocalDateKey } from '@/lib/utils/date'
+import type {
+  EventDetail,
+  EventPhoto,
+  ExtractedField,
+  FeedEvent,
+  SymptomRanking,
+} from '@/types/analytics'
 import type { ActionResult } from '@/types/common'
 import type { Database } from '@/types/database'
 import type {
@@ -14,6 +28,7 @@ import type {
   SharingLinkListItem,
   SharingLinkStatus,
 } from '@/types/sharing'
+import type { SummaryEventData } from '@/types/summary'
 
 type DbClient = SupabaseClient<Database>
 
@@ -317,7 +332,11 @@ export async function validateSharingLinkById(
 
 /**
  * Lädt Symptom-Events für das Arzt-Dashboard (gefiltert nach Zeitraum + Soft-Delete).
+ * Inkl. erstem symptom_name aus extracted_data für die Event-Liste.
  * Verwendet Service Client — Arzt hat keine Auth-Session (RLS würde Query blocken).
+ *
+ * @deprecated Superseded by {@link getSharedFeedEvents} which returns richer FeedEvent[] data.
+ * This function is no longer used in any component. Consider removing in next cleanup.
  */
 export async function getSharedSymptomEvents(
   accountId: string,
@@ -325,16 +344,122 @@ export async function getSharedSymptomEvents(
   dateTo: string,
 ): Promise<SharedSymptomEvent[]> {
   const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts/ranking)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, ended_at, raw_input, audio_url, status',
+      'id, event_type, occurred_at, ended_at, raw_input, audio_url, status, extracted_data(field_name, value)',
     )
     .eq('account_id', accountId)
-    .gte('occurred_at', dateFrom)
-    .lte('occurred_at', dateTo)
+    .eq('status', 'confirmed')
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
     .is('deleted_at', null)
     .order('occurred_at', { ascending: false })
+
+  if (error || !data) return []
+
+  return data.map((row) => {
+    const extractedData = Array.isArray(row.extracted_data)
+      ? (row.extracted_data as { field_name: string; value: string }[])
+      : []
+    const symptomName =
+      extractedData.find((f) => f.field_name === 'symptom_name')?.value ?? null
+    const medication =
+      extractedData.find((f) => f.field_name === 'medication')?.value ?? null
+
+    return {
+      id: row.id,
+      eventType: row.event_type,
+      occurredAt: row.occurred_at,
+      endedAt: row.ended_at,
+      rawInput: row.raw_input,
+      audioUrl: row.audio_url,
+      status: row.status,
+      symptomName: row.event_type === 'medication' ? medication : symptomName,
+    }
+  })
+}
+
+/**
+ * Lädt alle Events mit extrahierten Daten für die Arzt-Timeline.
+ * JOIN mit extracted_data + event_photos — liefert vollständige FeedEvent[].
+ * Verwendet Service Client — Arzt hat keine Auth-Session.
+ */
+export async function getSharedFeedEvents(
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<FeedEvent[]> {
+  const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts/ranking)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select(
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
+    )
+    .eq('account_id', accountId)
+    .eq('status', 'confirmed')
+    .is('deleted_at', null)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
+    .order('occurred_at', { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error(
+        '[Sharing] Feed-Events-Abfrage fehlgeschlagen:',
+        error.message,
+      )
+    }
+    return []
+  }
+
+  const rows = data as unknown as RawFeedRow[]
+  return rows.map(mapRowToFeedEvent)
+}
+
+/**
+ * Lädt Events mit extrahierten Daten für die KI-Summary-Generierung.
+ * JOIN mit extracted_data — liefert alle Felder pro Event.
+ * Sortierung: occurred_at ASC (chronologisch für Summary-Kontext).
+ * Verwendet Service Client — Arzt hat keine Auth-Session.
+ */
+export async function getSharedEventsForSummary(
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<SummaryEventData[]> {
+  const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts/ranking)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select(
+      'id, event_type, occurred_at, ended_at, raw_input, extracted_data(field_name, value, confidence)',
+    )
+    .eq('account_id', accountId)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
+    .is('deleted_at', null)
+    .order('occurred_at', { ascending: true })
 
   if (error || !data) return []
 
@@ -344,9 +469,169 @@ export async function getSharedSymptomEvents(
     occurredAt: row.occurred_at,
     endedAt: row.ended_at,
     rawInput: row.raw_input,
-    audioUrl: row.audio_url,
-    status: row.status,
+    extractedFields: Array.isArray(row.extracted_data)
+      ? row.extracted_data.map((f) => ({
+          fieldName: f.field_name,
+          value: f.value,
+          confidence: f.confidence,
+        }))
+      : [],
   }))
+}
+
+/**
+ * Lädt Symptom-Ranking für das Arzt-Dashboard (gefiltert nach Zeitraum).
+ * Aggregiert Symptome und Medikamente nach Häufigkeit mit Trend-Berechnung.
+ * Verwendet Service Client — Arzt hat keine Auth-Session (RLS-Bypass).
+ */
+export async function getSharedSymptomRanking(
+  accountId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<SymptomRanking> {
+  const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
+  const { data, error } = await supabase
+    .from('symptom_events')
+    .select(
+      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index)',
+    )
+    .eq('account_id', accountId)
+    .eq('status', 'confirmed')
+    .is('deleted_at', null)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
+    .order('occurred_at', { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error('[Sharing] Ranking-Abfrage fehlgeschlagen:', error.message)
+    }
+    return {
+      symptoms: [],
+      medications: [],
+      timeRange: 'all',
+      totalSymptomEvents: 0,
+      totalMedicationEvents: 0,
+    }
+  }
+
+  const rows = data as unknown as TimelineRawRow[]
+  const result = aggregateRankingFromRows(rows, dateFrom, dateTo)
+  return { ...result, timeRange: 'all' }
+}
+
+/**
+ * Lädt ein einzelnes Event mit allen Details für den Arzt-Drill-Down (Story 6.4).
+ * Validiert account_id + Zeitraum + Soft-Delete + status='confirmed'.
+ * Gibt signed URLs für Audio und Fotos zurück (15min TTL).
+ * Verwendet Service Client — Arzt hat keine Auth-Session (RLS würde Query blocken).
+ */
+export async function getSharedEventDetail(
+  accountId: string,
+  eventId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<EventDetail | null> {
+  const supabase = createServiceClient()
+
+  // +1 Tag Puffer für Timezone-Safety (bewährter Pattern aus insights.ts/ranking)
+  const bufferStart = new Date(dateFrom)
+  bufferStart.setDate(bufferStart.getDate() - 1)
+  const bufferEnd = new Date(dateTo)
+  bufferEnd.setDate(bufferEnd.getDate() + 1)
+
+  const { data: event, error: eventError } = await supabase
+    .from('symptom_events')
+    .select(
+      'id, account_id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, status, deleted_at',
+    )
+    .eq('id', eventId)
+    .eq('account_id', accountId)
+    .gte('occurred_at', bufferStart.toISOString())
+    .lt('occurred_at', bufferEnd.toISOString())
+    .is('deleted_at', null)
+    .eq('status', 'confirmed')
+    .single()
+
+  if (eventError || !event) {
+    if (eventError) {
+      console.error(
+        '[Sharing] Event-Detail-Abfrage fehlgeschlagen:',
+        eventError.message,
+      )
+    }
+    return null
+  }
+
+  const [{ data: extractedRows }, { data: photoRows }] = await Promise.all([
+    supabase
+      .from('extracted_data')
+      .select('field_name, value, confidence, confirmed, symptom_index')
+      .eq('symptom_event_id', eventId),
+    supabase
+      .from('event_photos')
+      .select('id, storage_path')
+      .eq('symptom_event_id', eventId)
+      .order('created_at', { ascending: true }),
+  ])
+
+  // Signed URL für Audio via Service Client (getSignedMediaUrl verwendet createServiceClient intern)
+  let audioUrl: string | null = null
+  if (event.audio_url) {
+    try {
+      audioUrl = await getSignedMediaUrl(event.audio_url, 'audio')
+    } catch {
+      audioUrl = null
+    }
+  }
+
+  // Signed URLs für Fotos via Promise.allSettled (resilient)
+  const photos: EventPhoto[] = []
+  if (photoRows && photoRows.length > 0) {
+    const results = await Promise.allSettled(
+      photoRows.map((p) => getSignedMediaUrl(p.storage_path, 'photos')),
+    )
+    for (let i = 0; i < photoRows.length; i++) {
+      const result = results[i]
+      if (result.status === 'fulfilled') {
+        photos.push({ id: photoRows[i].id, signedUrl: result.value })
+      }
+    }
+  }
+
+  const extractedFields: ExtractedField[] = (extractedRows ?? []).map((r) => ({
+    fieldName: r.field_name,
+    value: r.value,
+    confidence: r.confidence,
+    confirmed: r.confirmed ?? false,
+    symptomIndex: r.symptom_index ?? 0,
+  }))
+
+  const eventType = event.event_type === 'medication' ? 'medication' : 'symptom'
+  const fieldMap = new Map(extractedFields.map((f) => [f.fieldName, f.value]))
+  const symptomName = fieldMap.get('symptom_name') ?? null
+  const medication = fieldMap.get('medication') ?? null
+
+  return {
+    id: event.id,
+    eventType,
+    occurredAt: event.occurred_at,
+    createdAt: event.created_at,
+    endedAt: event.ended_at,
+    rawInput: event.raw_input,
+    audioUrl,
+    extractedFields,
+    photos,
+    symptomName,
+    medication,
+  }
 }
 
 /**

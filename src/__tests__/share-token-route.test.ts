@@ -94,7 +94,7 @@ describe('GET /share/[token]', () => {
     expect(setCookie).toContain('sharing_session=signed-cookie-value')
     expect(setCookie).toContain('HttpOnly')
     expect(setCookie?.toLowerCase()).toContain('samesite=strict')
-    expect(setCookie).toContain('Path=/share')
+    expect(setCookie).toContain('Path=/')
 
     expect(mockCreateSharingSessionCookie).toHaveBeenCalledWith(
       'link-uuid-1',

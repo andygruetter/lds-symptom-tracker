@@ -369,6 +369,7 @@ function createMockSupabaseRanking(result = { data: [], error: null }) {
     eq: vi.fn().mockReturnThis(),
     is: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
+    lte: vi.fn().mockReturnThis(),
     order: vi.fn().mockResolvedValue(result),
   }
   return {
@@ -406,6 +407,89 @@ describe('calculateTrend', () => {
   })
 })
 
+describe('aggregateRankingFromRows', () => {
+  it('gibt leeres Ergebnis zurück bei keinen Rows', async () => {
+    const { aggregateRankingFromRows } = await import('@/lib/db/insights')
+    const result = aggregateRankingFromRows([], '2026-01-01')
+
+    expect(result.symptoms).toHaveLength(0)
+    expect(result.medications).toHaveLength(0)
+    expect(result.totalSymptomEvents).toBe(0)
+    expect(result.totalMedicationEvents).toBe(0)
+  })
+
+  it('filtert Rows vor dateFrom aus', async () => {
+    const rows = [
+      {
+        id: 'ev-1',
+        event_type: 'symptom',
+        occurred_at: '2025-12-31T09:00:00.000Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+        ],
+      },
+    ]
+    const { aggregateRankingFromRows } = await import('@/lib/db/insights')
+    const result = aggregateRankingFromRows(rows, '2026-01-01')
+
+    expect(result.symptoms).toHaveLength(0)
+  })
+
+  it('filtert Rows nach dateTo aus wenn angegeben', async () => {
+    const rows = [
+      {
+        id: 'ev-1',
+        event_type: 'symptom',
+        occurred_at: '2026-04-01T09:00:00.000Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+        ],
+      },
+    ]
+    const { aggregateRankingFromRows } = await import('@/lib/db/insights')
+    const result = aggregateRankingFromRows(rows, '2026-01-01', '2026-03-31')
+
+    expect(result.symptoms).toHaveLength(0)
+  })
+
+  it('schließt Rows ohne dateTo unbegrenzt ein', async () => {
+    const rows = [
+      {
+        id: 'ev-1',
+        event_type: 'symptom',
+        occurred_at: '2026-06-01T09:00:00.000Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+        ],
+      },
+    ]
+    const { aggregateRankingFromRows } = await import('@/lib/db/insights')
+    const result = aggregateRankingFromRows(rows, '2026-01-01')
+
+    expect(result.symptoms).toHaveLength(1)
+    expect(result.symptoms[0].totalCount).toBe(1)
+  })
+
+  it('verwendet padStart(2, "0") für MonthKey-Format (Monat < 10)', async () => {
+    const rows = [
+      {
+        id: 'ev-1',
+        event_type: 'symptom',
+        occurred_at: '2026-01-15T09:00:00.000Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+        ],
+      },
+    ]
+    const { aggregateRankingFromRows } = await import('@/lib/db/insights')
+    const result = aggregateRankingFromRows(rows, '2026-01-01')
+
+    expect(result.symptoms[0].monthlyCounts).toEqual([
+      { year: 2026, month: 1, count: 1 },
+    ])
+  })
+})
+
 describe('getSymptomRanking', () => {
   it('gibt leeres Ranking zurück wenn keine Events vorhanden', async () => {
     const supabase = createMockSupabaseRanking({ data: [], error: null })
@@ -418,6 +502,8 @@ describe('getSymptomRanking', () => {
     expect(result.totalSymptomEvents).toBe(0)
     expect(result.totalMedicationEvents).toBe(0)
     expect(result.timeRange).toBe('3m')
+    // F5: getSymptomRanking darf kein .lte() verwenden (kein oberes Datumslimit)
+    expect(supabase._builder.lte).not.toHaveBeenCalled()
   })
 
   it('aggregiert Symptome korrekt nach Name', async () => {
@@ -497,6 +583,99 @@ describe('getSymptomRanking', () => {
 
     expect(result.symptoms).toHaveLength(0)
     expect(result.medications).toHaveLength(0)
+  })
+})
+
+describe('getSymptomRankingByAccount', () => {
+  it('gibt leeres Ranking zurück wenn keine Events vorhanden', async () => {
+    const supabase = createMockSupabaseRanking({ data: [], error: null })
+
+    const { getSymptomRankingByAccount } = await import('@/lib/db/insights')
+    const result = await getSymptomRankingByAccount(
+      supabase as never,
+      'user-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toHaveLength(0)
+    expect(result.medications).toHaveLength(0)
+    expect(result.totalSymptomEvents).toBe(0)
+    expect(result.totalMedicationEvents).toBe(0)
+    expect(result.timeRange).toBe('30d')
+  })
+
+  it('aggregiert Symptome und Medikamente korrekt mit dateFrom/dateTo Filter', async () => {
+    const dbRows = [
+      {
+        id: 'ev-1',
+        event_type: 'symptom',
+        occurred_at: '2026-02-10T09:00:00.000+01:00',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+          { field_name: 'intensity', value: '7' },
+        ],
+      },
+      {
+        id: 'ev-2',
+        event_type: 'medication',
+        occurred_at: '2026-02-15T09:00:00.000+01:00',
+        extracted_data: [{ field_name: 'medication', value: 'Dafalgan' }],
+      },
+      {
+        // außerhalb des Zeitraums — soll gefiltert werden
+        id: 'ev-3',
+        event_type: 'symptom',
+        occurred_at: '2025-12-31T09:00:00.000+01:00',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Rückenschmerzen' },
+        ],
+      },
+    ]
+    const supabase = createMockSupabaseRanking({ data: dbRows, error: null })
+
+    const { getSymptomRankingByAccount } = await import('@/lib/db/insights')
+    const result = await getSymptomRankingByAccount(
+      supabase as never,
+      'user-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toHaveLength(1)
+    expect(result.symptoms[0].name).toBe('Kopfschmerzen')
+    expect(result.symptoms[0].totalCount).toBe(1)
+    // F2: avgIntensity verifizieren
+    expect(result.symptoms[0].avgIntensity).toBe(7)
+    // F3: monthlyCounts-Shape verifizieren (padStart-Format "2026-02")
+    expect(result.symptoms[0].monthlyCounts).toEqual([
+      { year: 2026, month: 2, count: 1 },
+    ])
+    // F6: trend-Feld verifizieren
+    expect(result.symptoms[0].trend).toBe('stable')
+    expect(result.medications).toHaveLength(1)
+    expect(result.medications[0].name).toBe('Dafalgan')
+    expect(result.totalSymptomEvents).toBe(1)
+    expect(result.totalMedicationEvents).toBe(1)
+  })
+
+  it('gibt leeres Ranking zurück bei DB-Fehler', async () => {
+    const supabase = createMockSupabaseRanking({
+      data: null,
+      error: { message: 'DB error' },
+    })
+
+    const { getSymptomRankingByAccount } = await import('@/lib/db/insights')
+    const result = await getSymptomRankingByAccount(
+      supabase as never,
+      'user-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toHaveLength(0)
+    expect(result.medications).toHaveLength(0)
+    expect(result.timeRange).toBe('30d')
   })
 })
 

@@ -75,7 +75,7 @@ test.describe('Sharing-Link Ablauf & Widerruf', () => {
       await page.goto(`/share/${token}`)
 
       await page.waitForURL('**/share/dashboard**')
-      await expect(page.getByText('Events im Zeitraum')).toBeVisible()
+      await expect(page.getByText('Symptom-Report')).toBeVisible()
     })
   })
 

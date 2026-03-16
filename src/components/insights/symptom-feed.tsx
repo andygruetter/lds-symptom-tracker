@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 
 import { loadMoreFeedEvents } from '@/lib/actions/insights-actions'
-import { toLocalDateKey } from '@/lib/utils/date'
+import { groupEventsByDay, toLocalDateKey } from '@/lib/utils/date'
 import type { FeedEvent } from '@/types/analytics'
 
 import { EmptyFeed } from './empty-feed'
@@ -23,24 +23,6 @@ function formatDayHeader(isoString: string): string {
     month: 'long',
     year: 'numeric',
   }).format(date)
-}
-
-export function groupEventsByDay(
-  events: FeedEvent[],
-): Map<string, FeedEvent[]> {
-  const groups = new Map<string, FeedEvent[]>()
-
-  for (const event of events) {
-    const key = toLocalDateKey(new Date(event.occurredAt))
-    const existing = groups.get(key)
-    if (existing) {
-      existing.push(event)
-    } else {
-      groups.set(key, [event])
-    }
-  }
-
-  return groups
 }
 
 type Props = {

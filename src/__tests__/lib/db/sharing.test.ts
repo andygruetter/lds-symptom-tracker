@@ -24,6 +24,14 @@ vi.mock('@/lib/db/client', () => ({
   })),
 }))
 
+// Mock getSignedMediaUrl für getSharedEventDetail
+const mockGetSignedMediaUrl = vi.fn()
+vi.mock('@/lib/db/media', () => ({
+  getSignedMediaUrl: mockGetSignedMediaUrl,
+  getSignedAudioUrl: vi.fn(),
+  getSignedPhotoUrl: vi.fn(),
+}))
+
 // Mock process.env
 const originalEnv = process.env.NEXT_PUBLIC_APP_URL
 
@@ -31,6 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   process.env.NEXT_PUBLIC_APP_URL = 'https://app.example.com'
   mockGenerateSharingToken.mockReturnValue('a'.repeat(64))
+  mockGetSignedMediaUrl.mockResolvedValue('https://signed.url/test')
 })
 
 afterEach(() => {
@@ -445,6 +454,7 @@ function createServiceQueryBuilder(singleResult: {
     is: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
     order: vi.fn().mockResolvedValue({ data: [], error: null }),
     single: vi.fn().mockResolvedValue(singleResult),
   }
@@ -582,6 +592,7 @@ describe('getSharedSymptomEvents', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: mockRows, error: null }),
     }
@@ -599,8 +610,9 @@ describe('getSharedSymptomEvents', () => {
     expect(result[0].eventType).toBe('symptom')
     expect(result[1].audioUrl).toBe('path/to/audio.webm')
     expect(builder.eq).toHaveBeenCalledWith('account_id', 'user-1')
-    expect(builder.gte).toHaveBeenCalledWith('occurred_at', '2026-01-01')
-    expect(builder.lte).toHaveBeenCalledWith('occurred_at', '2026-03-15')
+    expect(builder.eq).toHaveBeenCalledWith('status', 'confirmed')
+    expect(builder.gte).toHaveBeenCalledWith('occurred_at', expect.any(String))
+    expect(builder.lt).toHaveBeenCalledWith('occurred_at', expect.any(String))
     expect(builder.is).toHaveBeenCalledWith('deleted_at', null)
   })
 
@@ -610,6 +622,7 @@ describe('getSharedSymptomEvents', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
     }
@@ -632,6 +645,7 @@ describe('getSharedSymptomEvents', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi
         .fn()
@@ -655,6 +669,7 @@ describe('getSharedSymptomEvents', () => {
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
     }
@@ -665,5 +680,580 @@ describe('getSharedSymptomEvents', () => {
 
     expect(mockServiceFrom).toHaveBeenCalledWith('symptom_events')
     expect(builder.eq).toHaveBeenCalledWith('account_id', 'account-xyz')
+  })
+})
+
+describe('getSharedEventsForSummary', () => {
+  it('gibt Events mit extrahierten Feldern zurück', async () => {
+    const mockData = [
+      {
+        id: 'evt-1',
+        event_type: 'symptom',
+        occurred_at: '2026-03-01T08:00:00Z',
+        ended_at: null,
+        raw_input: 'Kopfschmerzen rechts',
+        extracted_data: [
+          {
+            field_name: 'symptom_name',
+            value: 'Kopfschmerzen',
+            confidence: 95,
+          },
+          { field_name: 'body_region', value: 'Kopf', confidence: 90 },
+        ],
+      },
+    ]
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: mockData, error: null }),
+    }
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedEventsForSummary } = await import('@/lib/db/sharing')
+    const result = await getSharedEventsForSummary(
+      'user-1',
+      '2026-03-01',
+      '2026-03-15',
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('evt-1')
+    expect(result[0].eventType).toBe('symptom')
+    expect(result[0].extractedFields).toHaveLength(2)
+    expect(result[0].extractedFields[0].fieldName).toBe('symptom_name')
+    expect(result[0].extractedFields[0].value).toBe('Kopfschmerzen')
+    // Sortierung ASC für Summary-Kontext
+    expect(builder.order).toHaveBeenCalledWith('occurred_at', {
+      ascending: true,
+    })
+  })
+
+  it('gibt Events ohne extracted_data korrekt zurück (leeres Array)', async () => {
+    const mockData = [
+      {
+        id: 'evt-2',
+        event_type: 'symptom',
+        occurred_at: '2026-03-02T10:00:00Z',
+        ended_at: null,
+        raw_input: 'Schwindel',
+        extracted_data: [],
+      },
+    ]
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: mockData, error: null }),
+    }
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedEventsForSummary } = await import('@/lib/db/sharing')
+    const result = await getSharedEventsForSummary(
+      'user-1',
+      '2026-03-01',
+      '2026-03-15',
+    )
+
+    expect(result[0].extractedFields).toEqual([])
+  })
+
+  it('gibt leeres Array zurück bei DB-Fehler', async () => {
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      order: vi
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: 'DB error' } }),
+    }
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedEventsForSummary } = await import('@/lib/db/sharing')
+    const result = await getSharedEventsForSummary(
+      'user-1',
+      '2026-03-01',
+      '2026-03-15',
+    )
+
+    expect(result).toEqual([])
+  })
+})
+
+describe('getSharedSymptomRanking', () => {
+  function createRankingBuilder(rows: unknown[], error: unknown = null) {
+    const builder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: rows, error }),
+    }
+    return builder
+  }
+
+  it('gibt leeres Ranking zurück wenn keine Events vorhanden', async () => {
+    const builder = createRankingBuilder([])
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toEqual([])
+    expect(result.medications).toEqual([])
+    expect(result.totalSymptomEvents).toBe(0)
+    expect(result.totalMedicationEvents).toBe(0)
+    expect(result.timeRange).toBe('all')
+  })
+
+  it('gibt leeres Ranking zurück bei DB-Fehler', async () => {
+    const builder = createRankingBuilder(null as never, { message: 'DB error' })
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toEqual([])
+    expect(result.medications).toEqual([])
+  })
+
+  it('trennt Symptome und Medikamente korrekt', async () => {
+    const mockRows = [
+      {
+        id: 'e1',
+        event_type: 'symptom',
+        occurred_at: '2026-02-10T10:00:00Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+          { field_name: 'intensity', value: '7' },
+        ],
+      },
+      {
+        id: 'e2',
+        event_type: 'symptom',
+        occurred_at: '2026-02-15T09:00:00Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+          { field_name: 'intensity', value: '5' },
+        ],
+      },
+      {
+        id: 'e3',
+        event_type: 'medication',
+        occurred_at: '2026-02-20T08:00:00Z',
+        extracted_data: [
+          { field_name: 'medication', value: 'Ibuprofen 400mg' },
+        ],
+      },
+    ]
+    const builder = createRankingBuilder(mockRows)
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-02-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toHaveLength(1)
+    expect(result.symptoms[0].name).toBe('Kopfschmerzen')
+    expect(result.symptoms[0].totalCount).toBe(2)
+    expect(result.symptoms[0].avgIntensity).toBeCloseTo(6.0)
+
+    expect(result.medications).toHaveLength(1)
+    expect(result.medications[0].name).toBe('Ibuprofen 400mg')
+    expect(result.medications[0].totalCount).toBe(1)
+
+    expect(result.totalSymptomEvents).toBe(2)
+    expect(result.totalMedicationEvents).toBe(1)
+  })
+
+  it('sortiert nach totalCount absteigend, dann alphabetisch', async () => {
+    const mockRows = [
+      {
+        id: 'e1',
+        event_type: 'symptom',
+        occurred_at: '2026-02-10T10:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Rücken' }],
+      },
+      {
+        id: 'e2',
+        event_type: 'symptom',
+        occurred_at: '2026-02-11T10:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Rücken' }],
+      },
+      {
+        id: 'e3',
+        event_type: 'symptom',
+        occurred_at: '2026-02-12T10:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Rücken' }],
+      },
+      {
+        id: 'e4',
+        event_type: 'symptom',
+        occurred_at: '2026-02-13T10:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Kopf' }],
+      },
+    ]
+    const builder = createRankingBuilder(mockRows)
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-02-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms[0].name).toBe('Rücken')
+    expect(result.symptoms[0].totalCount).toBe(3)
+    expect(result.symptoms[1].name).toBe('Kopf')
+    expect(result.symptoms[1].totalCount).toBe(1)
+  })
+
+  it('verwirft Events ausserhalb des Zeitraums (Timezone-Edge-Case)', async () => {
+    // Events am Puffer-Tag (1 Tag vor dateFrom) sollen NICHT gezählt werden
+    const mockRows = [
+      {
+        id: 'e1',
+        event_type: 'symptom',
+        // Puffer-Event: occurred_at klar vor dateFrom (2026-01-20 — in jeder TZ vor Feb 1)
+        occurred_at: '2026-01-20T12:00:00Z',
+        extracted_data: [{ field_name: 'symptom_name', value: 'Puffer-Event' }],
+      },
+      {
+        id: 'e2',
+        event_type: 'symptom',
+        // Valides Event: am ersten Tag des Zeitraums
+        occurred_at: '2026-02-01T10:00:00Z',
+        extracted_data: [
+          { field_name: 'symptom_name', value: 'Kopfschmerzen' },
+        ],
+      },
+    ]
+    const builder = createRankingBuilder(mockRows)
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-02-01',
+      '2026-03-15',
+    )
+
+    // Nur das valide Event soll gezählt werden
+    const names = result.symptoms.map((s) => s.name)
+    expect(names).not.toContain('Puffer-Event')
+    expect(names).toContain('Kopfschmerzen')
+    // Zeitraum-Filter prüfen: gte und lt werden mit ISO-Strings aufgerufen
+    expect(builder.gte).toHaveBeenCalledWith('occurred_at', expect.any(String))
+    expect(builder.lt).toHaveBeenCalledWith('occurred_at', expect.any(String))
+  })
+
+  it('sammelt Events ohne symptom_name in Unbekannt-Gruppe', async () => {
+    const mockRows = [
+      {
+        id: 'e1',
+        event_type: 'symptom',
+        occurred_at: '2026-02-10T10:00:00Z',
+        extracted_data: [], // kein symptom_name
+      },
+    ]
+    const builder = createRankingBuilder(mockRows)
+    mockServiceFrom.mockReturnValue(builder)
+
+    const { getSharedSymptomRanking } = await import('@/lib/db/sharing')
+    const result = await getSharedSymptomRanking(
+      'user-1',
+      '2026-02-01',
+      '2026-03-15',
+    )
+
+    expect(result.symptoms).toHaveLength(1)
+    expect(result.symptoms[0].name).toBe('Unbekannt')
+    expect(result.symptoms[0].totalCount).toBe(1)
+  })
+})
+
+describe('getSharedEventDetail', () => {
+  const mockEventRow = {
+    id: 'event-uuid-1',
+    account_id: 'user-1',
+    event_type: 'symptom',
+    occurred_at: '2026-02-10T10:00:00Z',
+    created_at: '2026-02-10T10:00:00Z',
+    ended_at: null,
+    raw_input: 'Kopfschmerzen',
+    audio_url: 'audio/user-1/event-uuid-1.webm',
+    status: 'confirmed',
+    deleted_at: null,
+  }
+
+  function createDetailMocks({
+    eventRow = null as unknown,
+    eventError = null as unknown,
+    extractedRows = [] as unknown[],
+    photoRows = [] as unknown[],
+  } = {}) {
+    const eventBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: eventRow, error: eventError }),
+    }
+    const extractedBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: extractedRows, error: null }),
+    }
+    const photosBuilder = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: photoRows, error: null }),
+    }
+    mockServiceFrom.mockImplementation((tableName: string) => {
+      if (tableName === 'extracted_data') return extractedBuilder
+      if (tableName === 'event_photos') return photosBuilder
+      return eventBuilder
+    })
+    return { eventBuilder, extractedBuilder, photosBuilder }
+  }
+
+  it('gibt EventDetail zurück für gültiges Event mit Audio und Fotos', async () => {
+    const extractedRows = [
+      {
+        field_name: 'symptom_name',
+        value: 'Kopfschmerzen',
+        confidence: 92,
+        confirmed: true,
+        symptom_index: 0,
+      },
+      {
+        field_name: 'body_region',
+        value: 'Kopf',
+        confidence: 85,
+        confirmed: false,
+        symptom_index: 0,
+      },
+    ]
+    const photoRows = [
+      { id: 'photo-1', storage_path: 'photos/user-1/event-uuid-1/img.jpg' },
+    ]
+    createDetailMocks({
+      eventRow: mockEventRow,
+      extractedRows,
+      photoRows,
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'user-1',
+      'event-uuid-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result?.id).toBe('event-uuid-1')
+    expect(result?.eventType).toBe('symptom')
+    expect(result?.symptomName).toBe('Kopfschmerzen')
+    expect(result?.rawInput).toBe('Kopfschmerzen')
+    expect(result?.audioUrl).toBe('https://signed.url/test')
+    expect(result?.photos).toHaveLength(1)
+    expect(result?.photos[0].id).toBe('photo-1')
+    expect(result?.photos[0].signedUrl).toBe('https://signed.url/test')
+    expect(result?.extractedFields).toHaveLength(2)
+    expect(mockGetSignedMediaUrl).toHaveBeenCalledWith(
+      'audio/user-1/event-uuid-1.webm',
+      'audio',
+    )
+  })
+
+  it('gibt null zurück wenn Event nicht im Zeitraum liegt (DB gibt null zurück)', async () => {
+    createDetailMocks({
+      eventRow: null,
+      eventError: { code: 'PGRST116', message: 'no rows' },
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'user-1',
+      'event-uuid-1',
+      '2026-04-01',
+      '2026-04-30',
+    )
+
+    expect(result).toBeNull()
+  })
+
+  it('gibt null zurück wenn Event soft-deleted ist (deleted_at IS NULL Filter)', async () => {
+    const { eventBuilder } = createDetailMocks({
+      eventRow: null,
+      eventError: { code: 'PGRST116', message: 'no rows' },
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'user-1',
+      'event-uuid-deleted',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result).toBeNull()
+    expect(eventBuilder.is).toHaveBeenCalledWith('deleted_at', null)
+  })
+
+  it('gibt null zurück wenn Event anderem Account gehört', async () => {
+    createDetailMocks({
+      eventRow: null,
+      eventError: { code: 'PGRST116', message: 'no rows' },
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'other-user',
+      'event-uuid-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result).toBeNull()
+  })
+
+  it('gibt EventDetail ohne Audio und Fotos zurück (keine Signed URLs)', async () => {
+    const eventOhneMedia = { ...mockEventRow, audio_url: null }
+    const extractedRows = [
+      {
+        field_name: 'symptom_name',
+        value: 'Schwindel',
+        confidence: 78,
+        confirmed: false,
+        symptom_index: 0,
+      },
+    ]
+    createDetailMocks({
+      eventRow: eventOhneMedia,
+      extractedRows,
+      photoRows: [],
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'user-1',
+      'event-uuid-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result?.audioUrl).toBeNull()
+    expect(result?.photos).toEqual([])
+    expect(result?.symptomName).toBe('Schwindel')
+    expect(mockGetSignedMediaUrl).not.toHaveBeenCalled()
+  })
+
+  it('gibt audioUrl=null zurück wenn getSignedMediaUrl für Audio wirft', async () => {
+    mockGetSignedMediaUrl.mockRejectedValueOnce(new Error('Storage error'))
+
+    createDetailMocks({
+      eventRow: mockEventRow,
+      extractedRows: [],
+      photoRows: [],
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'user-1',
+      'event-uuid-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result?.audioUrl).toBeNull()
+  })
+
+  it('filtert Fotos mit fehlgeschlagener Signed URL heraus (Promise.allSettled)', async () => {
+    mockGetSignedMediaUrl
+      .mockResolvedValueOnce('https://signed.url/audio') // Audio URL
+      .mockResolvedValueOnce('https://signed.url/photo1') // Photo 1 OK
+      .mockRejectedValueOnce(new Error('Storage error')) // Photo 2 FAILS
+      .mockResolvedValueOnce('https://signed.url/photo3') // Photo 3 OK
+
+    const photoRows = [
+      { id: 'photo-1', storage_path: 'photos/p1.jpg' },
+      { id: 'photo-2', storage_path: 'photos/p2.jpg' },
+      { id: 'photo-3', storage_path: 'photos/p3.jpg' },
+    ]
+    createDetailMocks({
+      eventRow: mockEventRow,
+      extractedRows: [],
+      photoRows,
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    const result = await getSharedEventDetail(
+      'user-1',
+      'event-uuid-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result?.photos).toHaveLength(2)
+    expect(result?.photos[0].id).toBe('photo-1')
+    expect(result?.photos[1].id).toBe('photo-3')
+  })
+
+  it('verwendet Service Client und validiert account_id + Zeitraum-Filter', async () => {
+    const { eventBuilder } = createDetailMocks({
+      eventRow: mockEventRow,
+      extractedRows: [],
+      photoRows: [],
+    })
+
+    const { getSharedEventDetail } = await import('@/lib/db/sharing')
+    await getSharedEventDetail(
+      'user-1',
+      'event-uuid-1',
+      '2026-01-01',
+      '2026-03-15',
+    )
+
+    expect(mockServiceFrom).toHaveBeenCalledWith('symptom_events')
+    expect(eventBuilder.eq).toHaveBeenCalledWith('account_id', 'user-1')
+    expect(eventBuilder.eq).toHaveBeenCalledWith('id', 'event-uuid-1')
+    expect(eventBuilder.gte).toHaveBeenCalledWith(
+      'occurred_at',
+      expect.any(String),
+    )
+    expect(eventBuilder.lt).toHaveBeenCalledWith(
+      'occurred_at',
+      expect.any(String),
+    )
+    expect(eventBuilder.is).toHaveBeenCalledWith('deleted_at', null)
+    expect(eventBuilder.eq).toHaveBeenCalledWith('status', 'confirmed')
   })
 })
