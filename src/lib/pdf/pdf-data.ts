@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { generateSummary } from '@/lib/ai/summarize'
+import type { ExtractedDataRow } from '@/lib/db/insights'
 import {
   getMonthlyTimelinesByRange,
   getSymptomRankingByAccount,
@@ -19,9 +20,7 @@ type RawEventRow = {
   occurred_at: string
   ended_at: string | null
   raw_input: string | null
-  extracted_data:
-    | { field_name: string; value: string; symptom_index: number | null }[]
-    | null
+  extracted_data: ExtractedDataRow[] | null
   event_photos: { id: string; storage_path: string }[] | null
 }
 
