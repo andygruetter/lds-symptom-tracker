@@ -4,13 +4,13 @@ import {
   Activity,
   Clock,
   Mic,
-  Play,
   Share2,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 
+import { DemoAnimation } from '@/components/marketing/demo-animation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -152,13 +152,8 @@ export default function MarketingPage() {
             Minute.
           </p>
 
-          <div className="mx-auto mt-8 aspect-video max-w-2xl overflow-hidden rounded-xl border border-border bg-muted">
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-              <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
-                <Play className="ml-1 size-8 text-primary" />
-              </div>
-              <p className="text-sm font-medium">Demo-Video folgt in Kürze</p>
-            </div>
+          <div className="mx-auto mt-8 aspect-video max-w-2xl overflow-hidden rounded-xl border border-border shadow-lg">
+            <DemoAnimation />
           </div>
         </div>
       </section>
