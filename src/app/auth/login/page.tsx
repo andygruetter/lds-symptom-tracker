@@ -1,4 +1,5 @@
 import { AppleSignInButton } from '@/components/auth/apple-sign-in-button'
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 
 export default async function LoginPage(props: {
   searchParams: Promise<{ error?: string }>
@@ -22,6 +23,14 @@ export default async function LoginPage(props: {
         </div>
 
         <AppleSignInButton />
+
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">oder</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <GoogleSignInButton />
 
         {error === 'callback' && (
           <p className="text-center text-sm text-destructive">
