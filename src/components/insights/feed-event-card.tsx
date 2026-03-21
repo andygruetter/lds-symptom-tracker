@@ -137,6 +137,17 @@ export function FeedEventCard({ event }: Props) {
                 </p>
               )}
             </div>
+          ) : event.symptoms.length > 1 ? (
+            <div className="space-y-1.5">
+              {event.symptoms.map((s, i) => (
+                <SymptomGroupRow key={i} group={s} symbol={symbol} />
+              ))}
+              {event.endedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Dauer: {formatDuration(event.occurredAt, event.endedAt)}
+                </p>
+              )}
+            </div>
           ) : (
             <SymptomGroupRow
               group={event.symptoms[0] ?? { displayName: null, fields: {} }}
