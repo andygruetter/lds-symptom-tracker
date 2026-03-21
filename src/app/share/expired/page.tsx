@@ -10,7 +10,7 @@ export default function ShareExpiredPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="max-w-md text-center">
         <p className="mb-8 text-sm font-medium tracking-wide text-muted-foreground">
-          LDS Symptom Tracker
+          Symptomchat
         </p>
         <h1 className="mb-3 text-2xl font-semibold">
           Dieser Link ist abgelaufen

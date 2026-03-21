@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test.describe('Authentifizierung', () => {
   test('zeigt Login-Seite mit Apple Sign-In Button', async ({ page }) => {
     await page.goto('/auth/login')
-    await expect(page.getByText('LDS Symptom Tracker')).toBeVisible()
+    await expect(page.getByText('Symptomchat')).toBeVisible()
     await expect(page.getByText('Symptom-Tracking für Patienten')).toBeVisible()
     await expect(page.getByRole('button', { name: /Apple/ })).toBeVisible()
   })

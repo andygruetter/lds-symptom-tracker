@@ -342,7 +342,7 @@ function ReportFooter() {
   return (
     <View style={pdfStyles.footer} fixed>
       <Text style={pdfStyles.footerText}>
-        Symptom-Tracker · Vertraulich · Nur für medizinische Fachkräfte
+        Symptomchat · Vertraulich · Nur für medizinische Fachkräfte
       </Text>
       <Text
         style={pdfStyles.footerText}
@@ -360,7 +360,7 @@ export function SymptomReportDocument({ data }: { data: PdfReportData }) {
   return (
     <Document
       title="Symptom-Report"
-      author="Symptom-Tracker"
+      author="Symptomchat"
       subject={`Zeitraum: ${formatDateRange(data.metadata.dateFrom, data.metadata.dateTo)}`}
     >
       <Page size="A4" style={pdfStyles.page}>

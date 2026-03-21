@@ -15,7 +15,7 @@ export default async function LoginPage(props: {
       <div className="w-full max-w-sm space-y-8">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold text-foreground">
-            LDS Symptom Tracker
+            Symptomchat
           </h1>
           <p className="text-sm text-muted-foreground">
             Symptom-Tracking für Patienten mit seltenen Erkrankungen
