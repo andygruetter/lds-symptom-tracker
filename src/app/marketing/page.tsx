@@ -285,7 +285,7 @@ export default function MarketingPage() {
                   fertig.&raquo;
                 </p>
                 <p className="mt-4 text-sm font-medium text-foreground">
-                  — Patientin mit Lupus, Zürich
+                  — Patientin mit LDS, Bern
                 </p>
               </CardContent>
             </Card>
