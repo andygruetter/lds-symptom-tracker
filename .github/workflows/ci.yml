@@ -11,6 +11,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      marketing-only: ${{ steps.filter.outputs.marketing-only }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'src/**'
+              - '!src/app/marketing/**'
+              - '!src/components/marketing/**'
+            config:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'next.config.*'
+              - 'tsconfig.json'
+              - 'tailwind.config.*'
+              - 'postcss.config.*'
+              - 'supabase/**'
+              - '.github/workflows/**'
+              - 'playwright.config.*'
+              - 'vitest.config.*'
+            marketing:
+              - 'src/app/marketing/**'
+              - 'src/components/marketing/**'
+      # marketing-only: marketing changed, but no app code or config changed
+      - id: set-output
+        run: |
+          if [[ "${{ steps.filter.outputs.marketing }}" == "true" && \
+                "${{ steps.filter.outputs.app }}" == "false" && \
+                "${{ steps.filter.outputs.config }}" == "false" ]]; then
+            echo "marketing-only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "marketing-only=false" >> "$GITHUB_OUTPUT"
+          fi
+
   lint-and-test:
     name: Lint & Test
     runs-on: ubuntu-latest
@@ -51,7 +91,8 @@ jobs:
 
   e2e:
     name: E2E Tests
-    needs: [lint-and-test, build]
+    needs: [changes, lint-and-test, build]
+    if: needs.changes.outputs.marketing-only != 'true'
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
@@ -87,7 +128,7 @@ jobs:
   migrate-preview:
     name: Migrate Preview DB
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [lint-and-test, build]
+    needs: [changes, lint-and-test, build]
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

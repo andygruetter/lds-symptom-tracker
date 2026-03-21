@@ -40,7 +40,7 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title ?? 'LDS Tracker', {
+    self.registration.showNotification(data.title ?? 'Symptomchat', {
       body: data.body ?? '',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',

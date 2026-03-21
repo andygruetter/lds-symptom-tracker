@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'LDS Symptom Tracker',
-    short_name: 'LDS Tracker',
+    name: 'Symptomchat',
+    short_name: 'Symptomchat',
     description: 'Symptom-Tracking für Patienten mit seltenen Erkrankungen',
     start_url: '/',
     display: 'standalone',
