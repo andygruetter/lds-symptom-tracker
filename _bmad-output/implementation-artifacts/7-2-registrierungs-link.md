@@ -1,6 +1,6 @@
 # Story 7.2: Registrierungs-Link zur App
 
-Status: in-progress
+Status: done
 
 ## Story
 

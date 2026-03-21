@@ -80,7 +80,7 @@ development_status:
   epic-4-retrospective: done
 
   # Epic 5: Sharing-System & Daten-Souveränität
-  epic-5: in-progress
+  epic-5: done
   5-1-sharing-link-generieren: done
   5-2-sharing-link-email: done
   5-3-arzt-zugriff-sharing: done
@@ -89,7 +89,7 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Arzt-Dashboard & PDF-Export
-  epic-6: in-progress
+  epic-6: done
   6-1-arzt-dashboard-ki-zusammenfassung: done
   6-2-arzt-timeline: done
   6-3-arzt-symptom-ranking: done
@@ -98,7 +98,7 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Marketing-Seite
-  epic-7: in-progress
-  7-1-marketing-landingpage: in-progress
-  7-2-registrierungs-link: in-progress
+  epic-7: done
+  7-1-marketing-landingpage: done
+  7-2-registrierungs-link: done
   epic-7-retrospective: optional
