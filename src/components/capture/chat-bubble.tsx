@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { Camera, ChevronRight, Mic, Pill, X } from 'lucide-react'
 
+import { getFieldLabel } from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import type { ExtractedData } from '@/types/ai'
 import type { EventPhoto } from '@/types/symptom'
@@ -166,7 +167,7 @@ function SingleSymptomSummary({ fields }: { fields: ExtractedData[] }) {
         )}
         {extraFields.map((f) => (
           <p key={f.id} className="text-xs text-muted-foreground">
-            {f.value}
+            {getFieldLabel(f.field_name)}: {f.value}
           </p>
         ))}
       </div>
@@ -211,7 +212,7 @@ function ConfirmedFieldsSummary({
           {reason && <p className="text-xs text-muted-foreground">{reason}</p>}
           {extraMedFields.map((f) => (
             <p key={f.id} className="text-xs text-muted-foreground">
-              {f.value}
+              {getFieldLabel(f.field_name)}: {f.value}
             </p>
           ))}
         </div>

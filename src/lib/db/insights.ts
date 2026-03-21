@@ -65,7 +65,7 @@ export function groupExtractedBySymptomIndex(
       const fields = Object.fromEntries(map.entries())
       const displayName =
         eventType === 'medication'
-          ? (map.get('medication') ?? null)
+          ? (map.get('medication_name') ?? map.get('medication') ?? null)
           : (map.get('symptom_name') ?? null)
       return { displayName, fields }
     })

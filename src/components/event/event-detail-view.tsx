@@ -14,7 +14,7 @@ import {
   FIELD_LABELS,
   getFieldLabel,
   sortByFieldOrder,
-} from '@/components/capture/symptom-tag'
+} from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/lib/utils/duration'
 import type { EventDetail, ExtractedField } from '@/types/analytics'

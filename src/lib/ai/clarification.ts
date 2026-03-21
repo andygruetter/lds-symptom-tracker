@@ -1,4 +1,4 @@
-import { FIELD_LABELS } from '@/components/capture/symptom-tag'
+import { FIELD_LABELS } from '@/lib/field-config'
 import type { ClarificationQuestion, ExtractedData } from '@/types/ai'
 
 const CONFIDENCE_THRESHOLD = 70

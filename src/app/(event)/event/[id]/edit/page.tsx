@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 
 import { EventEditForm } from '@/components/event/event-edit-form'
-import { sortByFieldOrder } from '@/components/capture/symptom-tag'
+import { sortByFieldOrder } from '@/lib/field-config'
 import { createServerClient } from '@/lib/db/client'
 import type { Database } from '@/types/database'
 

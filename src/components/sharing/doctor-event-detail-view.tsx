@@ -4,10 +4,7 @@ import { useRouter } from 'next/navigation'
 
 import { AudioPlayer } from '@/components/event/audio-player'
 import { PhotoGallery } from '@/components/event/photo-gallery'
-import {
-  getFieldLabel,
-  sortByFieldOrder,
-} from '@/components/capture/symptom-tag'
+import { getFieldLabel, sortByFieldOrder } from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/lib/utils/duration'
 import type { EventDetail, ExtractedField } from '@/types/analytics'

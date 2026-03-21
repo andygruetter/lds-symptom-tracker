@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 
 import { Camera, ChevronRight, Mic } from 'lucide-react'
 
-import { FIELD_ORDER } from '@/components/capture/symptom-tag'
+import { FIELD_ORDER, TITLE_FIELDS } from '@/lib/field-config'
 import type { FeedEvent, FeedSymptomGroup } from '@/types/analytics'
 
 function formatTime(isoString: string): string {
@@ -39,7 +39,7 @@ function SymptomGroupRow({
 }) {
   // All fields except the title field, sorted by FIELD_ORDER
   const detailEntries = Object.entries(group.fields)
-    .filter(([k]) => k !== 'symptom_name' && k !== 'medication')
+    .filter(([k]) => !TITLE_FIELDS.has(k))
     .sort(([a], [b]) => {
       const ia = FIELD_ORDER.indexOf(a)
       const ib = FIELD_ORDER.indexOf(b)

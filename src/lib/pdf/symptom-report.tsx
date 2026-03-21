@@ -1,5 +1,6 @@
 import { Document, Image, Page, Text, View } from '@react-pdf/renderer'
 
+import { FIELD_LABELS, FIELD_ORDER, TITLE_FIELDS } from '@/lib/field-config'
 import type {
   FeedSymptomGroup,
   MonthTimeline,
@@ -183,24 +184,7 @@ function TimelineSection({ timeline }: { timeline: MonthTimeline[] }) {
   )
 }
 
-// Field order for PDF rendering
-const PDF_FIELD_ORDER = [
-  'symptom_name',
-  'body_region',
-  'side',
-  'symptom_type',
-  'intensity',
-  'trigger',
-  'frequency',
-  'status',
-  'symptom_time',
-  'duration',
-  'medication',
-  'medication_name',
-  'dosage',
-  'reason',
-  'action',
-]
+// Use shared FIELD_ORDER from field-config.ts (imported above)
 
 function formatPdfFieldValue(key: string, value: string): string {
   if (key === 'intensity') return `${value}/10`
@@ -217,38 +201,25 @@ function formatPdfFieldValue(key: string, value: string): string {
   return value
 }
 
+// PDF uses slightly different label for body_region
 const PDF_FIELD_LABELS: Record<string, string> = {
-  symptom_name: 'Symptom',
+  ...FIELD_LABELS,
   body_region: 'Region',
-  side: 'Seite',
-  symptom_type: 'Art',
-  intensity: 'Stärke',
-  trigger: 'Auslöser',
-  frequency: 'Häufigkeit',
-  status: 'Verlauf',
-  symptom_time: 'Zeitpunkt',
-  duration: 'Dauer',
-  medication: 'Medikament',
-  medication_name: 'Medikament',
-  dosage: 'Dosierung',
-  reason: 'Grund',
-  action: 'Aktion',
 }
 
 // ─── Event Detail Card ────────────────────────────────────────────────────────
 
 function SymptomGroupLine({ group }: { group: FeedSymptomGroup }) {
-  const entries = Object.entries(group.fields).filter(
-    ([k]) => k !== 'symptom_name' && k !== 'medication',
-  )
-  entries.sort(([a], [b]) => {
-    const ia = PDF_FIELD_ORDER.indexOf(a)
-    const ib = PDF_FIELD_ORDER.indexOf(b)
-    if (ia !== -1 && ib !== -1) return ia - ib
-    if (ia !== -1) return -1
-    if (ib !== -1) return 1
-    return a.localeCompare(b)
-  })
+  const entries = Object.entries(group.fields)
+    .filter(([k]) => !TITLE_FIELDS.has(k))
+    .sort(([a], [b]) => {
+      const ia = FIELD_ORDER.indexOf(a)
+      const ib = FIELD_ORDER.indexOf(b)
+      if (ia !== -1 && ib !== -1) return ia - ib
+      if (ia !== -1) return -1
+      if (ib !== -1) return 1
+      return a.localeCompare(b)
+    })
   const metaParts = entries.map(([k, v]) => {
     const label = PDF_FIELD_LABELS[k] ?? k
     return `${label}: ${formatPdfFieldValue(k, v)}`
@@ -275,17 +246,16 @@ function EventCard({ event }: { event: PdfEventDetail }) {
   const singleMetaParts: string[] = []
   if (!isMultiSymptom && event.symptoms[0]) {
     const fields = event.symptoms[0].fields
-    const entries = Object.entries(fields).filter(
-      ([k]) => k !== 'symptom_name' && k !== 'medication',
-    )
-    entries.sort(([a], [b]) => {
-      const ia = PDF_FIELD_ORDER.indexOf(a)
-      const ib = PDF_FIELD_ORDER.indexOf(b)
-      if (ia !== -1 && ib !== -1) return ia - ib
-      if (ia !== -1) return -1
-      if (ib !== -1) return 1
-      return a.localeCompare(b)
-    })
+    const entries = Object.entries(fields)
+      .filter(([k]) => !TITLE_FIELDS.has(k))
+      .sort(([a], [b]) => {
+        const ia = FIELD_ORDER.indexOf(a)
+        const ib = FIELD_ORDER.indexOf(b)
+        if (ia !== -1 && ib !== -1) return ia - ib
+        if (ia !== -1) return -1
+        if (ib !== -1) return 1
+        return a.localeCompare(b)
+      })
     for (const [k, v] of entries) {
       const label = PDF_FIELD_LABELS[k] ?? k
       singleMetaParts.push(`${label}: ${formatPdfFieldValue(k, v)}`)

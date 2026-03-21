@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 
 import { X } from 'lucide-react'
 
-import { FIELD_LABELS as BASE_FIELD_LABELS } from '@/components/capture/symptom-tag'
+import { FIELD_LABELS as BASE_FIELD_LABELS } from '@/lib/field-config'
 import { CorrectionHistory } from '@/components/event/correction-history'
 import { correctExtractedField } from '@/lib/actions/symptom-actions'
 import { cn } from '@/lib/utils'
