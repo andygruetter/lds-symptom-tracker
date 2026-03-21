@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console, import/order */
 /**
  * Re-Extraktion Script
  *
@@ -23,8 +24,9 @@
  *   --base-url <url>    Server-URL (Standard: http://localhost:3000)
  */
 
-import { createClient } from '@supabase/supabase-js'
 import readline from 'readline'
+
+import { createClient } from '@supabase/supabase-js'
 
 // --- Argumente parsen ---
 const args = process.argv.slice(2)
