@@ -12,12 +12,12 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'LDS Symptom Tracker',
+  title: 'Symptomchat',
   description: 'Symptom-Tracking für Patienten mit seltenen Erkrankungen',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'LDS Tracker',
+    title: 'Symptomchat',
   },
   icons: {
     apple: '/icons/apple-touch-icon.png',

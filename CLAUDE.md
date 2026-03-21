@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **BMAD Framework** (v6.0.3) installation for the **lds-symptome-tracker** project. It is not a traditional software codebase — it is an AI agent orchestration and workflow management system. There are no build, lint, or test commands. Development is driven through BMAD agents and workflows invoked via slash commands.
+This is a **BMAD Framework** (v6.0.3) installation for the **Symptomchat** project. It is not a traditional software codebase — it is an AI agent orchestration and workflow management system. There are no build, lint, or test commands. Development is driven through BMAD agents and workflows invoked via slash commands.
 
 ## Configuration
 

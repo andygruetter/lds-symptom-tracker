@@ -6,8 +6,8 @@ describe('Web App Manifest', () => {
   const result = manifest()
 
   it('hat korrekten App-Namen', () => {
-    expect(result.name).toBe('LDS Symptom Tracker')
-    expect(result.short_name).toBe('LDS Tracker')
+    expect(result.name).toBe('Symptomchat')
+    expect(result.short_name).toBe('Symptomchat')
   })
 
   it('ist als standalone PWA konfiguriert', () => {
