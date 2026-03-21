@@ -1,4 +1,4 @@
-# LDS Symptom Tracker
+# Symptomchat
 
 Ereignisbasierte Web-App zur Symptomerfassung für Patienten mit seltenen Erkrankungen. Patienten beschreiben Symptome per Sprache oder Text — KI extrahiert automatisch strukturierte medizinische Daten (Bezeichnung, Körperregion, Seite, Art, Intensität). Über Monate entsteht eine differenzierte Symptomgeschichte als objektive Entscheidungsgrundlage für die Spezialisten-Konsultation.
 

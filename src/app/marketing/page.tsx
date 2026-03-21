@@ -15,11 +15,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
 export const metadata: Metadata = {
-  title: 'LDS Symptom Tracker — Symptome erfassen, Muster erkennen',
+  title: 'Symptomchat — Symptome erfassen, Muster erkennen',
   description:
     'Erfasse Symptome in unter 10 Sekunden per Sprache oder Text. KI extrahiert automatisch strukturierte medizinische Daten. Teile deine Symptomgeschichte mit deinem Arzt.',
   openGraph: {
-    title: 'LDS Symptom Tracker — Symptome erfassen, Muster erkennen',
+    title: 'Symptomchat — Symptome erfassen, Muster erkennen',
     description:
       'Ereignisbasiertes Symptom-Tracking für Patienten mit seltenen Erkrankungen. Sprache → Struktur in 10 Sekunden.',
     type: 'website',
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'LDS Symptom Tracker',
+  name: 'Symptomchat',
   description:
     'Ereignisbasiertes Symptom-Tracking für Patienten mit seltenen Erkrankungen',
   applicationCategory: 'HealthApplication',
@@ -70,15 +70,15 @@ const features = [
   },
   {
     icon: Share2,
-    title: 'Arzt-Sharing',
+    title: 'Sicheres Teilen',
     description:
-      'Teile deine Symptomgeschichte per Link mit deinem Arzt. Kein Account nötig — Link klicken, sofort verstehen.',
+      'Teile deine Symptomgeschichte per zeitlich begrenztem Link — du entscheidest, mit wem und wie lange.',
   },
   {
     icon: ShieldCheck,
-    title: 'Deine Daten gehören dir',
+    title: 'Volle Kontrolle über deine Daten',
     description:
-      'Pseudonymisierte Speicherung. Du entscheidest, wer Zugriff hat — und kannst ihn jederzeit widerrufen.',
+      'Symptomchat kann deine Daten keiner Person zuordnen. Du bestimmst, wer Zugriff hat, und kannst ihn jederzeit widerrufen.',
   },
 ]
 
@@ -179,13 +179,12 @@ export default function MarketingPage() {
       <footer className="border-t border-border px-6 py-8">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs text-muted-foreground">
-            <strong>Hinweis:</strong> Der LDS Symptom Tracker ist kein
-            Medizinprodukt und ersetzt keine ärztliche Diagnose oder Behandlung.
-            Die App dient ausschliesslich der persönlichen Dokumentation von
-            Symptomen.
+            <strong>Hinweis:</strong> Symptomchat ist kein Medizinprodukt und
+            ersetzt keine ärztliche Diagnose oder Behandlung. Die App dient
+            ausschliesslich der persönlichen Dokumentation von Symptomen.
           </p>
           <p className="mt-4 text-xs text-muted-foreground">
-            © {new Date().getFullYear()} LDS Symptom Tracker
+            © {new Date().getFullYear()} Symptomchat
           </p>
         </div>
       </footer>

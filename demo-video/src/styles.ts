@@ -1,4 +1,4 @@
-// LDS Symptom Tracker brand colors (from app's Tailwind config)
+// Symptomchat brand colors (from app's Tailwind config)
 export const colors = {
   bg: '#F2EDE7', // warm beige background
   fg: '#3D3530', // dark brown foreground
@@ -30,7 +30,7 @@ export const text = {
     insights: 'Muster erkennen.\nTrends verstehen.',
     doctor: 'Sicher teilen.\nDu behältst die Kontrolle.',
     tagline: 'Deine Stimme.\nDeine Gesundheit.',
-    appName: 'LDS Symptom Tracker',
+    appName: 'Symptomchat',
   },
   en: {
     problem: 'Symptom diary?\nEveryone forgets.',
@@ -39,7 +39,7 @@ export const text = {
     insights: 'Spot patterns.\nUnderstand trends.',
     doctor: 'Share securely.\nYou stay in control.',
     tagline: 'Your voice.\nYour health.',
-    appName: 'LDS Symptom Tracker',
+    appName: 'Symptomchat',
   },
 }
 

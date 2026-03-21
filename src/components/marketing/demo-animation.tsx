@@ -703,7 +703,7 @@ function CTAScene() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9, duration: 0.4 }}
       >
-        LDS SYMPTOM TRACKER
+        SYMPTOMCHAT
       </motion.span>
     </motion.div>
   )
