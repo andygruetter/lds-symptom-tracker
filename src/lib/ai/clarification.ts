@@ -1,3 +1,4 @@
+import { FIELD_LABELS } from '@/lib/field-config'
 import type { ClarificationQuestion, ExtractedData } from '@/types/ai'
 
 const CONFIDENCE_THRESHOLD = 70
@@ -181,8 +182,9 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
 }
 
 function getDefaultTemplate(fieldName: string): ClarificationTemplate {
+  const label = FIELD_LABELS[fieldName] ?? fieldName
   return {
-    question: `Kannst du "${fieldName}" genauer beschreiben?`,
+    question: `Kannst du "${label}" genauer beschreiben?`,
     options: [],
   }
 }

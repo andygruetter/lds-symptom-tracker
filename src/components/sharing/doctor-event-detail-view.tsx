@@ -4,30 +4,12 @@ import { useRouter } from 'next/navigation'
 
 import { AudioPlayer } from '@/components/event/audio-player'
 import { PhotoGallery } from '@/components/event/photo-gallery'
+import { getFieldLabel, sortByFieldOrder } from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/lib/utils/duration'
 import type { EventDetail, ExtractedField } from '@/types/analytics'
 
-const FIELD_LABELS: Record<string, string> = {
-  symptom_name: 'Symptomname',
-  body_region: 'Körperregion',
-  side: 'Seite',
-  symptom_type: 'Symptomtyp',
-  intensity: 'Intensität',
-  symptom_time: 'Zeitpunkt',
-  duration: 'Dauer',
-  medication: 'Medikament',
-  dosage: 'Dosierung',
-}
-
-const PER_SYMPTOM_FIELDS = ['body_region', 'side', 'symptom_type', 'intensity']
-const SHARED_FIELDS = ['symptom_time', 'duration']
-const ALL_SYMPTOM_FIELDS = [
-  'symptom_name',
-  ...PER_SYMPTOM_FIELDS,
-  ...SHARED_FIELDS,
-]
-const MEDICATION_FIELDS = ['medication', 'dosage']
+const EVENT_LEVEL_FIELDS = new Set(['symptom_time', 'duration'])
 
 function groupBySymptomIndex(
   fields: ExtractedField[],
@@ -125,9 +107,6 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
 
   const { date, time } = formatDateTime(detail.occurredAt)
 
-  const relevantFieldNames = isMedication
-    ? MEDICATION_FIELDS
-    : ALL_SYMPTOM_FIELDS
   const symptomGroups = isMedication
     ? null
     : groupBySymptomIndex(detail.extractedFields)
@@ -137,16 +116,11 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
   const isMultiSymptom = sortedGroupKeys.length > 1
 
   const fieldMap = new Map(detail.extractedFields.map((f) => [f.fieldName, f]))
-  const displayFields = relevantFieldNames.map(
-    (name) =>
-      fieldMap.get(name) ?? {
-        fieldName: name,
-        value: null,
-        confidence: null,
-        confirmed: false,
-        symptomIndex: 0,
-      },
+  const displayFields = sortByFieldOrder(
+    detail.extractedFields.filter((f) => !!f.value).map((f) => f.fieldName),
   )
+    .map((name) => fieldMap.get(name)!)
+    .filter(Boolean)
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
@@ -242,9 +216,19 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
                   const symptomNameConf =
                     groupFieldMap.get('symptom_name')?.confidence ?? null
 
-                  const filledFields = PER_SYMPTOM_FIELDS.map((name) =>
-                    groupFieldMap.get(name),
-                  ).filter((f): f is ExtractedField => !!f && !!f.value)
+                  const perSymptomFieldNames = sortByFieldOrder(
+                    groupFields
+                      .filter(
+                        (f) =>
+                          !!f.value &&
+                          f.fieldName !== 'symptom_name' &&
+                          !EVENT_LEVEL_FIELDS.has(f.fieldName),
+                      )
+                      .map((f) => f.fieldName),
+                  )
+                  const filledFields = perSymptomFieldNames
+                    .map((name) => groupFieldMap.get(name)!)
+                    .filter((f): f is ExtractedField => !!f)
 
                   return (
                     <div
@@ -268,8 +252,7 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
                               className="flex items-center justify-between px-4 py-2.5"
                             >
                               <span className="text-xs text-muted-foreground">
-                                {FIELD_LABELS[field.fieldName] ??
-                                  field.fieldName}
+                                {getFieldLabel(field.fieldName)}
                               </span>
                               <div className="flex items-center gap-2">
                                 <ConfidenceIndicator
@@ -293,9 +276,15 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
                   const sharedFieldMap = new Map(
                     firstGroup.map((f) => [f.fieldName, f]),
                   )
-                  const filledShared = SHARED_FIELDS.map((name) =>
-                    sharedFieldMap.get(name),
-                  ).filter((f): f is ExtractedField => !!f && !!f.value)
+                  const filledShared = sortByFieldOrder(
+                    firstGroup
+                      .filter(
+                        (f) => !!f.value && EVENT_LEVEL_FIELDS.has(f.fieldName),
+                      )
+                      .map((f) => f.fieldName),
+                  )
+                    .map((name) => sharedFieldMap.get(name)!)
+                    .filter((f): f is ExtractedField => !!f)
 
                   if (filledShared.length === 0) return null
 
@@ -307,7 +296,7 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
                           className="flex items-center justify-between px-4 py-2.5"
                         >
                           <span className="text-xs text-muted-foreground">
-                            {FIELD_LABELS[field.fieldName] ?? field.fieldName}
+                            {getFieldLabel(field.fieldName)}
                           </span>
                           <div className="flex items-center gap-2">
                             <ConfidenceIndicator
@@ -325,24 +314,22 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
               </div>
             ) : (
               <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
-                {displayFields
-                  .filter((f) => !!f.value)
-                  .map((field) => (
-                    <div
-                      key={field.fieldName}
-                      className="flex items-center justify-between px-4 py-2.5"
-                    >
-                      <span className="text-xs text-muted-foreground">
-                        {FIELD_LABELS[field.fieldName] ?? field.fieldName}
+                {displayFields.map((field) => (
+                  <div
+                    key={field.fieldName}
+                    className="flex items-center justify-between px-4 py-2.5"
+                  >
+                    <span className="text-xs text-muted-foreground">
+                      {getFieldLabel(field.fieldName)}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <ConfidenceIndicator confidence={field.confidence} />
+                      <span className="text-sm text-foreground">
+                        {formatFieldValue(field)}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <ConfidenceIndicator confidence={field.confidence} />
-                        <span className="text-sm text-foreground">
-                          {formatFieldValue(field)}
-                        </span>
-                      </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
             )}
           </div>

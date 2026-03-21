@@ -49,11 +49,19 @@ test.describe('Event Delete (Story 4.5)', () => {
       Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
     ).toISOString()
 
-    await createTestSymptomEvent(userId, {
+    const event = await createTestSymptomEvent(userId, {
       status: 'confirmed',
       raw_input: 'Kopfschmerzen',
       occurred_at: todayNoon,
     })
+    await createTestExtractedData(event.id, [
+      {
+        field_name: 'symptom_name',
+        value: 'Kopfschmerzen',
+        confidence: 95,
+        confirmed: true,
+      },
+    ])
 
     await page.goto('/more')
     await page.getByRole('heading', { name: 'Mehr' }).waitFor()

@@ -2,21 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+import { getFieldLabel } from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 
-export const FIELD_LABELS: Record<string, string> = {
-  symptom_name: 'Symptom',
-  body_region: 'Körperregion',
-  side: 'Seite',
-  symptom_type: 'Art',
-  intensity: 'Stärke',
-  symptom_time: 'Zeitpunkt',
-  duration: 'Dauer',
-}
-
-function getFieldLabel(fieldName: string): string {
-  return FIELD_LABELS[fieldName] ?? fieldName
-}
+// Re-export shared field config so existing client imports keep working
+export {
+  FIELD_LABELS,
+  FIELD_ORDER,
+  getFieldLabel,
+  sortByFieldOrder,
+} from '@/lib/field-config'
 
 interface SymptomTagProps {
   label: string

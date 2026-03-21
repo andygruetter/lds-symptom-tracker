@@ -46,44 +46,9 @@ export type RawFeedRow = {
   event_photos: PhotoRow[] | null
 }
 
-export function pivotExtractedData(rows: ExtractedDataRow[] | null): {
-  symptomName: string | null
-  bodyRegion: string | null
-  side: string | null
-  symptomType: string | null
-  intensity: number | null
-  medication: string | null
-  dosage: string | null
-} {
-  if (!rows || rows.length === 0) {
-    return {
-      symptomName: null,
-      bodyRegion: null,
-      side: null,
-      symptomType: null,
-      intensity: null,
-      medication: null,
-      dosage: null,
-    }
-  }
-
-  const map = new Map(rows.map((r) => [r.field_name, r.value]))
-  const intensityRaw = map.get('intensity')
-
-  return {
-    symptomName: map.get('symptom_name') ?? null,
-    bodyRegion: map.get('body_region') ?? null,
-    side: map.get('side') ?? null,
-    symptomType: map.get('symptom_type') ?? null,
-    intensity:
-      intensityRaw !== undefined ? parseFloat(intensityRaw) || null : null,
-    medication: map.get('medication') ?? null,
-    dosage: map.get('dosage') ?? null,
-  }
-}
-
 export function groupExtractedBySymptomIndex(
   rows: ExtractedDataRow[] | null,
+  eventType: string,
 ): FeedSymptomGroup[] {
   if (!rows || rows.length === 0) return []
 
@@ -97,25 +62,18 @@ export function groupExtractedBySymptomIndex(
   return [...groups.entries()]
     .sort(([a], [b]) => a - b)
     .map(([, map]) => {
-      const intensityRaw = map.get('intensity')
-      return {
-        symptomName: map.get('symptom_name') ?? null,
-        bodyRegion: map.get('body_region') ?? null,
-        side: map.get('side') ?? null,
-        symptomType: map.get('symptom_type') ?? null,
-        intensity:
-          intensityRaw !== undefined ? parseFloat(intensityRaw) || null : null,
-      }
+      const fields = Object.fromEntries(map.entries())
+      const displayName =
+        eventType === 'medication'
+          ? (map.get('medication_name') ?? map.get('medication') ?? null)
+          : (map.get('symptom_name') ?? null)
+      return { displayName, fields }
     })
 }
 
 export function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
-  const extracted = pivotExtractedData(row.extracted_data)
   const eventType = row.event_type === 'medication' ? 'medication' : 'symptom'
-  const symptoms =
-    eventType === 'symptom'
-      ? groupExtractedBySymptomIndex(row.extracted_data)
-      : []
+  const symptoms = groupExtractedBySymptomIndex(row.extracted_data, eventType)
 
   return {
     id: row.id,
@@ -124,7 +82,6 @@ export function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
     createdAt: row.created_at,
     endedAt: row.ended_at,
     rawInput: row.raw_input,
-    ...extracted,
     photoCount: row.event_photos?.length ?? 0,
     hasAudio: row.audio_url !== null,
     symptoms,
@@ -238,12 +195,16 @@ export async function getMonthlyTimeline(
     }
 
     // Intensität aus extracted_data
-    const extracted = pivotExtractedData(row.extracted_data)
-    if (extracted.intensity !== null) {
+    const intensityRaw = row.extracted_data?.find(
+      (r) => r.field_name === 'intensity',
+    )?.value
+    const intensity =
+      intensityRaw !== undefined ? parseFloat(intensityRaw) || null : null
+    if (intensity !== null) {
       existing.maxIntensity =
         existing.maxIntensity === null
-          ? extracted.intensity
-          : Math.max(existing.maxIntensity, extracted.intensity)
+          ? intensity
+          : Math.max(existing.maxIntensity, intensity)
     }
 
     dayMap.set(dateKey, existing)
@@ -351,7 +312,9 @@ export function aggregateRankingFromRows(
     if (localKey < dateFrom) continue
     if (dateTo && localKey > dateTo) continue
 
-    const extracted = pivotExtractedData(row.extracted_data)
+    const fieldMap = new Map(
+      (row.extracted_data ?? []).map((r) => [r.field_name, r.value]),
+    )
     const isMedication = row.event_type === 'medication'
     const [yearStr, monthStr] = localKey.split('-')
     const year = parseInt(yearStr, 10)
@@ -359,7 +322,7 @@ export function aggregateRankingFromRows(
     const monthKey = `${year}-${String(month).padStart(2, '0')}`
 
     if (isMedication) {
-      const name = extracted.medication ?? 'Unbekannt'
+      const name = fieldMap.get('medication') ?? 'Unbekannt'
       let entry = medicationMap.get(name)
       if (!entry) {
         entry = { monthlyCounts: new Map() }
@@ -370,7 +333,7 @@ export function aggregateRankingFromRows(
         (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
       )
     } else {
-      const name = extracted.symptomName ?? 'Unbekannt'
+      const name = fieldMap.get('symptom_name') ?? 'Unbekannt'
       let entry = symptomMap.get(name)
       if (!entry) {
         entry = { monthlyCounts: new Map(), intensities: [] }
@@ -380,8 +343,10 @@ export function aggregateRankingFromRows(
         monthKey,
         (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
       )
-      if (extracted.intensity !== null) {
-        entry.intensities.push(extracted.intensity)
+      const intensityRaw = fieldMap.get('intensity')
+      if (intensityRaw !== undefined) {
+        const int = parseFloat(intensityRaw)
+        if (!isNaN(int)) entry.intensities.push(int)
       }
     }
   }
@@ -591,14 +556,14 @@ export async function getSymptomEvents(
   const filtered = rows.filter((row) => {
     const localKey = toLocalDateKey(new Date(row.occurred_at))
     if (localKey < cutoffKey) return false
-    const extracted = pivotExtractedData(row.extracted_data)
-    // symptomName can be a symptom name or medication name
-    // Check symptom_name for symptoms and medication for medications
+    const fieldMap = new Map(
+      (row.extracted_data ?? []).map((r) => [r.field_name, r.value]),
+    )
     const isMed = row.event_type === 'medication'
     if (isMed) {
-      return extracted.medication === symptomName
+      return fieldMap.get('medication') === symptomName
     } else {
-      return extracted.symptomName === symptomName
+      return fieldMap.get('symptom_name') === symptomName
     }
   })
 
@@ -669,11 +634,6 @@ export async function getEventDetail(
 
   const eventType = event.event_type === 'medication' ? 'medication' : 'symptom'
 
-  // Resolve symptomName / medication from extracted fields
-  const fieldMap = new Map(extractedFields.map((f) => [f.fieldName, f.value]))
-  const symptomName = fieldMap.get('symptom_name') ?? null
-  const medication = fieldMap.get('medication') ?? null
-
   return {
     id: event.id,
     eventType,
@@ -684,8 +644,6 @@ export async function getEventDetail(
     audioUrl,
     extractedFields,
     photos,
-    symptomName,
-    medication,
   }
 }
 

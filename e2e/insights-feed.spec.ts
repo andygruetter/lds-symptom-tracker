@@ -38,17 +38,26 @@ test.describe('Insights Feed (Story 4.1)', () => {
       Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
     ).toISOString()
 
-    await createTestSymptomEvent(userId, {
+    const event = await createTestSymptomEvent(userId, {
       status: 'confirmed',
       raw_input: 'Kopfschmerzen rechts',
       occurred_at: todayNoon,
     })
+    await createTestExtractedData(event.id, [
+      {
+        field_name: 'symptom_name',
+        value: 'Kopfschmerzen rechts',
+        confidence: 95,
+        confirmed: true,
+      },
+    ])
 
     await insightsPage.goto()
     await insightsPage.waitForLoaded()
 
     await expect(page.getByText('Heute')).toBeVisible()
-    await expect(page.getByText('Kopfschmerzen rechts')).toBeVisible()
+    // Feed card shows displayName from symptom_name with bullet prefix
+    await expect(page.getByText('● Kopfschmerzen rechts')).toBeVisible()
   })
 
   test('Symptom-Karte zeigt Name, Körperregion und Intensität', async ({
@@ -88,12 +97,10 @@ test.describe('Insights Feed (Story 4.1)', () => {
     await insightsPage.goto()
     await insightsPage.waitForLoaded()
 
-    // Symptom name with bullet prefix
+    // Symptom name with bullet prefix (displayName from symptom_name)
     await expect(page.getByText('● Kopfschmerzen')).toBeVisible()
-    // Body region (exact to avoid matching "Kopfschmerzen")
-    await expect(page.getByText('Kopf', { exact: true })).toBeVisible()
-    // Intensity
-    await expect(page.getByText('7/10')).toBeVisible()
+    // Detail line shows non-title fields joined by ' · ' (body_region and intensity)
+    await expect(page.getByText('Kopf · 7/10')).toBeVisible()
     // Type badge
     await expect(page.getByText('Symptom')).toBeVisible()
   })

@@ -615,9 +615,6 @@ export async function getSharedEventDetail(
   }))
 
   const eventType = event.event_type === 'medication' ? 'medication' : 'symptom'
-  const fieldMap = new Map(extractedFields.map((f) => [f.fieldName, f.value]))
-  const symptomName = fieldMap.get('symptom_name') ?? null
-  const medication = fieldMap.get('medication') ?? null
 
   return {
     id: event.id,
@@ -629,8 +626,6 @@ export async function getSharedEventDetail(
     audioUrl,
     extractedFields,
     photos,
-    symptomName,
-    medication,
   }
 }
 

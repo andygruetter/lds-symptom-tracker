@@ -54,8 +54,6 @@ const baseDetail: EventDetail = {
     },
   ],
   photos: [],
-  symptomName: 'Rückenschmerzen',
-  medication: null,
 }
 
 describe('EventDetailView', () => {
@@ -124,8 +122,6 @@ describe('EventDetailView', () => {
           symptomIndex: 0,
         },
       ],
-      medication: 'Dafalgan',
-      symptomName: null,
     }
     render(<EventDetailView detail={medDetail} />)
     // "Medikament" appears in badge AND in field labels, so use getAllByText

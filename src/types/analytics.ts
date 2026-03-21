@@ -14,11 +14,10 @@ export type MonthTimeline = {
 }
 
 export type FeedSymptomGroup = {
-  symptomName: string | null
-  bodyRegion: string | null
-  side: string | null
-  symptomType: string | null
-  intensity: number | null
+  /** Display title: symptom_name for symptom events, medication for medication events */
+  displayName: string | null
+  /** All extracted fields as key-value pairs */
+  fields: Record<string, string>
 }
 
 export type FeedEvent = {
@@ -28,16 +27,9 @@ export type FeedEvent = {
   createdAt: string
   endedAt: string | null
   rawInput: string | null
-  symptomName: string | null
-  bodyRegion: string | null
-  side: string | null
-  symptomType: string | null
-  intensity: number | null
-  medication: string | null
-  dosage: string | null
   photoCount: number
   hasAudio: boolean
-  /** Multi-symptom groups (empty for medication or single-symptom) */
+  /** Symptom/medication groups — always populated for all event types */
   symptoms: FeedSymptomGroup[]
 }
 
@@ -106,6 +98,4 @@ export type EventDetail = {
   audioUrl: string | null
   extractedFields: ExtractedField[]
   photos: EventPhoto[]
-  symptomName: string | null
-  medication: string | null
 }

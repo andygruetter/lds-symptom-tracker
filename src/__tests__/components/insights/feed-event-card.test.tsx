@@ -14,22 +14,18 @@ const symptomEvent: FeedEvent = {
   createdAt: '2026-03-14T09:30:00Z',
   endedAt: null,
   rawInput: 'Rückenschmerzen',
-  symptomName: 'Rückenschmerzen',
-  bodyRegion: 'Rücken',
-  side: 'links',
-  symptomType: 'stechend',
-  intensity: 7,
-  medication: null,
-  dosage: null,
   photoCount: 2,
   hasAudio: false,
   symptoms: [
     {
-      symptomName: 'Rückenschmerzen',
-      bodyRegion: 'Rücken',
-      side: 'links',
-      symptomType: 'stechend',
-      intensity: 7,
+      displayName: 'Rückenschmerzen',
+      fields: {
+        symptom_name: 'Rückenschmerzen',
+        body_region: 'Rücken',
+        side: 'links',
+        symptom_type: 'stechend',
+        intensity: '7',
+      },
     },
   ],
 }
@@ -41,16 +37,17 @@ const medicationEvent: FeedEvent = {
   createdAt: '2026-03-13T20:15:00Z',
   endedAt: null,
   rawInput: 'Dafalgan 1g',
-  symptomName: null,
-  bodyRegion: null,
-  side: null,
-  symptomType: null,
-  intensity: null,
-  medication: 'Dafalgan',
-  dosage: '1g',
   photoCount: 0,
   hasAudio: true,
-  symptoms: [],
+  symptoms: [
+    {
+      displayName: 'Dafalgan',
+      fields: {
+        medication: 'Dafalgan',
+        dosage: '1g',
+      },
+    },
+  ],
 }
 
 describe('FeedEventCard', () => {
@@ -60,7 +57,7 @@ describe('FeedEventCard', () => {
     render(<FeedEventCard event={symptomEvent} />)
 
     expect(screen.getByText(/Rückenschmerzen/)).toBeInTheDocument()
-    expect(screen.getByText('Rücken, links')).toBeInTheDocument()
+    expect(screen.getByText(/Rücken.*links/)).toBeInTheDocument()
   })
 
   it('zeigt Medikament-Karte korrekt', async () => {

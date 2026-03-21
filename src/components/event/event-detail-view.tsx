@@ -10,34 +10,17 @@ import { ArrowLeft, Trash2 } from 'lucide-react'
 import { AudioPlayer } from '@/components/event/audio-player'
 import { DeleteEventDialog } from '@/components/event/delete-event-dialog'
 import { PhotoGallery } from '@/components/event/photo-gallery'
+import {
+  FIELD_LABELS,
+  getFieldLabel,
+  sortByFieldOrder,
+} from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/lib/utils/duration'
 import type { EventDetail, ExtractedField } from '@/types/analytics'
 
-const FIELD_LABELS: Record<string, string> = {
-  symptom_name: 'Symptomname',
-  body_region: 'Körperregion',
-  side: 'Seite',
-  symptom_type: 'Symptomtyp',
-  intensity: 'Intensität',
-  symptom_time: 'Zeitpunkt',
-  duration: 'Dauer',
-  medication: 'Medikament',
-  dosage: 'Dosierung',
-}
-
-/** Per-symptom fields (shown per group in multi-symptom) */
-const PER_SYMPTOM_FIELDS = ['body_region', 'side', 'symptom_type', 'intensity']
-
-/** Shared fields (shown once for the whole event) */
-const SHARED_FIELDS = ['symptom_time', 'duration']
-
-const ALL_SYMPTOM_FIELDS = [
-  'symptom_name',
-  ...PER_SYMPTOM_FIELDS,
-  ...SHARED_FIELDS,
-]
-const MEDICATION_FIELDS = ['medication', 'dosage']
+/** Fields that belong to the whole event, not per-symptom group */
+const EVENT_LEVEL_FIELDS = new Set(['symptom_time', 'duration'])
 
 function groupBySymptomIndex(
   fields: ExtractedField[],
@@ -116,9 +99,6 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
   }
 
   const isMedication = detail.eventType === 'medication'
-  const relevantFieldNames = isMedication
-    ? MEDICATION_FIELDS
-    : ALL_SYMPTOM_FIELDS
 
   const symptomGroups = isMedication
     ? null
@@ -128,21 +108,13 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
     : []
   const isMultiSymptom = sortedGroupKeys.length > 1
 
-  // For medication or single-symptom fallback
+  // All fields with a value, sorted by FIELD_ORDER
   const fieldMap = new Map(detail.extractedFields.map((f) => [f.fieldName, f]))
-
-  const displayFields = relevantFieldNames.map((name) => {
-    const field = fieldMap.get(name)
-    return (
-      field ?? {
-        fieldName: name,
-        value: null,
-        confidence: null,
-        confirmed: false,
-        symptomIndex: 0,
-      }
-    )
-  })
+  const displayFields = sortByFieldOrder(
+    detail.extractedFields.filter((f) => !!f.value).map((f) => f.fieldName),
+  )
+    .map((name) => fieldMap.get(name)!)
+    .filter(Boolean)
 
   const typeBadgeColor = isMedication ? '#4A7FA5' : '#C06A3C'
   const typeLabel = isMedication ? 'Medikament' : 'Symptom'
@@ -251,10 +223,20 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
                 const symptomNameConf =
                   groupFieldMap.get('symptom_name')?.confidence ?? null
 
-                // Only show per-symptom fields that have values
-                const filledFields = PER_SYMPTOM_FIELDS.map((name) =>
-                  groupFieldMap.get(name),
-                ).filter((f): f is ExtractedField => !!f && !!f.value)
+                // Show all per-symptom fields with values, excluding event-level and title
+                const perSymptomFieldNames = sortByFieldOrder(
+                  groupFields
+                    .filter(
+                      (f) =>
+                        !!f.value &&
+                        f.fieldName !== 'symptom_name' &&
+                        !EVENT_LEVEL_FIELDS.has(f.fieldName),
+                    )
+                    .map((f) => f.fieldName),
+                )
+                const filledFields = perSymptomFieldNames
+                  .map((name) => groupFieldMap.get(name)!)
+                  .filter(Boolean)
 
                 return (
                   <div
@@ -289,7 +271,7 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
                             className="flex items-center justify-between px-4 py-2.5"
                           >
                             <span className="text-xs text-muted-foreground">
-                              {FIELD_LABELS[field.fieldName] ?? field.fieldName}
+                              {getFieldLabel(field.fieldName)}
                             </span>
                             <div className="flex items-center gap-2">
                               {field.confidence !== null && (
@@ -314,15 +296,21 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
                 )
               })}
 
-              {/* Shared fields: Zeitpunkt & Dauer (once for the event) */}
+              {/* Event-level fields (Zeitpunkt & Dauer) — once for the whole event */}
               {(() => {
                 const firstGroup = symptomGroups!.get(sortedGroupKeys[0])!
                 const sharedFieldMap = new Map(
                   firstGroup.map((f) => [f.fieldName, f]),
                 )
-                const filledShared = SHARED_FIELDS.map((name) =>
-                  sharedFieldMap.get(name),
-                ).filter((f): f is ExtractedField => !!f && !!f.value)
+                const filledShared = sortByFieldOrder(
+                  firstGroup
+                    .filter(
+                      (f) => !!f.value && EVENT_LEVEL_FIELDS.has(f.fieldName),
+                    )
+                    .map((f) => f.fieldName),
+                )
+                  .map((name) => sharedFieldMap.get(name)!)
+                  .filter((f): f is ExtractedField => !!f)
 
                 if (filledShared.length === 0) return null
 
@@ -334,7 +322,7 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
                         className="flex items-center justify-between px-4 py-3"
                       >
                         <span className="text-sm text-muted-foreground">
-                          {FIELD_LABELS[field.fieldName] ?? field.fieldName}
+                          {getFieldLabel(field.fieldName)}
                         </span>
                         <div className="flex items-center gap-2">
                           {field.confidence !== null && (
@@ -359,33 +347,31 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
             </div>
           ) : (
             <div className="flex flex-col divide-y divide-border rounded-xl border border-border">
-              {displayFields
-                .filter((f) => !!f.value)
-                .map((field) => (
-                  <div
-                    key={field.fieldName}
-                    className="flex items-center justify-between px-4 py-3"
-                  >
-                    <span className="text-sm text-muted-foreground">
-                      {FIELD_LABELS[field.fieldName] ?? field.fieldName}
+              {displayFields.map((field) => (
+                <div
+                  key={field.fieldName}
+                  className="flex items-center justify-between px-4 py-3"
+                >
+                  <span className="text-sm text-muted-foreground">
+                    {getFieldLabel(field.fieldName)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {field.confidence !== null && (
+                      <span
+                        className={cn(
+                          'size-2 rounded-full',
+                          getConfidenceColor(field.confidence),
+                        )}
+                        title={`Konfidenz: ${Math.round(field.confidence)}%`}
+                        aria-label={`Konfidenz ${Math.round(field.confidence)}%`}
+                      />
+                    )}
+                    <span className="text-sm text-foreground">
+                      {formatFieldValue(field)}
                     </span>
-                    <div className="flex items-center gap-2">
-                      {field.confidence !== null && (
-                        <span
-                          className={cn(
-                            'size-2 rounded-full',
-                            getConfidenceColor(field.confidence),
-                          )}
-                          title={`Konfidenz: ${Math.round(field.confidence)}%`}
-                          aria-label={`Konfidenz ${Math.round(field.confidence)}%`}
-                        />
-                      )}
-                      <span className="text-sm text-foreground">
-                        {formatFieldValue(field)}
-                      </span>
-                    </div>
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
           )}
         </div>

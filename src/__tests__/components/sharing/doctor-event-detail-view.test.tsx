@@ -50,8 +50,6 @@ const baseSymptomEvent: EventDetail = {
     },
   ],
   photos: [],
-  symptomName: 'Kopfschmerzen',
-  medication: null,
 }
 
 const baseMedicationEvent: EventDetail = {
@@ -72,22 +70,19 @@ const baseMedicationEvent: EventDetail = {
     },
   ],
   photos: [],
-  symptomName: null,
-  medication: 'Ibuprofen 400mg',
 }
 
 describe('DoctorEventDetailView', () => {
   it('rendert Symptom-Event mit extrahierten Feldern und Konfidenz-Indikatoren', () => {
     render(<DoctorEventDetailView detail={baseSymptomEvent} />)
 
-    // Symptom-Badge
-    expect(screen.getByText('Symptom')).toBeInTheDocument()
+    // Symptom-Badge (also shown as field label → use getAllByText)
+    expect(screen.getAllByText('Symptom').length).toBeGreaterThanOrEqual(1)
 
     // Transkription
     expect(screen.getByText('Kopfschmerzen rechts')).toBeInTheDocument()
 
-    // Extrahierte Felder
-    expect(screen.getByText('Symptomname')).toBeInTheDocument()
+    // Extrahierte Felder (symptom_name label is now 'Symptom', already checked above)
     expect(screen.getByText('Kopfschmerzen')).toBeInTheDocument()
     expect(screen.getByText('Körperregion')).toBeInTheDocument()
     expect(screen.getByText('Kopf')).toBeInTheDocument()
@@ -213,8 +208,6 @@ describe('DoctorEventDetailView', () => {
         },
       ],
       photos: [],
-      symptomName: 'Kopfschmerzen',
-      medication: null,
     }
     render(<DoctorEventDetailView detail={multiSymptomEvent} />)
 
@@ -269,8 +262,6 @@ describe('DoctorEventDetailView', () => {
         },
       ],
       photos: [],
-      symptomName: 'Migräne',
-      medication: null,
     }
     render(<DoctorEventDetailView detail={multiWithSharedFields} />)
 

@@ -46,7 +46,9 @@ afterEach(() => {
   process.env.NEXT_PUBLIC_APP_URL = originalEnv
 })
 
-function createMockSupabase(insertResult = { data: null, error: null }) {
+function createMockSupabase(
+  insertResult: { data: unknown; error: unknown } = { data: null, error: null },
+) {
   const insertBuilder = {
     select: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue(insertResult),
@@ -1077,7 +1079,10 @@ describe('getSharedEventDetail', () => {
     expect(result).not.toBeNull()
     expect(result?.id).toBe('event-uuid-1')
     expect(result?.eventType).toBe('symptom')
-    expect(result?.symptomName).toBe('Kopfschmerzen')
+    expect(
+      result?.extractedFields.find((f) => f.fieldName === 'symptom_name')
+        ?.value,
+    ).toBe('Kopfschmerzen')
     expect(result?.rawInput).toBe('Kopfschmerzen')
     expect(result?.audioUrl).toBe('https://signed.url/test')
     expect(result?.photos).toHaveLength(1)
@@ -1170,7 +1175,10 @@ describe('getSharedEventDetail', () => {
     expect(result).not.toBeNull()
     expect(result?.audioUrl).toBeNull()
     expect(result?.photos).toEqual([])
-    expect(result?.symptomName).toBe('Schwindel')
+    expect(
+      result?.extractedFields.find((f) => f.fieldName === 'symptom_name')
+        ?.value,
+    ).toBe('Schwindel')
     expect(mockGetSignedMediaUrl).not.toHaveBeenCalled()
   })
 

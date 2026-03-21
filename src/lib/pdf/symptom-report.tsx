@@ -1,5 +1,6 @@
 import { Document, Image, Page, Text, View } from '@react-pdf/renderer'
 
+import { FIELD_LABELS, FIELD_ORDER, TITLE_FIELDS } from '@/lib/field-config'
 import type {
   FeedSymptomGroup,
   MonthTimeline,
@@ -183,18 +184,50 @@ function TimelineSection({ timeline }: { timeline: MonthTimeline[] }) {
   )
 }
 
+// Use shared FIELD_ORDER from field-config.ts (imported above)
+
+function formatPdfFieldValue(key: string, value: string): string {
+  if (key === 'intensity') return `${value}/10`
+  if (key === 'duration') {
+    const mins = parseInt(value, 10)
+    if (!isNaN(mins) && mins > 0) {
+      const h = Math.floor(mins / 60)
+      const m = mins % 60
+      if (h > 0 && m > 0) return `${h} Std. ${m} Min.`
+      if (h > 0) return `${h} Std.`
+      return `${mins} Min.`
+    }
+  }
+  return value
+}
+
+// PDF uses slightly different label for body_region
+const PDF_FIELD_LABELS: Record<string, string> = {
+  ...FIELD_LABELS,
+  body_region: 'Region',
+}
+
 // ─── Event Detail Card ────────────────────────────────────────────────────────
 
 function SymptomGroupLine({ group }: { group: FeedSymptomGroup }) {
-  const metaParts: string[] = []
-  if (group.bodyRegion) metaParts.push(group.bodyRegion)
-  if (group.side) metaParts.push(group.side)
-  if (group.intensity !== null) metaParts.push(`${group.intensity}/10`)
-  if (group.symptomType) metaParts.push(group.symptomType)
+  const entries = Object.entries(group.fields)
+    .filter(([k]) => !TITLE_FIELDS.has(k))
+    .sort(([a], [b]) => {
+      const ia = FIELD_ORDER.indexOf(a)
+      const ib = FIELD_ORDER.indexOf(b)
+      if (ia !== -1 && ib !== -1) return ia - ib
+      if (ia !== -1) return -1
+      if (ib !== -1) return 1
+      return a.localeCompare(b)
+    })
+  const metaParts = entries.map(([k, v]) => {
+    const label = PDF_FIELD_LABELS[k] ?? k
+    return `${label}: ${formatPdfFieldValue(k, v)}`
+  })
 
   return (
     <View>
-      <Text style={pdfStyles.eventTitle}>{group.symptomName ?? 'Symptom'}</Text>
+      <Text style={pdfStyles.eventTitle}>{group.displayName ?? 'Symptom'}</Text>
       {metaParts.length > 0 && (
         <Text style={pdfStyles.eventMeta}>{metaParts.join(' · ')}</Text>
       )}
@@ -207,16 +240,26 @@ function EventCard({ event }: { event: PdfEventDetail }) {
     event.eventType === 'symptom' && event.symptoms.length > 1
 
   const singleTitle =
-    event.eventType === 'medication'
-      ? (event.medication ?? 'Medikament')
-      : (event.symptomName ?? 'Symptom')
+    event.symptoms[0]?.displayName ??
+    (event.eventType === 'medication' ? 'Medikament' : 'Symptom')
 
   const singleMetaParts: string[] = []
-  if (!isMultiSymptom) {
-    if (event.bodyRegion) singleMetaParts.push(event.bodyRegion)
-    if (event.side) singleMetaParts.push(event.side)
-    if (event.intensity !== null)
-      singleMetaParts.push(`Intensität: ${event.intensity}/10`)
+  if (!isMultiSymptom && event.symptoms[0]) {
+    const fields = event.symptoms[0].fields
+    const entries = Object.entries(fields)
+      .filter(([k]) => !TITLE_FIELDS.has(k))
+      .sort(([a], [b]) => {
+        const ia = FIELD_ORDER.indexOf(a)
+        const ib = FIELD_ORDER.indexOf(b)
+        if (ia !== -1 && ib !== -1) return ia - ib
+        if (ia !== -1) return -1
+        if (ib !== -1) return 1
+        return a.localeCompare(b)
+      })
+    for (const [k, v] of entries) {
+      const label = PDF_FIELD_LABELS[k] ?? k
+      singleMetaParts.push(`${label}: ${formatPdfFieldValue(k, v)}`)
+    }
   }
   if (event.endedAt) {
     const durationMs =

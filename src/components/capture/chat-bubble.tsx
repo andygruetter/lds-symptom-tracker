@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { Camera, ChevronRight, Mic, Pill, X } from 'lucide-react'
 
+import { getFieldLabel } from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import type { ExtractedData } from '@/types/ai'
 import type { EventPhoto } from '@/types/symptom'
@@ -103,7 +104,8 @@ function getSeverityInfo(value: string): {
   return { label: value, colorClass: 'bg-yellow-500' }
 }
 
-const KNOWN_SYMPTOM_FIELDS = new Set([
+/** Fields rendered in the structured layout of SingleSymptomSummary */
+const STRUCTURED_SYMPTOM_FIELDS = new Set([
   'symptom_name',
   'body_region',
   'side',
@@ -111,13 +113,6 @@ const KNOWN_SYMPTOM_FIELDS = new Set([
   'intensity',
   'symptom_time',
   'duration',
-])
-
-const KNOWN_MEDICATION_FIELDS = new Set([
-  'medication_name',
-  'action',
-  'dosage',
-  'reason',
 ])
 
 function SingleSymptomSummary({ fields }: { fields: ExtractedData[] }) {
@@ -140,8 +135,8 @@ function SingleSymptomSummary({ fields }: { fields: ExtractedData[] }) {
   const formattedTime = symptomTime ? formatSymptomTimestamp(symptomTime) : null
   const formattedDuration = duration ? formatDurationMinutes(duration) : null
 
-  const unknownFields = fields.filter(
-    (f) => !KNOWN_SYMPTOM_FIELDS.has(f.field_name),
+  const extraFields = fields.filter(
+    (f) => !STRUCTURED_SYMPTOM_FIELDS.has(f.field_name),
   )
 
   return (
@@ -170,15 +165,23 @@ function SingleSymptomSummary({ fields }: { fields: ExtractedData[] }) {
             {[formattedTime, formattedDuration].filter(Boolean).join(' · ')}
           </p>
         )}
-        {unknownFields.map((f) => (
+        {extraFields.map((f) => (
           <p key={f.id} className="text-xs text-muted-foreground">
-            {f.value}
+            {getFieldLabel(f.field_name)}: {f.value}
           </p>
         ))}
       </div>
     </div>
   )
 }
+
+/** Fields shown explicitly in ConfirmedFieldsSummary medication layout */
+const STRUCTURED_MEDICATION_FIELDS = new Set([
+  'medication_name',
+  'action',
+  'dosage',
+  'reason',
+])
 
 function ConfirmedFieldsSummary({
   fields,
@@ -193,8 +196,8 @@ function ConfirmedFieldsSummary({
     const action = get('action')
     const dosage = get('dosage')
     const reason = get('reason')
-    const unknownFields = fields.filter(
-      (f) => !KNOWN_MEDICATION_FIELDS.has(f.field_name),
+    const extraMedFields = fields.filter(
+      (f) => !STRUCTURED_MEDICATION_FIELDS.has(f.field_name),
     )
 
     return (
@@ -207,9 +210,9 @@ function ConfirmedFieldsSummary({
             </p>
           )}
           {reason && <p className="text-xs text-muted-foreground">{reason}</p>}
-          {unknownFields.map((f) => (
+          {extraMedFields.map((f) => (
             <p key={f.id} className="text-xs text-muted-foreground">
-              {f.value}
+              {getFieldLabel(f.field_name)}: {f.value}
             </p>
           ))}
         </div>

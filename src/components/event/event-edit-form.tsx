@@ -8,6 +8,7 @@ import { X } from 'lucide-react'
 
 import { CorrectionHistory } from '@/components/event/correction-history'
 import { correctExtractedField } from '@/lib/actions/symptom-actions'
+import { FIELD_LABELS as BASE_FIELD_LABELS } from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import type { ExtractedData } from '@/types/ai'
 import type { Database } from '@/types/database'
@@ -17,14 +18,10 @@ type Correction = Database['public']['Tables']['corrections']['Row']
 
 type DurationUnit = 'min' | 'std' | 'tage'
 
+// Edit-form uses a local override for intensity label (with range hint)
 const FIELD_LABELS: Record<string, string> = {
-  symptom_name: 'Symptomname',
-  body_region: 'Körperregion',
-  side: 'Seite',
-  symptom_type: 'Symptomtyp',
+  ...BASE_FIELD_LABELS,
   intensity: 'Intensität (1–10)',
-  symptom_time: 'Zeitpunkt',
-  duration: 'Dauer',
 }
 
 const SIDE_OPTIONS = ['links', 'rechts', 'beidseits']
@@ -514,43 +511,26 @@ export function EventEditForm({
                     {symptomLabel}
                   </h2>
                   <div className="flex flex-col gap-4">
-                    {renderField('symptom_name', idx)}
-                    {renderField('body_region', idx)}
-                    {renderField('side', idx)}
-                    {renderField('symptom_type', idx)}
-                    {renderField('intensity', idx)}
+                    {allFieldNames
+                      .filter(
+                        (name) =>
+                          name !== 'symptom_time' && name !== 'duration',
+                      )
+                      .map((name) => renderField(name, idx))}
                   </div>
                 </div>
               )
             })}
           </>
         ) : (
-          <>
-            {/* Zeitpunkt & Dauer */}
-            <div className="mb-5">
-              <h2 className="mb-3 text-sm font-semibold text-foreground">
-                Zeitpunkt &amp; Dauer
-              </h2>
-              <div className="flex flex-col gap-4">
-                {renderField('symptom_time')}
-                {renderField('duration')}
-              </div>
+          <div className="mb-5">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">
+              Symptom-Details
+            </h2>
+            <div className="flex flex-col gap-4">
+              {allFieldNames.map((name) => renderField(name))}
             </div>
-
-            {/* Symptom-Details */}
-            <div className="mb-5">
-              <h2 className="mb-3 text-sm font-semibold text-foreground">
-                Symptom-Details
-              </h2>
-              <div className="flex flex-col gap-4">
-                {renderField('symptom_name')}
-                {renderField('body_region')}
-                {renderField('side')}
-                {renderField('symptom_type')}
-                {renderField('intensity')}
-              </div>
-            </div>
-          </>
+          </div>
         )}
 
         {/* Änderungshistorie */}

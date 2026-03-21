@@ -102,9 +102,10 @@ export default async function DashboardPage() {
                 >
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-semibold text-foreground">
-                      {event.eventType === 'medication'
-                        ? (event.medication ?? 'Unbekannt')
-                        : (event.symptomName ?? 'Symptom')}
+                      {event.symptoms[0]?.displayName ??
+                        (event.eventType === 'medication'
+                          ? 'Unbekannt'
+                          : 'Symptom')}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {formatEventDate(event.occurredAt)}
