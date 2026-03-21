@@ -5,6 +5,7 @@ on:
 
 jobs:
   security-review:
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -16,4 +17,4 @@ jobs:
 
       - uses: anthropics/claude-code-security-review@main
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
