@@ -1,6 +1,6 @@
 # Story 7.1: Marketing-Landingpage mit Demo-Video
 
-Status: in-progress
+Status: done
 
 ## Story
 
