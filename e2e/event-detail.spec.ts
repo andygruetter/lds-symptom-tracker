@@ -119,11 +119,13 @@ test.describe('Event Detail View (Story 4.4)', () => {
       page.getByRole('heading', { name: 'Extrahierte Daten' }),
     ).toBeVisible()
 
-    // Field labels
-    await expect(page.getByText('Symptomname')).toBeVisible()
+    // Field labels (from field-config.ts: symptom_name→Symptom, body_region→Körperregion, side→Seite, intensity→Stärke)
+    // "Symptom" appears as both type badge and field label — check that at least 2 exist
+    const symptomTexts = page.getByText('Symptom', { exact: true })
+    await expect(symptomTexts.nth(1)).toBeVisible()
     await expect(page.getByText('Körperregion')).toBeVisible()
     await expect(page.getByText('Seite', { exact: true })).toBeVisible()
-    await expect(page.getByText('Intensität')).toBeVisible()
+    await expect(page.getByText('Stärke')).toBeVisible()
 
     // Field values
     await expect(page.getByText('Kopfschmerzen')).toBeVisible()

@@ -69,12 +69,12 @@ test.describe('Medikamenten-Erfassung', () => {
 
     await capturePage.goto()
 
-    // SymptomTag buttons have aria-label like "fieldName ändern"
+    // SymptomTag buttons have aria-label using getFieldLabel() (German labels)
     await expect(
-      page.getByRole('button', { name: 'medication_name ändern' }),
+      page.getByRole('button', { name: 'Medikament ändern' }),
     ).toBeVisible()
     await expect(
-      page.getByRole('button', { name: 'dosage ändern' }),
+      page.getByRole('button', { name: 'Dosierung ändern' }),
     ).toBeVisible()
     await expect(
       page.getByRole('button', { name: /Bestätigen/i }),

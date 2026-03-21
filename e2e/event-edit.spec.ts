@@ -61,18 +61,25 @@ test.describe('Event Edit-Screen', () => {
       raw_input: 'Rückenschmerzen',
       status: 'extracted',
     })
+    // Create all expected fields — some with values, most empty
     await createTestExtractedData(event.id, [
       { field_name: 'symptom_name', value: 'Rückenschmerzen', confidence: 90 },
+      { field_name: 'body_region', value: '', confidence: 0 },
+      { field_name: 'side', value: '', confidence: 0 },
+      { field_name: 'symptom_type', value: '', confidence: 0 },
+      { field_name: 'intensity', value: '', confidence: 0 },
+      { field_name: 'symptom_time', value: '', confidence: 0 },
+      { field_name: 'duration', value: '', confidence: 0 },
     ])
 
     await eventEditPage.goto(event.id)
     await eventEditPage.waitForForm()
 
-    // Alle Felder sichtbar
-    await expect(page.getByText('Symptomname')).toBeVisible()
+    // Alle Felder sichtbar (labels from field-config.ts, intensity overridden in edit form)
+    await expect(page.getByText('Symptom', { exact: true })).toBeVisible()
     await expect(page.getByText('Körperregion')).toBeVisible()
     await expect(page.getByText('Seite')).toBeVisible()
-    await expect(page.getByText('Symptomtyp')).toBeVisible()
+    await expect(page.getByText('Art', { exact: true })).toBeVisible()
     await expect(page.getByText('Intensität (1–10)')).toBeVisible()
     await expect(page.getByText('Zeitpunkt', { exact: true })).toBeVisible()
     await expect(page.getByText('Dauer', { exact: true })).toBeVisible()
@@ -114,8 +121,10 @@ test.describe('Event Edit-Screen', () => {
       raw_input: 'Kopfschmerzen',
       status: 'extracted',
     })
+    // Create symptom_name with value and body_region empty so it can be filled in
     await createTestExtractedData(event.id, [
       { field_name: 'symptom_name', value: 'Kopfschmerzen', confidence: 90 },
+      { field_name: 'body_region', value: '', confidence: 0 },
     ])
 
     await eventEditPage.goto(event.id)
