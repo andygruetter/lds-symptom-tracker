@@ -1,8 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 
 import { EventEditForm } from '@/components/event/event-edit-form'
-import { sortByFieldOrder } from '@/lib/field-config'
 import { createServerClient } from '@/lib/db/client'
+import { sortByFieldOrder } from '@/lib/field-config'
 import type { Database } from '@/types/database'
 
 type Correction = Database['public']['Tables']['corrections']['Row']
