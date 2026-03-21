@@ -169,7 +169,7 @@ export default function MarketingPage() {
           </p>
           <div className="mt-8">
             <Button asChild size="lg" className="text-base">
-              <Link href="/auth/login">Jetzt starten</Link>
+              <Link href="/auth/login">Jetzt kostenlos starten</Link>
             </Button>
           </div>
         </div>
