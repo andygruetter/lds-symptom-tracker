@@ -91,10 +91,10 @@ describe('EventEditForm', () => {
       />,
     )
 
-    expect(screen.getByText('Symptomname')).toBeInTheDocument()
+    expect(screen.getByText('Symptom')).toBeInTheDocument()
     expect(screen.getByText('Körperregion')).toBeInTheDocument()
     expect(screen.getByText('Seite')).toBeInTheDocument()
-    expect(screen.getByText('Symptomtyp')).toBeInTheDocument()
+    expect(screen.getByText('Art')).toBeInTheDocument()
     expect(screen.getByText('Intensität (1–10)')).toBeInTheDocument()
     expect(screen.getByText('Zeitpunkt')).toBeInTheDocument()
     expect(screen.getByText('Dauer')).toBeInTheDocument()

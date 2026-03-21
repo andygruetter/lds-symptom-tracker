@@ -79,18 +79,18 @@ describe('getSharedFeedEvents', () => {
     // Symptom-Event
     expect(result[0].id).toBe('evt-1')
     expect(result[0].eventType).toBe('symptom')
-    expect(result[0].symptomName).toBe('Kopfschmerzen')
-    expect(result[0].bodyRegion).toBe('Kopf')
-    expect(result[0].side).toBe('rechts')
-    expect(result[0].intensity).toBe(7)
+    expect(result[0].symptoms[0].displayName).toBe('Kopfschmerzen')
+    expect(result[0].symptoms[0].fields['body_region']).toBe('Kopf')
+    expect(result[0].symptoms[0].fields['side']).toBe('rechts')
+    expect(result[0].symptoms[0].fields['intensity']).toBe('7')
     expect(result[0].photoCount).toBe(1)
     expect(result[0].hasAudio).toBe(false)
 
     // Medication-Event
     expect(result[1].id).toBe('evt-2')
     expect(result[1].eventType).toBe('medication')
-    expect(result[1].medication).toBe('Ibuprofen')
-    expect(result[1].dosage).toBe('400mg')
+    expect(result[1].symptoms[0].displayName).toBe('Ibuprofen')
+    expect(result[1].symptoms[0].fields['dosage']).toBe('400mg')
     expect(result[1].hasAudio).toBe(true)
   })
 

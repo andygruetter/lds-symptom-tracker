@@ -6,7 +6,6 @@ import {
   getMonthlyTimelinesByRange,
   getSymptomRankingByAccount,
   groupExtractedBySymptomIndex,
-  pivotExtractedData,
 } from '@/lib/db/insights'
 import type { Database } from '@/types/database'
 import type { PdfEventDetail, PdfReportData } from '@/types/report'
@@ -108,23 +107,14 @@ async function loadPdfEvents(
   }
 
   return rows.map((row): PdfEventDetail => {
-    const extracted = pivotExtractedData(row.extracted_data)
     const eventType = row.event_type === 'medication' ? 'medication' : 'symptom'
-    const symptoms =
-      eventType === 'symptom'
-        ? groupExtractedBySymptomIndex(row.extracted_data)
-        : []
+    const symptoms = groupExtractedBySymptomIndex(row.extracted_data, eventType)
 
     return {
       id: row.id,
       eventType,
       occurredAt: row.occurred_at,
       endedAt: row.ended_at,
-      symptomName: extracted.symptomName,
-      medication: extracted.medication,
-      bodyRegion: extracted.bodyRegion,
-      side: extracted.side,
-      intensity: extracted.intensity,
       rawInput: row.raw_input,
       symptoms,
       photoBase64: photosByEventId.get(row.id) ?? [],
@@ -204,7 +194,7 @@ function buildStatisticalSummary(
 
   const symptomCounts = new Map<string, number>()
   for (const e of symptomEvents) {
-    const name = e.symptomName ?? 'Unbekannt'
+    const name = e.symptoms[0]?.fields['symptom_name'] ?? 'Unbekannt'
     symptomCounts.set(name, (symptomCounts.get(name) ?? 0) + 1)
   }
   const topSymptom = Array.from(symptomCounts.entries()).sort(

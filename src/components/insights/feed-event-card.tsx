@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 
 import { Camera, ChevronRight, Mic } from 'lucide-react'
 
+import { FIELD_ORDER } from '@/components/capture/symptom-tag'
 import type { FeedEvent, FeedSymptomGroup } from '@/types/analytics'
 
 function formatTime(isoString: string): string {
@@ -24,6 +25,11 @@ function formatDuration(occurredAt: string, endedAt: string): string {
   return `${minutes}min`
 }
 
+function formatFeedFieldValue(key: string, value: string): string {
+  if (key === 'intensity') return `${value}/10`
+  return value
+}
+
 function SymptomGroupRow({
   group,
   symbol,
@@ -31,21 +37,28 @@ function SymptomGroupRow({
   group: FeedSymptomGroup
   symbol: string
 }) {
-  const locationParts = [group.bodyRegion, group.side].filter(Boolean)
-  const detailParts: string[] = []
-  if (group.intensity !== null) detailParts.push(`${group.intensity}/10`)
-  if (group.symptomType) detailParts.push(group.symptomType)
+  // All fields except the title field, sorted by FIELD_ORDER
+  const detailEntries = Object.entries(group.fields)
+    .filter(([k]) => k !== 'symptom_name' && k !== 'medication')
+    .sort(([a], [b]) => {
+      const ia = FIELD_ORDER.indexOf(a)
+      const ib = FIELD_ORDER.indexOf(b)
+      if (ia !== -1 && ib !== -1) return ia - ib
+      if (ia !== -1) return -1
+      if (ib !== -1) return 1
+      return a.localeCompare(b)
+    })
+
+  const detailParts = detailEntries.map(([k, v]) => formatFeedFieldValue(k, v))
 
   return (
     <div>
       <p className="text-sm font-medium text-foreground">
-        {symbol} {group.symptomName ?? '—'}
+        {symbol} {group.displayName ?? '—'}
       </p>
-      {(locationParts.length > 0 || detailParts.length > 0) && (
+      {detailParts.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          {[locationParts.join(', '), ...detailParts]
-            .filter(Boolean)
-            .join(' · ')}
+          {detailParts.join(' · ')}
         </p>
       )}
     </div>
@@ -113,16 +126,7 @@ export function FeedEventCard({ event }: Props) {
 
         {/* Content */}
         <div className="mt-1">
-          {isMedication ? (
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                {symbol} {event.medication ?? event.rawInput ?? '—'}
-              </p>
-              {event.dosage && (
-                <p className="text-xs text-muted-foreground">{event.dosage}</p>
-              )}
-            </div>
-          ) : event.symptoms.length > 1 ? (
+          {event.symptoms.length > 1 ? (
             <div className="space-y-1.5">
               {event.symptoms.map((s, i) => (
                 <SymptomGroupRow key={i} group={s} symbol={symbol} />
@@ -134,27 +138,10 @@ export function FeedEventCard({ event }: Props) {
               )}
             </div>
           ) : (
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                {symbol} {event.symptomName ?? event.rawInput ?? '—'}
-              </p>
-              {(event.bodyRegion || event.side) && (
-                <p className="text-xs text-muted-foreground">
-                  {[event.bodyRegion, event.side].filter(Boolean).join(', ')}
-                </p>
-              )}
-              <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                {event.intensity !== null && (
-                  <span>Intensität: {event.intensity}/10</span>
-                )}
-                {event.symptomType && <span>{event.symptomType}</span>}
-                {event.endedAt && (
-                  <span>
-                    Dauer: {formatDuration(event.occurredAt, event.endedAt)}
-                  </span>
-                )}
-              </div>
-            </div>
+            <SymptomGroupRow
+              group={event.symptoms[0] ?? { displayName: null, fields: {} }}
+              symbol={symbol}
+            />
           )}
         </div>
       </div>

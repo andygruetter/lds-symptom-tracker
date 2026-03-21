@@ -13,7 +13,9 @@ vi.mock('@/lib/db/media', () => ({
   getSignedPhotoUrl: vi.fn().mockResolvedValue('https://signed.url/photo.jpg'),
 }))
 
-function createMockSupabase(result = { data: [], error: null }) {
+function createMockSupabase(
+  result: { data: unknown; error: unknown } = { data: [], error: null },
+) {
   const builder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -28,7 +30,9 @@ function createMockSupabase(result = { data: [], error: null }) {
   }
 }
 
-function createMockSupabaseTimeline(result = { data: [], error: null }) {
+function createMockSupabaseTimeline(
+  result: { data: unknown; error: unknown } = { data: [], error: null },
+) {
   const builder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -114,15 +118,18 @@ describe('getChronologicalFeed', () => {
       id: 'event-1',
       eventType: 'symptom',
       occurredAt: '2026-03-14T09:30:00Z',
-      symptomName: 'Rückenschmerzen',
-      bodyRegion: 'Rücken',
-      side: 'links',
-      symptomType: 'stechend',
-      intensity: 7,
-      medication: null,
-      dosage: null,
       photoCount: 2,
       hasAudio: false,
+    })
+    expect(result.events[0].symptoms[0]).toMatchObject({
+      displayName: 'Rückenschmerzen',
+      fields: {
+        symptom_name: 'Rückenschmerzen',
+        body_region: 'Rücken',
+        side: 'links',
+        symptom_type: 'stechend',
+        intensity: '7',
+      },
     })
   })
 
@@ -149,11 +156,12 @@ describe('getChronologicalFeed', () => {
     expect(result.events[0]).toMatchObject({
       id: 'event-2',
       eventType: 'medication',
-      medication: 'Dafalgan',
-      dosage: '1g',
-      symptomName: null,
       photoCount: 0,
       hasAudio: true,
+    })
+    expect(result.events[0].symptoms[0]).toMatchObject({
+      displayName: 'Dafalgan',
+      fields: { medication: 'Dafalgan', dosage: '1g' },
     })
   })
 
@@ -177,9 +185,9 @@ describe('getChronologicalFeed', () => {
     expect(result.events[0]).toMatchObject({
       id: 'event-3',
       eventType: 'symptom',
-      symptomName: 'Kopfschmerzen',
       hasAudio: true,
     })
+    expect(result.events[0].symptoms[0].displayName).toBe('Kopfschmerzen')
   })
 
   it('berechnet nextCursor korrekt (occurred_at des letzten Events)', async () => {
@@ -258,7 +266,9 @@ describe('getChronologicalFeed', () => {
   })
 })
 
-function createMockSupabaseDayEvents(result = { data: [], error: null }) {
+function createMockSupabaseDayEvents(
+  result: { data: unknown; error: unknown } = { data: [], error: null },
+) {
   const builder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -343,11 +353,11 @@ describe('getDayEvents', () => {
     expect(result[0]).toMatchObject({
       id: 'ev-1',
       eventType: 'symptom',
-      symptomName: 'Rückenschmerzen',
-      intensity: 6,
       photoCount: 1,
       hasAudio: true,
     })
+    expect(result[0].symptoms[0].displayName).toBe('Rückenschmerzen')
+    expect(result[0].symptoms[0].fields['intensity']).toBe('6')
   })
 
   it('gibt leeres Array zurück bei DB-Fehler', async () => {
@@ -363,7 +373,9 @@ describe('getDayEvents', () => {
   })
 })
 
-function createMockSupabaseRanking(result = { data: [], error: null }) {
+function createMockSupabaseRanking(
+  result: { data: unknown; error: unknown } = { data: [], error: null },
+) {
   const builder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -981,8 +993,9 @@ describe('getEventDetail', () => {
 
     expect(result).not.toBeNull()
     expect(result!.eventType).toBe('medication')
-    expect(result!.medication).toBe('Dafalgan')
-    expect(result!.symptomName).toBeNull()
+    expect(
+      result!.extractedFields.find((f) => f.fieldName === 'medication')?.value,
+    ).toBe('Dafalgan')
   })
 
   it('lädt Event ohne Audio und Fotos korrekt (audioUrl null, photos leer)', async () => {

@@ -10,13 +10,8 @@ export type PdfEventDetail = {
   eventType: 'symptom' | 'medication'
   occurredAt: string
   endedAt: string | null
-  symptomName: string | null
-  medication: string | null
-  bodyRegion: string | null
-  side: string | null
-  intensity: number | null
   rawInput: string | null
-  /** Multi-Symptom-Gruppen (leer bei Medikament oder Einzel-Symptom) */
+  /** Symptom/Medikament-Gruppen mit allen extrahierten Feldern */
   symptoms: FeedSymptomGroup[]
   /** Base64-kodierte Foto-Thumbnails (max 200px Breite) */
   photoBase64: string[]

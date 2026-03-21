@@ -10,22 +10,18 @@ const symptomEvent: FeedEvent = {
   createdAt: '2026-03-14T09:30:00Z',
   endedAt: '2026-03-14T11:00:00Z',
   rawInput: 'Rückenschmerzen',
-  symptomName: 'Rückenschmerzen',
-  bodyRegion: 'Rücken',
-  side: 'links',
-  symptomType: 'stechend',
-  intensity: 7,
-  medication: null,
-  dosage: null,
   photoCount: 2,
   hasAudio: false,
   symptoms: [
     {
-      symptomName: 'Rückenschmerzen',
-      bodyRegion: 'Rücken',
-      side: 'links',
-      symptomType: 'stechend',
-      intensity: 7,
+      displayName: 'Rückenschmerzen',
+      fields: {
+        symptom_name: 'Rückenschmerzen',
+        body_region: 'Rücken',
+        side: 'links',
+        symptom_type: 'stechend',
+        intensity: '7',
+      },
     },
   ],
 }
@@ -37,16 +33,17 @@ const medicationEvent: FeedEvent = {
   createdAt: '2026-03-13T20:15:00Z',
   endedAt: null,
   rawInput: 'Dafalgan 1g',
-  symptomName: null,
-  bodyRegion: null,
-  side: null,
-  symptomType: null,
-  intensity: null,
-  medication: 'Dafalgan',
-  dosage: '1g',
   photoCount: 0,
   hasAudio: true,
-  symptoms: [],
+  symptoms: [
+    {
+      displayName: 'Dafalgan',
+      fields: {
+        medication: 'Dafalgan',
+        dosage: '1g',
+      },
+    },
+  ],
 }
 
 describe('DoctorEventCard', () => {
@@ -56,7 +53,7 @@ describe('DoctorEventCard', () => {
     render(<DoctorEventCard event={symptomEvent} />)
 
     expect(screen.getByText(/Rückenschmerzen/)).toBeInTheDocument()
-    expect(screen.getByText('Rücken, links')).toBeInTheDocument()
+    expect(screen.getByText(/Rücken.*links/)).toBeInTheDocument()
   })
 
   it('zeigt Symptom-Intensität und -Typ', async () => {
@@ -64,14 +61,22 @@ describe('DoctorEventCard', () => {
       await import('@/components/sharing/doctor-event-card')
     render(<DoctorEventCard event={symptomEvent} />)
 
-    expect(screen.getByText(/Intensität: 7\/10/)).toBeInTheDocument()
-    expect(screen.getByText('stechend')).toBeInTheDocument()
+    expect(screen.getByText(/7\/10/)).toBeInTheDocument()
+    expect(screen.getByText(/stechend/)).toBeInTheDocument()
   })
 
-  it('zeigt Dauer wenn endedAt vorhanden', async () => {
+  it('zeigt Dauer wenn endedAt vorhanden (Multi-Symptom)', async () => {
     const { DoctorEventCard } =
       await import('@/components/sharing/doctor-event-card')
-    render(<DoctorEventCard event={symptomEvent} />)
+    // Duration is only shown in multi-symptom cards
+    const multiEvent: FeedEvent = {
+      ...symptomEvent,
+      symptoms: [
+        ...symptomEvent.symptoms,
+        { displayName: 'Schwindel', fields: { symptom_name: 'Schwindel' } },
+      ],
+    }
+    render(<DoctorEventCard event={multiEvent} />)
 
     expect(screen.getByText(/Dauer: 1h 30min/)).toBeInTheDocument()
   })
