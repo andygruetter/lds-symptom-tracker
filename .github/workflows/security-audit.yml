@@ -1,0 +1,37 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: '0 8 * * 1' # Jeden Montag um 08:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  npm-audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=high > audit-report.txt 2>&1 || true
+          if grep -q "found 0 vulnerabilities" audit-report.txt; then
+            echo "No vulnerabilities found."
+          else
+            echo "::warning::Vulnerabilities found in dependencies"
+            cat audit-report.txt
+            gh issue create \
+              --title "Security: npm audit hat Schwachstellen gefunden ($(date +%Y-%m-%d))" \
+              --body "$(cat audit-report.txt)" \
+              --label "security"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
