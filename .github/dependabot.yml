@@ -13,6 +13,17 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      - dependency-name: 'eslint'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@vitejs/plugin-react'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'jsdom'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'shadcn'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
