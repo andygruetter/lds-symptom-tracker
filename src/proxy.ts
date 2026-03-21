@@ -54,11 +54,12 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Öffentliche Routen durchlassen: /auth/*, /api/*, /share/*, /~offline
+  // Öffentliche Routen durchlassen: /auth/*, /api/*, /share/*, /marketing, /~offline
   if (
     path.startsWith('/auth') ||
     path.startsWith('/api') ||
     path.startsWith('/share') ||
+    path.startsWith('/marketing') ||
     path.startsWith('/~offline')
   ) {
     return supabaseResponse

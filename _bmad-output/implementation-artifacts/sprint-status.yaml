@@ -98,7 +98,7 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Marketing-Seite
-  epic-7: backlog
-  7-1-marketing-landingpage: backlog
-  7-2-registrierungs-link: backlog
+  epic-7: in-progress
+  7-1-marketing-landingpage: in-progress
+  7-2-registrierungs-link: in-progress
   epic-7-retrospective: optional
