@@ -5,10 +5,16 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://symptomchat.ch'
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: BASE_URL,
+      url: `${BASE_URL}/marketing`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 1,
+    },
+    {
+      url: BASE_URL,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
     },
     {
       url: `${BASE_URL}/auth/login`,

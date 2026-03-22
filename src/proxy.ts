@@ -65,10 +65,10 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Geschützte Routen: Redirect zu Login wenn kein User
+  // Geschützte Routen: Redirect zu Marketing/Login wenn kein User
   if (!user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    url.pathname = path === '/' ? '/marketing' : '/auth/login'
     return NextResponse.redirect(url)
   }
 
