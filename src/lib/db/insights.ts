@@ -574,13 +574,14 @@ export async function getEventDetail(
   supabase: SupabaseClient<Database>,
   eventId: string,
   accountId: string,
+  photoLimit = 10,
+  photoOffset = 0,
 ): Promise<EventDetail | null> {
   const { data: event, error: eventError } = await supabase
     .from('symptom_events')
     .select('*')
     .eq('id', eventId)
     .eq('account_id', accountId)
-    .eq('status', 'confirmed')
     .is('deleted_at', null)
     .single()
 
@@ -588,16 +589,25 @@ export async function getEventDetail(
     return null
   }
 
-  const [{ data: extractedRows }, { data: photoRows }] = await Promise.all([
+  const [
+    { data: extractedRows },
+    { data: photoRows },
+    { count: totalPhotoCount },
+  ] = await Promise.all([
     supabase
       .from('extracted_data')
       .select('field_name, value, confidence, confirmed, symptom_index')
       .eq('symptom_event_id', eventId),
     supabase
       .from('event_photos')
-      .select('id, storage_path')
+      .select('id, storage_path, created_at')
       .eq('symptom_event_id', eventId)
-      .order('created_at', { ascending: true }),
+      .order('created_at', { ascending: false })
+      .range(photoOffset, photoOffset + photoLimit - 1),
+    supabase
+      .from('event_photos')
+      .select('id', { count: 'exact', head: true })
+      .eq('symptom_event_id', eventId),
   ])
 
   // Generate signed URL for audio (serverseitig)
@@ -619,7 +629,11 @@ export async function getEventDetail(
     for (let i = 0; i < photoRows.length; i++) {
       const result = results[i]
       if (result.status === 'fulfilled') {
-        photos.push({ id: photoRows[i].id, signedUrl: result.value })
+        photos.push({
+          id: photoRows[i].id,
+          signedUrl: result.value,
+          createdAt: photoRows[i].created_at,
+        })
       }
     }
   }
@@ -644,6 +658,8 @@ export async function getEventDetail(
     audioUrl,
     extractedFields,
     photos,
+    totalPhotoCount: totalPhotoCount ?? 0,
+    eventStatus: event.status,
   }
 }
 

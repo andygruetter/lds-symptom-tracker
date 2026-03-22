@@ -117,19 +117,10 @@ describe('InputBar', () => {
     expect(onSendText).not.toHaveBeenCalled()
   })
 
-  it('zeigt aktiven Kamera-Button', () => {
+  it('zeigt keinen Kamera-Button (aus Input-Bar entfernt)', () => {
     render(<InputBar onSendText={vi.fn()} />)
 
-    const cameraBtn = screen.getByLabelText('Foto aufnehmen')
-    expect(cameraBtn).not.toBeDisabled()
-  })
-
-  it('hat min 44x44px Touch-Targets (min-h-11 min-w-11)', () => {
-    render(<InputBar onSendText={vi.fn()} />)
-
-    const cameraBtn = screen.getByLabelText('Foto aufnehmen')
-    expect(cameraBtn.className).toContain('min-h-11')
-    expect(cameraBtn.className).toContain('min-w-11')
+    expect(screen.queryByLabelText('Foto aufnehmen')).not.toBeInTheDocument()
   })
 
   it('zeigt Mikrofon-Button als enabled bei prompt Permission', () => {

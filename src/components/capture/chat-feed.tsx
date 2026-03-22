@@ -29,6 +29,7 @@ interface ChatFeedProps {
     answer: string,
   ) => void
   onNavigateToEvent?: (eventId: string) => void
+  onAddPhotoToEvent?: (eventId: string) => void
 }
 
 function formatTimestamp(dateString: string): string {
@@ -51,6 +52,7 @@ export function ChatFeed({
   onEndSymptom,
   onAnswerClarification,
   onNavigateToEvent,
+  onAddPhotoToEvent,
 }: ChatFeedProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [confirmingEventId, setConfirmingEventId] = useState<string | null>(
@@ -120,6 +122,7 @@ export function ChatFeed({
                 eventId={event.id}
                 eventStatus={event.status}
                 onNavigate={onNavigateToEvent}
+                onAddPhoto={onAddPhotoToEvent}
               />
 
               {/* Processing indicator for pending/transcribed events

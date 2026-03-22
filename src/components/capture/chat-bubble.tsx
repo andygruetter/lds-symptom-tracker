@@ -29,6 +29,7 @@ interface ChatBubbleProps {
   eventId?: string
   eventStatus?: string
   onNavigate?: (eventId: string) => void
+  onAddPhoto?: (eventId: string) => void
 }
 
 function ProcessingDots() {
@@ -374,6 +375,7 @@ export function ChatBubble({
   eventId,
   eventStatus,
   onNavigate,
+  onAddPhoto,
 }: ChatBubbleProps) {
   const isNavigable =
     onNavigate && eventId && eventStatus && eventStatus !== 'pending'
@@ -523,18 +525,40 @@ export function ChatBubble({
               </div>
             )}
             {timestamp && (
-              <p
-                className={cn(
-                  'mt-1 text-xs',
-                  variant === 'sent'
-                    ? isMedication
-                      ? 'text-white/70'
-                      : 'text-primary-foreground/70'
-                    : 'text-muted-foreground',
+              <div className="mt-1 flex items-center gap-1.5">
+                <p
+                  className={cn(
+                    'text-xs',
+                    variant === 'sent'
+                      ? isMedication
+                        ? 'text-white/70'
+                        : 'text-primary-foreground/70'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  {timestamp}
+                </p>
+                {onAddPhoto && eventId && eventStatus === 'confirmed' && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onAddPhoto(eventId)
+                    }}
+                    aria-label="Foto hinzufügen"
+                    className={cn(
+                      'flex items-center justify-center rounded-full p-0.5',
+                      variant === 'sent'
+                        ? isMedication
+                          ? 'text-white/70'
+                          : 'text-primary-foreground/70'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    <Camera className="size-3.5" aria-hidden="true" />
+                  </button>
                 )}
-              >
-                {timestamp}
-              </p>
+              </div>
             )}
             {isNavigable && (
               <div className="absolute right-2 top-1/2 -translate-y-1/2">

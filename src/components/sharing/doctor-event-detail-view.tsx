@@ -191,9 +191,12 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
           {detail.photos.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-semibold text-muted-foreground">
-                Fotos ({detail.photos.length})
+                Fotos ({detail.totalPhotoCount})
               </p>
-              <PhotoGallery photos={detail.photos} />
+              <PhotoGallery
+                photos={detail.photos}
+                totalCount={detail.totalPhotoCount}
+              />
             </div>
           )}
 

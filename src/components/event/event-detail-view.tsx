@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 
 import { ArrowLeft, Trash2 } from 'lucide-react'
 
+import { PhotoPicker } from '@/components/capture/photo-picker'
 import { AudioPlayer } from '@/components/event/audio-player'
 import { DeleteEventDialog } from '@/components/event/delete-event-dialog'
 import { PhotoGallery } from '@/components/event/photo-gallery'
@@ -17,7 +18,12 @@ import {
 } from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/lib/utils/duration'
-import type { EventDetail, ExtractedField } from '@/types/analytics'
+import type { EventDetail, EventPhoto, ExtractedField } from '@/types/analytics'
+import {
+  addPhotosToEvent,
+  deleteEventPhoto,
+  loadMoreEventPhotos,
+} from '@/lib/actions/symptom-actions'
 
 /** Fields that belong to the whole event, not per-symptom group */
 const EVENT_LEVEL_FIELDS = new Set(['symptom_time', 'duration'])
@@ -82,13 +88,79 @@ function formatFieldValue(field: ExtractedField): string {
   return field.value
 }
 
-interface EventDetailViewProps {
-  detail: EventDetail
+function EventPhotoUploader({
+  eventId,
+  autoOpen = false,
+  onUploaded,
+}: {
+  eventId: string
+  autoOpen?: boolean
+  onUploaded: () => void
+}) {
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+
+  const handleUpload = async () => {
+    if (pendingPhotos.length === 0 || isUploading) return
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append('eventId', eventId)
+    for (const photo of pendingPhotos) {
+      formData.append('photos', photo)
+    }
+    try {
+      await addPhotosToEvent(formData)
+      setPendingPhotos([])
+      onUploaded()
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <PhotoPicker
+        pendingPhotos={pendingPhotos}
+        onPhotosSelected={(files) =>
+          setPendingPhotos((prev) => [...prev, ...files])
+        }
+        onRemovePhoto={(index) =>
+          setPendingPhotos((prev) => prev.filter((_, i) => i !== index))
+        }
+        autoOpen={autoOpen}
+        disabled={isUploading}
+      />
+      {pendingPhotos.length > 0 && (
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={isUploading}
+          className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {isUploading
+            ? 'Wird hochgeladen...'
+            : `${pendingPhotos.length} Foto${pendingPhotos.length !== 1 ? 's' : ''} speichern`}
+        </button>
+      )}
+    </div>
+  )
 }
 
-export function EventDetailView({ detail }: EventDetailViewProps) {
+interface EventDetailViewProps {
+  detail: EventDetail
+  addPhoto?: boolean
+}
+
+export function EventDetailView({
+  detail,
+  addPhoto = false,
+}: EventDetailViewProps) {
   const router = useRouter()
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [photos, setPhotos] = useState<EventPhoto[]>(detail.photos)
+  const [photoOffset, setPhotoOffset] = useState(detail.photos.length)
+  const [totalPhotoCount, setTotalPhotoCount] = useState(detail.totalPhotoCount)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -196,14 +268,50 @@ export function EventDetailView({ detail }: EventDetailViewProps) {
         )}
 
         {/* Fotos */}
-        {detail.photos.length > 0 && (
-          <div className="mb-5">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              📷 Fotos ({detail.photos.length})
-            </p>
-            <PhotoGallery photos={detail.photos} />
-          </div>
-        )}
+        <div className="mb-5">
+          {photos.length > 0 && (
+            <>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                📷 Fotos ({totalPhotoCount})
+              </p>
+              <PhotoGallery
+                photos={photos}
+                totalCount={totalPhotoCount}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={async () => {
+                  setIsLoadingMore(true)
+                  try {
+                    const result = await loadMoreEventPhotos(
+                      detail.id,
+                      photoOffset,
+                    )
+                    if (result.data && result.data.length > 0) {
+                      setPhotos((prev) => [...prev, ...result.data!])
+                      setPhotoOffset((prev) => prev + result.data!.length)
+                    }
+                  } finally {
+                    setIsLoadingMore(false)
+                  }
+                }}
+                onDeletePhoto={async (photoId) => {
+                  const result = await deleteEventPhoto(photoId)
+                  if (!result.error) {
+                    setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+                    setTotalPhotoCount((prev) => prev - 1)
+                  }
+                }}
+              />
+            </>
+          )}
+          {(detail.eventStatus === 'confirmed' ||
+            detail.eventStatus === 'extraction_failed') && (
+            <EventPhotoUploader
+              eventId={detail.id}
+              autoOpen={addPhoto}
+              onUploaded={() => router.refresh()}
+            />
+          )}
+        </div>
 
         {/* Extrahierte Daten */}
         <div className="mb-5">

@@ -6,13 +6,14 @@ import { Camera, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-const MAX_PHOTOS = 5
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB Supabase Bucket Limit
 
 interface PhotoPickerProps {
   pendingPhotos: File[]
   onPhotosSelected: (files: File[]) => void
   onRemovePhoto: (index: number) => void
+  maxPhotos?: number
+  autoOpen?: boolean
   disabled?: boolean
   compressImage?: (
     file: File,
@@ -57,16 +58,28 @@ export function PhotoPicker({
   pendingPhotos,
   onPhotosSelected,
   onRemovePhoto,
+  maxPhotos,
+  autoOpen = false,
   disabled = false,
   compressImage = defaultCompressImage,
 }: PhotoPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    if (!autoOpen) return
+    // Delay to ensure DOM is ready; abort if unmounted (React Strict Mode)
+    const timer = setTimeout(() => fileInputRef.current?.click(), 50)
+    return () => clearTimeout(timer)
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    const remaining = MAX_PHOTOS - pendingPhotos.length
+    const remaining =
+      maxPhotos !== undefined ? maxPhotos - pendingPhotos.length : files.length
     const selected = Array.from(files).slice(0, remaining)
 
     const compressed: File[] = []
@@ -132,11 +145,16 @@ export function PhotoPicker({
       <button
         type="button"
         onClick={handleCameraClick}
-        disabled={disabled || pendingPhotos.length >= MAX_PHOTOS}
+        disabled={
+          disabled ||
+          (maxPhotos !== undefined && pendingPhotos.length >= maxPhotos)
+        }
         aria-label="Foto aufnehmen"
         className={cn(
           'flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground',
-          (disabled || pendingPhotos.length >= MAX_PHOTOS) && 'opacity-40',
+          (disabled ||
+            (maxPhotos !== undefined && pendingPhotos.length >= maxPhotos)) &&
+            'opacity-40',
         )}
       >
         <Camera className="size-5" aria-hidden="true" />

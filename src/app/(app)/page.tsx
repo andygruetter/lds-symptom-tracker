@@ -9,7 +9,6 @@ import { InputBar } from '@/components/capture/input-bar'
 import { PushOptIn } from '@/components/capture/push-opt-in'
 import { useSymptomEvents } from '@/hooks/use-symptom-events'
 import {
-  addPhotosToEvent,
   answerClarification,
   confirmSymptomEvent,
   correctExtractedField,
@@ -80,32 +79,6 @@ export default function CapturePage() {
     }
   }
 
-  const handleSendPhotos = async (text: string | null, photos: File[]) => {
-    // Create event first (text or default "Foto-Dokumentation")
-    const rawInput = text || 'Foto-Dokumentation'
-    const optimisticId = addOptimisticEvent(rawInput)
-    const eventResult = await createSymptomEvent({ raw_input: rawInput })
-
-    if (eventResult.error || !eventResult.data) {
-      removeOptimisticEvent(optimisticId)
-      return
-    }
-
-    // Upload photos to event
-    const formData = new FormData()
-    formData.append('eventId', eventResult.data.id)
-    for (const photo of photos) {
-      formData.append('photos', photo)
-    }
-    const photoResult = await addPhotosToEvent(formData)
-    if (photoResult.error) {
-      console.error('[Photo] Upload failed:', photoResult.error.error)
-    } else {
-      // Fotos nach Upload laden (kein Realtime-Subscription für event_photos)
-      await refreshPhotos([eventResult.data.id])
-    }
-  }
-
   const handleConfirmEvent = async (eventId: string) => {
     await confirmSymptomEvent({ eventId })
   }
@@ -142,6 +115,10 @@ export default function CapturePage() {
     router.push(`/event/${eventId}`)
   }
 
+  const handleAddPhotoToEvent = (eventId: string) => {
+    router.push(`/event/${eventId}?addPhoto=true`)
+  }
+
   const handleRetryExtraction = async (eventId: string) => {
     try {
       const response = await fetch('/api/ai/extract', {
@@ -172,12 +149,9 @@ export default function CapturePage() {
         onEndSymptom={handleEndSymptom}
         onAnswerClarification={handleAnswerClarification}
         onNavigateToEvent={handleNavigateToEvent}
+        onAddPhotoToEvent={handleAddPhotoToEvent}
       />
-      <InputBar
-        onSendText={handleSendText}
-        onSendAudio={handleSendAudio}
-        onSendPhotos={handleSendPhotos}
-      />
+      <InputBar onSendText={handleSendText} onSendAudio={handleSendAudio} />
     </div>
   )
 }

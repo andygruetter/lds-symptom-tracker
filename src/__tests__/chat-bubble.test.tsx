@@ -237,6 +237,75 @@ describe('ChatBubble', () => {
     expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
+  it('zeigt Kamera-Icon bei confirmed Event mit onAddPhoto', () => {
+    const onAddPhoto = vi.fn()
+    render(
+      <ChatBubble
+        variant="sent"
+        content="Kopfschmerzen"
+        timestamp="10:30"
+        eventId="event-1"
+        eventStatus="confirmed"
+        onAddPhoto={onAddPhoto}
+      />,
+    )
+
+    const cameraBtn = screen.getByLabelText('Foto hinzufügen')
+    expect(cameraBtn).toBeInTheDocument()
+    fireEvent.click(cameraBtn)
+    expect(onAddPhoto).toHaveBeenCalledWith('event-1')
+  })
+
+  it('zeigt kein Kamera-Icon bei pending Event', () => {
+    render(
+      <ChatBubble
+        variant="sent"
+        content="Kopfschmerzen"
+        timestamp="10:30"
+        eventId="event-1"
+        eventStatus="pending"
+        onAddPhoto={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByLabelText('Foto hinzufügen')).not.toBeInTheDocument()
+  })
+
+  it('zeigt kein Kamera-Icon bei extracted Event', () => {
+    render(
+      <ChatBubble
+        variant="sent"
+        content="Kopfschmerzen"
+        timestamp="10:30"
+        eventId="event-1"
+        eventStatus="extracted"
+        onAddPhoto={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByLabelText('Foto hinzufügen')).not.toBeInTheDocument()
+  })
+
+  it('Kamera-Icon stopPropagation verhindert Bubble-Navigation', () => {
+    const onNavigate = vi.fn()
+    const onAddPhoto = vi.fn()
+    render(
+      <ChatBubble
+        variant="received"
+        content="Gespeichert ✓"
+        timestamp="10:30"
+        eventId="event-1"
+        eventStatus="confirmed"
+        onNavigate={onNavigate}
+        onAddPhoto={onAddPhoto}
+      />,
+    )
+
+    fireEvent.click(screen.getByLabelText('Foto hinzufügen'))
+    expect(onAddPhoto).toHaveBeenCalledTimes(1)
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+
   it('zeigt Foto-Indikator bei isPhoto ohne Content', () => {
     render(<ChatBubble variant="sent" isPhoto timestamp="10:30" />)
 
