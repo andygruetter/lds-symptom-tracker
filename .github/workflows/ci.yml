@@ -17,8 +17,8 @@ jobs:
     outputs:
       marketing-only: ${{ steps.filter.outputs.marketing-only }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -55,7 +55,7 @@ jobs:
     name: Lint & Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -78,10 +78,10 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -103,7 +103,7 @@ jobs:
       E2E_MOCK_EXTRACTION: 'true'
       E2E_MOCK_SUMMARY: 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -116,7 +116,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npx playwright test --project="Desktop Chrome"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -133,7 +133,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: supabase/setup-cli@v1
         with:
           version: latest
