@@ -8,8 +8,8 @@ import { updateVocabularyFromCorrection } from '@/lib/ai/vocabulary-builder'
 import { createServerClient, createServiceClient } from '@/lib/db/client'
 import { getSignedPhotoUrl, uploadAudio, uploadPhoto } from '@/lib/db/media'
 import type { ExtractedData } from '@/types/ai'
-import type { ActionResult } from '@/types/common'
 import type { EventPhoto } from '@/types/analytics'
+import type { ActionResult } from '@/types/common'
 import type { SymptomEvent } from '@/types/symptom'
 import {
   addPhotosToEventSchema,

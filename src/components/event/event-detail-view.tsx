@@ -17,12 +17,12 @@ import {
 } from '@/components/event/event-detail-sections'
 import { formatDateTime } from '@/components/event/event-detail-utils'
 import { PhotoGallery } from '@/components/event/photo-gallery'
-import type { EventDetail, EventPhoto } from '@/types/analytics'
 import {
   addPhotosToEvent,
   deleteEventPhoto,
   loadMoreEventPhotos,
 } from '@/lib/actions/symptom-actions'
+import type { EventDetail, EventPhoto } from '@/types/analytics'
 
 function EventPhotoUploader({
   eventId,
