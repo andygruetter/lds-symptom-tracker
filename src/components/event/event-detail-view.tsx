@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -99,19 +99,29 @@ function EventPhotoUploader({
 }) {
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const handleUpload = async () => {
     if (pendingPhotos.length === 0 || isUploading) return
     setIsUploading(true)
+    setUploadError(null)
     const formData = new FormData()
     formData.append('eventId', eventId)
     for (const photo of pendingPhotos) {
       formData.append('photos', photo)
     }
     try {
-      await addPhotosToEvent(formData)
+      const result = await addPhotosToEvent(formData)
+      if (result.error) {
+        setUploadError(result.error.error)
+        return
+      }
       setPendingPhotos([])
       onUploaded()
+    } catch (err) {
+      setUploadError(
+        err instanceof Error ? err.message : 'Upload fehlgeschlagen',
+      )
     } finally {
       setIsUploading(false)
     }
@@ -121,15 +131,19 @@ function EventPhotoUploader({
     <div className="mt-3">
       <PhotoPicker
         pendingPhotos={pendingPhotos}
-        onPhotosSelected={(files) =>
+        onPhotosSelected={(files) => {
+          setUploadError(null)
           setPendingPhotos((prev) => [...prev, ...files])
-        }
+        }}
         onRemovePhoto={(index) =>
           setPendingPhotos((prev) => prev.filter((_, i) => i !== index))
         }
         autoOpen={autoOpen}
         disabled={isUploading}
       />
+      {uploadError && (
+        <p className="mt-2 text-sm text-destructive">{uploadError}</p>
+      )}
       {pendingPhotos.length > 0 && (
         <button
           type="button"
@@ -161,6 +175,13 @@ export function EventDetailView({
   const [photoOffset, setPhotoOffset] = useState(detail.photos.length)
   const [totalPhotoCount, setTotalPhotoCount] = useState(detail.totalPhotoCount)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+
+  // Sync state when server re-renders after router.refresh()
+  useEffect(() => {
+    setPhotos(detail.photos)
+    setPhotoOffset(detail.photos.length)
+    setTotalPhotoCount(detail.totalPhotoCount)
+  }, [detail.photos, detail.totalPhotoCount])
 
   const handleBack = () => {
     if (window.history.length > 1) {
