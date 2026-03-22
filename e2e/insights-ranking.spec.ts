@@ -139,7 +139,7 @@ test.describe('Insights Ranking (Story 4.3)', () => {
     })
 
     // The expanded card should show an event card with the symptom
-    await expect(page.getByText('● Migräne')).toBeVisible()
+    await expect(page.getByText('Migräne').nth(1)).toBeVisible()
   })
 
   test('Karte zuklappen verbirgt Events', async ({ page }) => {

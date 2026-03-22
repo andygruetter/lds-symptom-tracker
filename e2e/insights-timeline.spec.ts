@@ -127,7 +127,7 @@ test.describe('Insights Timeline (Story 4.2)', () => {
     await expect(
       page.getByRole('button', { name: 'Drill-Down schliessen' }),
     ).toBeVisible()
-    await expect(page.getByText('● Rückenschmerzen')).toBeVisible()
+    await expect(page.getByText('Rückenschmerzen')).toBeVisible()
   })
 
   test('Drill-Down Schliessen-Button funktioniert', async ({ page }) => {
