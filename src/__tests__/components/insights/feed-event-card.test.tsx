@@ -120,4 +120,89 @@ describe('FeedEventCard', () => {
     // Wir testen nur das Format HH:MM
     expect(screen.getByText(/\d{1,2}:\d{2}/)).toBeInTheDocument()
   })
+
+  it('übersetzt Status-Wert resolved zu Abgeklungen', async () => {
+    const { FeedEventCard } =
+      await import('@/components/insights/feed-event-card')
+    const event: FeedEvent = {
+      ...symptomEvent,
+      symptoms: [
+        {
+          displayName: 'Kopfschmerzen',
+          fields: {
+            symptom_name: 'Kopfschmerzen',
+            body_region: 'Kopf',
+            status: 'resolved',
+          },
+        },
+      ],
+    }
+    render(<FeedEventCard event={event} />)
+
+    expect(screen.getByText(/Abgeklungen/)).toBeInTheDocument()
+    expect(screen.queryByText(/resolved/)).not.toBeInTheDocument()
+  })
+
+  it('formatiert ISO-Timestamps in lesbares Datum', async () => {
+    const { FeedEventCard } =
+      await import('@/components/insights/feed-event-card')
+    const event: FeedEvent = {
+      ...symptomEvent,
+      symptoms: [
+        {
+          displayName: 'Migräne',
+          fields: {
+            symptom_name: 'Migräne',
+            duration: '2026-03-20T08:00:00+00:00',
+          },
+        },
+      ],
+    }
+    render(<FeedEventCard event={event} />)
+
+    // Soll kein roher ISO-String angezeigt werden
+    expect(screen.queryByText(/2026-03-20T/)).not.toBeInTheDocument()
+    // Stattdessen ein formatiertes Datum (z.B. "20. Mär., 08:00")
+    expect(screen.getByText(/\d{1,2}\.\s?\w+/)).toBeInTheDocument()
+  })
+
+  it('blendet symptom_time Feld aus', async () => {
+    const { FeedEventCard } =
+      await import('@/components/insights/feed-event-card')
+    const event: FeedEvent = {
+      ...symptomEvent,
+      symptoms: [
+        {
+          displayName: 'Kopfschmerzen',
+          fields: {
+            symptom_name: 'Kopfschmerzen',
+            symptom_time: '2026-03-22T07:00:00+00:00',
+            body_region: 'Kopf',
+          },
+        },
+      ],
+    }
+    render(<FeedEventCard event={event} />)
+
+    // symptom_time soll nicht als Wert erscheinen (redundant zur Header-Uhrzeit)
+    expect(screen.queryByText(/2026-03-22T/)).not.toBeInTheDocument()
+  })
+
+  it('zeigt Dauer auch bei Einzelsymptom-Events', async () => {
+    const { FeedEventCard } =
+      await import('@/components/insights/feed-event-card')
+    const event: FeedEvent = {
+      ...symptomEvent,
+      endedAt: '2026-03-14T12:00:00Z',
+      symptoms: [
+        {
+          displayName: 'Kopfschmerzen',
+          fields: { symptom_name: 'Kopfschmerzen' },
+        },
+      ],
+    }
+    render(<FeedEventCard event={event} />)
+
+    expect(screen.getByText(/Dauer:/)).toBeInTheDocument()
+  })
 })
