@@ -288,52 +288,6 @@ export function EventDetailView({
           </div>
         )}
 
-        {/* Fotos */}
-        <div className="mb-5">
-          {photos.length > 0 && (
-            <>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">
-                📷 Fotos ({totalPhotoCount})
-              </p>
-              <PhotoGallery
-                photos={photos}
-                totalCount={totalPhotoCount}
-                isLoadingMore={isLoadingMore}
-                onLoadMore={async () => {
-                  setIsLoadingMore(true)
-                  try {
-                    const result = await loadMoreEventPhotos(
-                      detail.id,
-                      photoOffset,
-                    )
-                    if (result.data && result.data.length > 0) {
-                      setPhotos((prev) => [...prev, ...result.data!])
-                      setPhotoOffset((prev) => prev + result.data!.length)
-                    }
-                  } finally {
-                    setIsLoadingMore(false)
-                  }
-                }}
-                onDeletePhoto={async (photoId) => {
-                  const result = await deleteEventPhoto(photoId)
-                  if (!result.error) {
-                    setPhotos((prev) => prev.filter((p) => p.id !== photoId))
-                    setTotalPhotoCount((prev) => prev - 1)
-                  }
-                }}
-              />
-            </>
-          )}
-          {(detail.eventStatus === 'confirmed' ||
-            detail.eventStatus === 'extraction_failed') && (
-            <EventPhotoUploader
-              eventId={detail.id}
-              autoOpen={addPhoto}
-              onUploaded={() => router.refresh()}
-            />
-          )}
-        </div>
-
         {/* Extrahierte Daten */}
         <div className="mb-5">
           <h2 className="mb-3 text-sm font-semibold text-foreground">
@@ -502,6 +456,52 @@ export function EventDetailView({
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* Fotos */}
+        <div className="mb-5">
+          {photos.length > 0 && (
+            <>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                📷 Fotos ({totalPhotoCount})
+              </p>
+              <PhotoGallery
+                photos={photos}
+                totalCount={totalPhotoCount}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={async () => {
+                  setIsLoadingMore(true)
+                  try {
+                    const result = await loadMoreEventPhotos(
+                      detail.id,
+                      photoOffset,
+                    )
+                    if (result.data && result.data.length > 0) {
+                      setPhotos((prev) => [...prev, ...result.data!])
+                      setPhotoOffset((prev) => prev + result.data!.length)
+                    }
+                  } finally {
+                    setIsLoadingMore(false)
+                  }
+                }}
+                onDeletePhoto={async (photoId) => {
+                  const result = await deleteEventPhoto(photoId)
+                  if (!result.error) {
+                    setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+                    setTotalPhotoCount((prev) => prev - 1)
+                  }
+                }}
+              />
+            </>
+          )}
+          {(detail.eventStatus === 'confirmed' ||
+            detail.eventStatus === 'extraction_failed') && (
+            <EventPhotoUploader
+              eventId={detail.id}
+              autoOpen={addPhoto}
+              onUploaded={() => router.refresh()}
+            />
           )}
         </div>
 

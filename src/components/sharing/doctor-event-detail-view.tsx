@@ -187,19 +187,6 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
             </div>
           )}
 
-          {/* Foto-Sektion */}
-          {detail.photos.length > 0 && (
-            <div>
-              <p className="mb-2 text-xs font-semibold text-muted-foreground">
-                Fotos ({detail.totalPhotoCount})
-              </p>
-              <PhotoGallery
-                photos={detail.photos}
-                totalCount={detail.totalPhotoCount}
-              />
-            </div>
-          )}
-
           {/* Extrahierte Daten */}
           <div>
             <h2 className="mb-3 text-sm font-semibold text-foreground">
@@ -336,6 +323,19 @@ export function DoctorEventDetailView({ detail }: DoctorEventDetailViewProps) {
               </div>
             )}
           </div>
+
+          {/* Foto-Timeline */}
+          {detail.photos.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                Fotos ({detail.totalPhotoCount})
+              </p>
+              <PhotoGallery
+                photos={detail.photos}
+                totalCount={detail.totalPhotoCount}
+              />
+            </div>
+          )}
 
           <div className="h-4" aria-hidden="true" />
         </div>
