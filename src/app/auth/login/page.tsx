@@ -1,5 +1,13 @@
+import type { Metadata } from 'next'
+
 import { AppleSignInButton } from '@/components/auth/apple-sign-in-button'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
+
+export const metadata: Metadata = {
+  title: 'Anmelden',
+  description:
+    'Melde dich bei Symptomchat an — kostenlos Symptome erfassen und mit deinem Arzt teilen.',
+}
 
 export default async function LoginPage(props: {
   searchParams: Promise<{ error?: string }>

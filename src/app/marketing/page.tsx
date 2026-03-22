@@ -26,8 +26,15 @@ export const metadata: Metadata = {
     title: 'Symptomchat — Symptome erfassen, Muster erkennen',
     description:
       'Ereignisbasiertes Symptom-Tracking für Patienten mit seltenen Erkrankungen. Sprache → Struktur in 10 Sekunden.',
+    url: '/marketing',
     type: 'website',
     locale: 'de_CH',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Symptomchat — Symptome erfassen, Muster erkennen',
+    description:
+      'Ereignisbasiertes Symptom-Tracking für Patienten mit seltenen Erkrankungen. Sprache → Struktur in 10 Sekunden.',
   },
 }
 
