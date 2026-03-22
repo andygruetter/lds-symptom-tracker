@@ -75,9 +75,29 @@ describe('PhotoPicker', () => {
     expect(onRemove).toHaveBeenCalledWith(0)
   })
 
-  it('deaktiviert Kamera-Button bei max 5 Fotos', () => {
+  it('deaktiviert Kamera-Button wenn maxPhotos erreicht', () => {
     const files = Array.from(
-      { length: 5 },
+      { length: 3 },
+      (_, i) => new File(['photo'], `test${i}.jpg`, { type: 'image/jpeg' }),
+    )
+    global.URL.createObjectURL = vi.fn(() => 'blob:test-url')
+
+    render(
+      <PhotoPicker
+        pendingPhotos={files}
+        onPhotosSelected={vi.fn()}
+        onRemovePhoto={vi.fn()}
+        maxPhotos={3}
+        compressImage={mockCompressImage}
+      />,
+    )
+
+    expect(screen.getByLabelText('Foto aufnehmen')).toBeDisabled()
+  })
+
+  it('lässt unbegrenzte Fotos ohne maxPhotos', () => {
+    const files = Array.from(
+      { length: 10 },
       (_, i) => new File(['photo'], `test${i}.jpg`, { type: 'image/jpeg' }),
     )
     global.URL.createObjectURL = vi.fn(() => 'blob:test-url')
@@ -91,7 +111,7 @@ describe('PhotoPicker', () => {
       />,
     )
 
-    expect(screen.getByLabelText('Foto aufnehmen')).toBeDisabled()
+    expect(screen.getByLabelText('Foto aufnehmen')).not.toBeDisabled()
   })
 
   it('deaktiviert Kamera-Button wenn disabled=true', () => {

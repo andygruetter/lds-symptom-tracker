@@ -24,7 +24,7 @@ type RawEventRow = {
 }
 
 const MAX_PHOTOS = 50
-const PHOTO_WIDTH = 150
+const PHOTO_WIDTH = 400
 
 /** Fetch a signed URL and convert to Base64 string (JPEG thumbnail) */
 async function fetchPhotoAsBase64(

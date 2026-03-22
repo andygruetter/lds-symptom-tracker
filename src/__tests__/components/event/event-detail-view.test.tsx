@@ -22,6 +22,18 @@ vi.mock('@/components/event/photo-gallery', () => ({
   }) => <div data-testid="photo-gallery" data-count={photos.length} />,
 }))
 
+vi.mock('@/components/capture/photo-picker', () => ({
+  PhotoPicker: () => <div data-testid="photo-picker" />,
+}))
+
+vi.mock('@/lib/actions/symptom-actions', () => ({
+  addPhotosToEvent: vi
+    .fn()
+    .mockResolvedValue({ data: { count: 0 }, error: null }),
+  deleteEventPhoto: vi.fn().mockResolvedValue({ data: null, error: null }),
+  loadMoreEventPhotos: vi.fn().mockResolvedValue({ data: [], error: null }),
+}))
+
 const baseDetail: EventDetail = {
   id: 'event-abc',
   eventType: 'symptom',
@@ -54,6 +66,8 @@ const baseDetail: EventDetail = {
     },
   ],
   photos: [],
+  totalPhotoCount: 0,
+  eventStatus: 'confirmed',
 }
 
 describe('EventDetailView', () => {
@@ -84,15 +98,24 @@ describe('EventDetailView', () => {
     expect(screen.getByTestId('audio-player')).toBeTruthy()
   })
 
-  it('zeigt Foto-Sektion NUR wenn Fotos vorhanden', () => {
-    const { rerender } = render(<EventDetailView detail={baseDetail} />)
+  it('zeigt keine Foto-Galerie wenn keine Fotos vorhanden', () => {
+    render(<EventDetailView detail={baseDetail} />)
     expect(screen.queryByTestId('photo-gallery')).toBeNull()
+  })
 
+  it('zeigt Foto-Galerie wenn Fotos vorhanden', () => {
     const withPhotos: EventDetail = {
       ...baseDetail,
-      photos: [{ id: 'p1', signedUrl: 'https://signed.url/photo.jpg' }],
+      photos: [
+        {
+          id: 'p1',
+          signedUrl: 'https://signed.url/photo.jpg',
+          createdAt: '2026-03-15T10:00:00Z',
+        },
+      ],
+      totalPhotoCount: 1,
     }
-    rerender(<EventDetailView detail={withPhotos} />)
+    render(<EventDetailView detail={withPhotos} />)
     expect(screen.getByTestId('photo-gallery')).toBeTruthy()
   })
 
@@ -100,6 +123,34 @@ describe('EventDetailView', () => {
     render(<EventDetailView detail={baseDetail} />)
     const editLink = screen.getByText('Bearbeiten')
     expect(editLink).toBeTruthy()
+  })
+
+  it('zeigt PhotoPicker (Uploader) bei confirmed Event', () => {
+    render(<EventDetailView detail={baseDetail} />)
+    expect(screen.getByTestId('photo-picker')).toBeTruthy()
+  })
+
+  it('zeigt PhotoPicker bei extraction_failed Event', () => {
+    render(
+      <EventDetailView
+        detail={{ ...baseDetail, eventStatus: 'extraction_failed' }}
+      />,
+    )
+    expect(screen.getByTestId('photo-picker')).toBeTruthy()
+  })
+
+  it('versteckt PhotoPicker bei pending Event', () => {
+    render(
+      <EventDetailView detail={{ ...baseDetail, eventStatus: 'pending' }} />,
+    )
+    expect(screen.queryByTestId('photo-picker')).toBeNull()
+  })
+
+  it('versteckt PhotoPicker bei extracted Event', () => {
+    render(
+      <EventDetailView detail={{ ...baseDetail, eventStatus: 'extracted' }} />,
+    )
+    expect(screen.queryByTestId('photo-picker')).toBeNull()
   })
 
   it('zeigt Medikament-Event korrekt (kein Bearbeiten-Link)', () => {

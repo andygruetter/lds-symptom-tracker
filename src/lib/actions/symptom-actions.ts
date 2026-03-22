@@ -6,8 +6,9 @@ import { after } from 'next/server'
 import { runExtractionPipeline } from '@/lib/ai/pipeline'
 import { updateVocabularyFromCorrection } from '@/lib/ai/vocabulary-builder'
 import { createServerClient, createServiceClient } from '@/lib/db/client'
-import { uploadAudio, uploadPhoto } from '@/lib/db/media'
+import { getSignedPhotoUrl, uploadAudio, uploadPhoto } from '@/lib/db/media'
 import type { ExtractedData } from '@/types/ai'
+import type { EventPhoto } from '@/types/analytics'
 import type { ActionResult } from '@/types/common'
 import type { SymptomEvent } from '@/types/symptom'
 import {
@@ -739,4 +740,120 @@ export async function addPhotosToEvent(
   revalidatePath('/')
 
   return { data: { count: uploadedCount }, error: null }
+}
+
+export async function loadMoreEventPhotos(
+  eventId: string,
+  offset: number,
+  limit = 10,
+): Promise<ActionResult<EventPhoto[]>> {
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      data: null,
+      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
+    }
+  }
+
+  // Ownership-Check
+  const { data: event } = await supabase
+    .from('symptom_events')
+    .select('id')
+    .eq('id', eventId)
+    .eq('account_id', user.id)
+    .is('deleted_at', null)
+    .single()
+
+  if (!event) {
+    return {
+      data: null,
+      error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' },
+    }
+  }
+
+  const { data: photoRows } = await supabase
+    .from('event_photos')
+    .select('id, storage_path, created_at')
+    .eq('symptom_event_id', eventId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (!photoRows) return { data: [], error: null }
+
+  const photos: EventPhoto[] = []
+  const results = await Promise.allSettled(
+    photoRows.map((p) => getSignedPhotoUrl(supabase, p.storage_path)),
+  )
+  for (let i = 0; i < photoRows.length; i++) {
+    const result = results[i]
+    if (result.status === 'fulfilled') {
+      photos.push({
+        id: photoRows[i].id,
+        signedUrl: result.value,
+        createdAt: photoRows[i].created_at ?? new Date().toISOString(),
+      })
+    }
+  }
+
+  return { data: photos, error: null }
+}
+
+export async function deleteEventPhoto(
+  photoId: string,
+): Promise<ActionResult<null>> {
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      data: null,
+      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
+    }
+  }
+
+  // Fetch photo and verify ownership
+  const { data: photo } = await supabase
+    .from('event_photos')
+    .select('id, storage_path, symptom_event_id')
+    .eq('id', photoId)
+    .single()
+
+  if (!photo) {
+    return {
+      data: null,
+      error: { error: 'Foto nicht gefunden', code: 'NOT_FOUND' },
+    }
+  }
+
+  // Verify the event belongs to this user
+  const { data: event } = await supabase
+    .from('symptom_events')
+    .select('id')
+    .eq('id', photo.symptom_event_id)
+    .eq('account_id', user.id)
+    .is('deleted_at', null)
+    .single()
+
+  if (!event) {
+    return {
+      data: null,
+      error: { error: 'Keine Berechtigung', code: 'FORBIDDEN' },
+    }
+  }
+
+  // Delete from storage
+  await supabase.storage.from('photos').remove([photo.storage_path])
+
+  // Delete row
+  await supabase.from('event_photos').delete().eq('id', photoId)
+
+  revalidatePath(`/event/${photo.symptom_event_id}`)
+
+  return { data: null, error: null }
 }

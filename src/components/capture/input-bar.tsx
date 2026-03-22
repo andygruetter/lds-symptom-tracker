@@ -5,26 +5,22 @@ import { useRef, useState } from 'react'
 import { Mic, MicOff, SendHorizontal, X } from 'lucide-react'
 
 import { AudioWaveform } from '@/components/capture/audio-waveform'
-import { PhotoPicker } from '@/components/capture/photo-picker'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { cn } from '@/lib/utils'
 
 interface InputBarProps {
   onSendText: (text: string) => void | Promise<void>
   onSendAudio?: (blob: Blob, mimeType: string) => void | Promise<void>
-  onSendPhotos?: (text: string | null, photos: File[]) => void | Promise<void>
   disabled?: boolean
 }
 
 export function InputBar({
   onSendText,
   onSendAudio,
-  onSendPhotos,
   disabled = false,
 }: InputBarProps) {
   const [text, setText] = useState('')
   const [isSendingMessage, setIsSendingMessage] = useState(false)
-  const [pendingPhotos, setPendingPhotos] = useState<File[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const {
@@ -40,7 +36,6 @@ export function InputBar({
   } = useAudioRecorder()
 
   const hasText = text.trim().length > 0
-  const hasPhotos = pendingPhotos.length > 0
   const isRecording = recordingState === 'recording'
   const isProcessing = recordingState === 'processing'
   const isPermissionDenied = permission === 'denied'
@@ -49,24 +44,6 @@ export function InputBar({
 
   const handleSend = async () => {
     const trimmed = text.trim()
-
-    // Photos (with or without text)
-    if (hasPhotos && onSendPhotos) {
-      setIsSendingMessage(true)
-      setText('')
-      setPendingPhotos([])
-
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto'
-      }
-
-      try {
-        await onSendPhotos(trimmed || null, pendingPhotos)
-      } finally {
-        setIsSendingMessage(false)
-      }
-      return
-    }
 
     // Text only
     if (!trimmed || isSendingMessage) return
@@ -120,15 +97,7 @@ export function InputBar({
     cancelRecording()
   }
 
-  const handlePhotosSelected = (files: File[]) => {
-    setPendingPhotos((prev) => [...prev, ...files])
-  }
-
-  const handleRemovePhoto = (index: number) => {
-    setPendingPhotos((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const showSendButton = hasText || hasPhotos
+  const showSendButton = hasText
 
   return (
     <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-background px-4 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
@@ -166,14 +135,6 @@ export function InputBar({
           </>
         ) : (
           <>
-            {/* Photo Picker (Kamera-Button + Vorschau) */}
-            <PhotoPicker
-              pendingPhotos={pendingPhotos}
-              onPhotosSelected={handlePhotosSelected}
-              onRemovePhoto={handleRemovePhoto}
-              disabled={disabled || isSendingMessage}
-            />
-
             {/* Text-Input */}
             <textarea
               ref={textareaRef}

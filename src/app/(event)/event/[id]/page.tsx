@@ -6,10 +6,15 @@ import { getEventDetail } from '@/lib/db/insights'
 
 export default async function EventDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { id } = await params
+  const [{ id }, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams,
+  ])
 
   const supabase = await createServerClient()
 
@@ -27,5 +32,7 @@ export default async function EventDetailPage({
     notFound()
   }
 
-  return <EventDetailView detail={detail} />
+  const addPhoto = resolvedSearchParams.addPhoto === 'true'
+
+  return <EventDetailView detail={detail} addPhoto={addPhoto} />
 }

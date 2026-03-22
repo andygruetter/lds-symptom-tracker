@@ -803,10 +803,12 @@ function createMockSupabaseEventDetail({
   eventError = null as { message: string } | null,
   extractedRows = [] as Record<string, unknown>[],
   photoRows = [] as Record<string, unknown>[],
+  totalPhotoCount = 0,
 } = {}) {
   const singleResult = { data: eventRow, error: eventError }
   const extractedResult = { data: extractedRows, error: null }
   const photosResult = { data: photoRows, error: null }
+  const countResult = { count: totalPhotoCount, error: null }
 
   let callCount = 0
 
@@ -818,8 +820,9 @@ function createMockSupabaseEventDetail({
         reject?: (e: unknown) => unknown,
       ) => Promise<unknown>
     } = {
-      order: vi.fn().mockResolvedValue(resolvedWith),
+      order: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue(resolvedWith),
+      range: vi.fn().mockResolvedValue(resolvedWith),
       then: (resolve, reject) =>
         Promise.resolve(resolvedWith).then(resolve, reject),
       select: vi.fn(),
@@ -835,7 +838,8 @@ function createMockSupabaseEventDetail({
   const builders = [
     makeBuilder(singleResult), // symptom_events
     makeBuilder(extractedResult), // extracted_data
-    makeBuilder(photosResult), // event_photos
+    makeBuilder(photosResult), // event_photos (paged)
+    makeBuilder(countResult), // event_photos (count)
   ]
 
   return {
@@ -905,12 +909,17 @@ describe('getEventDetail', () => {
     const { getSignedAudioUrl, getSignedPhotoUrl } =
       await import('@/lib/db/media')
     const photoRows = [
-      { id: 'photo-1', storage_path: 'user-1/event-abc/photo.jpg' },
+      {
+        id: 'photo-1',
+        storage_path: 'user-1/event-abc/photo.jpg',
+        created_at: '2026-03-15T10:00:00Z',
+      },
     ]
     const supabase = createMockSupabaseEventDetail({
       eventRow: { ...baseEvent, audio_url: 'user-1/event-abc.webm' },
       extractedRows: [],
       photoRows,
+      totalPhotoCount: 1,
     })
 
     const { getEventDetail } = await import('@/lib/db/insights')
@@ -927,6 +936,8 @@ describe('getEventDetail', () => {
     expect(result!.photos).toHaveLength(1)
     expect(result!.photos[0].id).toBe('photo-1')
     expect(result!.photos[0].signedUrl).toBe('https://signed.url/photo.jpg')
+    expect(result!.photos[0].createdAt).toBe('2026-03-15T10:00:00Z')
+    expect(result!.totalPhotoCount).toBe(1)
   })
 
   it('gibt null zurück bei nicht gefundenem Event (Ownership-Check)', async () => {

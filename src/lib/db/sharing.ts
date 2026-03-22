@@ -570,16 +570,24 @@ export async function getSharedEventDetail(
     return null
   }
 
-  const [{ data: extractedRows }, { data: photoRows }] = await Promise.all([
+  const [
+    { data: extractedRows },
+    { data: photoRows },
+    { count: totalPhotoCount },
+  ] = await Promise.all([
     supabase
       .from('extracted_data')
       .select('field_name, value, confidence, confirmed, symptom_index')
       .eq('symptom_event_id', eventId),
     supabase
       .from('event_photos')
-      .select('id, storage_path')
+      .select('id, storage_path, created_at')
       .eq('symptom_event_id', eventId)
-      .order('created_at', { ascending: true }),
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('event_photos')
+      .select('id', { count: 'exact', head: true })
+      .eq('symptom_event_id', eventId),
   ])
 
   // Signed URL für Audio via Service Client (getSignedMediaUrl verwendet createServiceClient intern)
@@ -601,7 +609,11 @@ export async function getSharedEventDetail(
     for (let i = 0; i < photoRows.length; i++) {
       const result = results[i]
       if (result.status === 'fulfilled') {
-        photos.push({ id: photoRows[i].id, signedUrl: result.value })
+        photos.push({
+          id: photoRows[i].id,
+          signedUrl: result.value,
+          createdAt: photoRows[i].created_at ?? new Date().toISOString(),
+        })
       }
     }
   }
@@ -626,6 +638,8 @@ export async function getSharedEventDetail(
     audioUrl,
     extractedFields,
     photos,
+    totalPhotoCount: totalPhotoCount ?? 0,
+    eventStatus: event.status,
   }
 }
 

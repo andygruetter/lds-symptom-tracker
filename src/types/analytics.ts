@@ -86,6 +86,7 @@ export type ExtractedField = {
 export type EventPhoto = {
   id: string
   signedUrl: string
+  createdAt: string
 }
 
 export type EventDetail = {
@@ -98,4 +99,6 @@ export type EventDetail = {
   audioUrl: string | null
   extractedFields: ExtractedField[]
   photos: EventPhoto[]
+  totalPhotoCount: number
+  eventStatus: string
 }

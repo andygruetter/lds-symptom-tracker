@@ -127,7 +127,7 @@ export const pdfStyles = StyleSheet.create({
     marginTop: 6,
   },
   photo: {
-    maxWidth: 200,
+    maxWidth: 400,
     objectFit: 'contain',
     borderRadius: 2,
     marginRight: 4,
