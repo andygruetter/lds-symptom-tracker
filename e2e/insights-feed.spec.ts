@@ -56,8 +56,8 @@ test.describe('Insights Feed (Story 4.1)', () => {
     await insightsPage.waitForLoaded()
 
     await expect(page.getByText('Heute')).toBeVisible()
-    // Feed card shows displayName from symptom_name with bullet prefix
-    await expect(page.getByText('● Kopfschmerzen rechts')).toBeVisible()
+    // Feed card shows displayName from symptom_name
+    await expect(page.getByText('Kopfschmerzen rechts')).toBeVisible()
   })
 
   test('Symptom-Karte zeigt Name, Körperregion und Intensität', async ({
@@ -97,8 +97,8 @@ test.describe('Insights Feed (Story 4.1)', () => {
     await insightsPage.goto()
     await insightsPage.waitForLoaded()
 
-    // Symptom name with bullet prefix (displayName from symptom_name)
-    await expect(page.getByText('● Kopfschmerzen')).toBeVisible()
+    // Symptom name (displayName from symptom_name)
+    await expect(page.getByText('Kopfschmerzen')).toBeVisible()
     // Detail line shows non-title fields joined by ' · ' (body_region and intensity)
     await expect(page.getByText('Kopf · 7/10')).toBeVisible()
     // Type badge
@@ -137,8 +137,8 @@ test.describe('Insights Feed (Story 4.1)', () => {
     await insightsPage.goto()
     await insightsPage.waitForLoaded()
 
-    // Medication name with diamond prefix
-    await expect(page.getByText('◆ Ibuprofen')).toBeVisible()
+    // Medication name
+    await expect(page.getByText('Ibuprofen')).toBeVisible()
     // Dosage
     await expect(page.getByText('400mg')).toBeVisible()
     // Type badge
@@ -168,7 +168,7 @@ test.describe('Insights Feed (Story 4.1)', () => {
     await insightsPage.goto()
     await insightsPage.waitForLoaded()
 
-    await page.getByText('● Migräne').click()
+    await page.getByText('Migräne').click()
 
     await page.waitForURL(`/event/${event.id}`, { timeout: 10_000 })
     expect(page.url()).toContain(`/event/${event.id}`)
