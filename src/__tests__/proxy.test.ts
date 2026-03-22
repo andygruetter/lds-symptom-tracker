@@ -89,7 +89,7 @@ beforeEach(() => {
 })
 
 describe('proxy', () => {
-  it('leitet unauthentifizierte Nutzer zu /auth/login um', async () => {
+  it('leitet unauthentifizierte Nutzer auf Root zu /marketing um', async () => {
     const mockResponse = new Response()
     mockUpdateSession.mockResolvedValue({
       user: null,
@@ -98,6 +98,22 @@ describe('proxy', () => {
 
     const { proxy } = await import('@/proxy')
     const request = createMockRequest('/')
+
+    const result = await proxy(request as Parameters<typeof proxy>[0])
+
+    expect(result?.status).toBe(307)
+    expect(result?.headers.get('Location')).toContain('/marketing')
+  })
+
+  it('leitet unauthentifizierte Nutzer auf geschützten Pfaden zu /auth/login um', async () => {
+    const mockResponse = new Response()
+    mockUpdateSession.mockResolvedValue({
+      user: null,
+      supabaseResponse: mockResponse,
+    })
+
+    const { proxy } = await import('@/proxy')
+    const request = createMockRequest('/insights')
 
     const result = await proxy(request as Parameters<typeof proxy>[0])
 
