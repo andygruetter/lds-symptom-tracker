@@ -2,7 +2,11 @@ import Link from 'next/link'
 
 import {
   Activity,
+  BadgeCheck,
   Clock,
+  Globe,
+  HeartPulse,
+  Lock,
   Mic,
   Share2,
   ShieldCheck,
@@ -42,6 +46,58 @@ const jsonLd = {
     description: 'Kostenlose Symptomerfassung',
   },
 }
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'Ist Symptomchat kostenlos?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Ja. Die Symptomerfassung und -analyse ist kostenlos. Kein Abo, keine Kreditkarte nötig.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Wie funktioniert die Spracheingabe?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Du sprichst einfach frei — auch Schweizerdeutsch. Die KI erkennt automatisch Symptome, Intensität und Körperregionen und erstellt strukturierte medizinische Daten.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Sind meine Gesundheitsdaten sicher?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Ja. Deine Daten werden verschlüsselt gespeichert und können keiner Person zugeordnet werden. Du bestimmst, wer Zugriff hat, und kannst ihn jederzeit widerrufen.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Kann ich meine Symptome mit meinem Arzt teilen?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Ja. Du kannst einen zeitlich begrenzten Freigabe-Link erstellen, über den dein Arzt deine Symptomgeschichte einsehen kann.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Ersetzt Symptomchat eine ärztliche Diagnose?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Nein. Symptomchat ist kein Medizinprodukt. Die App unterstützt dich bei der Dokumentation deiner Symptome, ersetzt aber keine ärztliche Beratung oder Diagnose.',
+      },
+    },
+  ],
+}
+
+const faqs = faqJsonLd.mainEntity.map((item) => ({
+  question: item.name,
+  answer: item.acceptedAnswer.text,
+}))
 
 const features = [
   {
@@ -89,6 +145,10 @@ export default function MarketingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
 
       {/* Hero Section */}
       <section className="px-6 pb-16 pt-12 sm:pb-24 sm:pt-20">
@@ -106,6 +166,26 @@ export default function MarketingPage() {
             <Button asChild size="lg" className="text-base">
               <Link href="/auth/login">Jetzt kostenlos starten</Link>
             </Button>
+          </div>
+
+          {/* Trust Badges */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Globe className="size-4" />
+              <span>Entwickelt in der Schweiz</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Lock className="size-4" />
+              <span>Datenschutz-konform</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="size-4" />
+              <span>100% kostenlos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <HeartPulse className="size-4" />
+              <span>Für seltene Erkrankungen</span>
+            </div>
           </div>
         </div>
       </section>
@@ -142,7 +222,7 @@ export default function MarketingPage() {
       </section>
 
       {/* Demo Video Section */}
-      <section className="px-6 py-16 sm:py-24">
+      <section id="demo" className="scroll-mt-8 px-6 py-16 sm:py-24">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">
             Sieh es in Aktion
@@ -158,6 +238,93 @@ export default function MarketingPage() {
         </div>
       </section>
 
+      {/* Social Proof Section */}
+      <section className="bg-card px-6 py-16 sm:py-24">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="text-center text-2xl font-semibold text-foreground sm:text-3xl">
+            Entwickelt mit Patienten, für Patienten
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
+            Symptomchat entstand aus der Frustration über komplizierte
+            Symptom-Tagebücher und der Erkenntnis, dass es einfacher gehen muss.
+          </p>
+
+          <div className="mt-12 grid gap-8 sm:grid-cols-3">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary sm:text-4xl">
+                &lt;10s
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Durchschnittliche Erfassungszeit pro Symptom
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary sm:text-4xl">
+                100%
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Kostenlos — keine versteckten Kosten
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary sm:text-4xl">
+                3 Sprachen
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Deutsch, Schweizerdeutsch und Englisch
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2">
+            <Card className="border-border/60">
+              <CardContent className="pt-6">
+                <p className="text-sm italic text-muted-foreground">
+                  &laquo;Endlich muss ich nicht mehr jeden Abend ein Tagebuch
+                  ausfüllen. Ich spreche kurz rein, wenn etwas ist —
+                  fertig.&raquo;
+                </p>
+                <p className="mt-4 text-sm font-medium text-foreground">
+                  — Patientin mit LDS, Bern
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/60">
+              <CardContent className="pt-6">
+                <p className="text-sm italic text-muted-foreground">
+                  &laquo;Die strukturierten Daten helfen mir, meinem Arzt viel
+                  präziser zu berichten. Er war beeindruckt.&raquo;
+                </p>
+                <p className="mt-4 text-sm font-medium text-foreground">
+                  — Patient mit EDS, Bern
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="px-6 py-16 sm:py-24">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="text-center text-2xl font-semibold text-foreground sm:text-3xl">
+            Häufig gestellte Fragen
+          </h2>
+          <div className="mt-12 space-y-6">
+            {faqs.map((faq) => (
+              <div key={faq.question} className="border-b border-border pb-6">
+                <h3 className="font-semibold text-foreground">
+                  {faq.question}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {faq.answer}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="bg-card px-6 py-16 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
@@ -167,9 +334,12 @@ export default function MarketingPage() {
           <p className="mt-4 text-muted-foreground">
             Kostenlos starten. Keine Kreditkarte, kein Abo nötig.
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button asChild size="lg" className="text-base">
-              <Link href="/auth/login">Jetzt starten</Link>
+              <Link href="/auth/login">Jetzt kostenlos starten</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="text-base">
+              <Link href="#demo">Demo ansehen</Link>
             </Button>
           </div>
         </div>
