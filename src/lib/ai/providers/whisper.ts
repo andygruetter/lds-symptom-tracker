@@ -31,6 +31,7 @@ const MEDICAL_DOMAIN_TERMS = [
   // Kardiovaskulär (LDS/Marfan-typisch)
   'Brustschmerzen',
   'Herzrhythmusstörungen',
+  'Herzflimmern',
   'Herzstolpern',
   'Herzklopfen',
   'Aorta',

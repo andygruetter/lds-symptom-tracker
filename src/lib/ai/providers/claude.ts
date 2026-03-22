@@ -29,6 +29,7 @@ const SYMPTOM_TAXONOMY = {
     'Erschöpfung',
     'Schlafstörungen',
     'Herzrhythmusstörungen',
+    'Herzflimmern',
     'Herzrasen',
     'Atemnot',
     'Husten',
@@ -378,7 +379,8 @@ Die App wird von Patienten mit Bindegewebserkrankungen (LDS, Marfan, Ehlers-Danl
 ### Kardiovaskuläre Symptome (hohe klinische Relevanz!)
 - Brustschmerzen/Rückenschmerzen zwischen den Schulterblättern → immer body_region genau extrahieren
 - "Reissender"/"zerreissender" Schmerz in Brust oder Rücken → kann Aortendissektion signalisieren → symptom_type präzise als "reissend" oder "zerreissend" erfassen
-- Herzstolpern, Herzrasen, unregelmässiger Herzschlag → Herzrhythmusstörungen (Mitralklappenprolaps-typisch)
+- Herzstolpern, unregelmässiger Herzschlag → Herzrhythmusstörungen (Mitralklappenprolaps-typisch)
+- Herzflimmern → immer als eigenständiges Symptom "Herzflimmern" erfassen (NICHT als Herzrhythmusstörungen klassifizieren)
 - Schwindel, Ohnmacht, "schwarz vor Augen" → Synkope (kann vaskulär bedingt sein)
 - Atemnot bei Belastung → als "Belastungsdyspnoe" extrahieren, Trigger genau erfassen
 
