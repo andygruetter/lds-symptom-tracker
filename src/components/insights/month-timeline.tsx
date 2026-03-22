@@ -31,10 +31,18 @@ function formatMonthHeader(year: number, month: number): string {
   }).format(new Date(year, month - 1, 1))
 }
 
-function getDensityClass(totalCount: number): string {
-  if (totalCount === 0) return ''
-  if (totalCount <= 2) return 'bg-muted/40'
-  return 'bg-muted/80'
+function getDensityStyle(totalCount: number): React.CSSProperties {
+  if (totalCount === 0) return {}
+  // Orange-tinted background with increasing opacity
+  if (totalCount === 1) return { backgroundColor: 'rgba(192, 106, 60, 0.08)' }
+  if (totalCount <= 3) return { backgroundColor: 'rgba(192, 106, 60, 0.15)' }
+  return { backgroundColor: 'rgba(192, 106, 60, 0.25)' }
+}
+
+function getDotSize(count: number): string {
+  if (count === 1) return 'h-1.5 w-1.5'
+  if (count <= 3) return 'h-2 w-2'
+  return 'h-2.5 w-2.5'
 }
 
 export function MonthTimeline({ initialTimeline }: Props) {
@@ -159,7 +167,6 @@ export function MonthTimeline({ initialTimeline }: Props) {
                   aria-current={isToday ? 'date' : undefined}
                   className={[
                     'flex min-h-[44px] flex-col items-center justify-center rounded-lg p-0.5 transition-colors',
-                    getDensityClass(day.totalCount),
                     isToday ? 'ring-2 ring-primary' : '',
                     isSelected ? 'bg-muted' : '',
                     hasEvents
@@ -168,16 +175,19 @@ export function MonthTimeline({ initialTimeline }: Props) {
                   ]
                     .filter(Boolean)
                     .join(' ')}
+                  style={
+                    !isSelected ? getDensityStyle(day.totalCount) : undefined
+                  }
                 >
                   <span className="text-xs font-medium leading-none">
                     {parseInt(day.date.split('-')[2], 10)}
                   </span>
                   {hasEvents && (
-                    <div className="mt-0.5 flex gap-0.5">
+                    <div className="mt-0.5 flex items-center gap-0.5">
                       {day.symptomCount > 0 && (
                         <span
                           data-testid="symptom-dot"
-                          className="h-1.5 w-1.5 rounded-full"
+                          className={`rounded-full ${getDotSize(day.symptomCount)}`}
                           style={{ backgroundColor: '#C06A3C' }}
                           aria-hidden="true"
                         />
@@ -185,7 +195,7 @@ export function MonthTimeline({ initialTimeline }: Props) {
                       {day.medicationCount > 0 && (
                         <span
                           data-testid="medication-dot"
-                          className="h-1.5 w-1.5 rounded-full"
+                          className={`rounded-full ${getDotSize(day.medicationCount)}`}
                           style={{ backgroundColor: '#4A7FA5' }}
                           aria-hidden="true"
                         />

@@ -58,10 +58,10 @@ function formatFeedFieldValue(key: string, value: string): string | null {
 
 function SymptomGroupRow({
   group,
-  symbol,
+  accentColor,
 }: {
   group: FeedSymptomGroup
-  symbol: string
+  accentColor: string
 }) {
   // All fields except the title field, sorted by FIELD_ORDER
   const detailEntries = Object.entries(group.fields)
@@ -81,8 +81,12 @@ function SymptomGroupRow({
 
   return (
     <div>
-      <p className="text-sm font-medium text-foreground">
-        {symbol} {group.displayName ?? '—'}
+      <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+        <span
+          className="inline-block h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: accentColor }}
+        />
+        {group.displayName ?? '—'}
       </p>
       {detailParts.length > 0 && (
         <p className="text-xs text-muted-foreground">
@@ -105,7 +109,6 @@ export function FeedEventCard({ event }: Props) {
   const badgeBg = isMedication ? 'bg-[#4A7FA5]/10' : 'bg-[#C06A3C]/10'
   const badgeText = isMedication ? 'text-[#4A7FA5]' : 'text-[#C06A3C]'
   const badgeLabel = isMedication ? 'Medikament' : 'Symptom'
-  const symbol = isMedication ? '◆' : '●'
 
   return (
     <button
@@ -157,13 +160,13 @@ export function FeedEventCard({ event }: Props) {
           {event.symptoms.length > 1 ? (
             <div className="space-y-1.5">
               {event.symptoms.map((s, i) => (
-                <SymptomGroupRow key={i} group={s} symbol={symbol} />
+                <SymptomGroupRow key={i} group={s} accentColor={accentColor} />
               ))}
             </div>
           ) : (
             <SymptomGroupRow
               group={event.symptoms[0] ?? { displayName: null, fields: {} }}
-              symbol={symbol}
+              accentColor={accentColor}
             />
           )}
           {event.endedAt && (
