@@ -25,8 +25,34 @@ function formatDuration(occurredAt: string, endedAt: string): string {
   return `${minutes}min`
 }
 
-function formatFeedFieldValue(key: string, value: string): string {
+const STATUS_LABELS: Record<string, string> = {
+  resolved: 'Abgeklungen',
+  active: 'Aktiv',
+  improving: 'Besserung',
+  worsening: 'Verschlechterung',
+  chronic: 'Chronisch',
+  recurring: 'Wiederkehrend',
+}
+
+/** Fields already represented elsewhere in the card (header time, duration row) */
+const HIDDEN_FEED_FIELDS = new Set(['symptom_time'])
+
+function looksLikeIsoTimestamp(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)
+}
+
+function formatFeedFieldValue(key: string, value: string): string | null {
+  if (HIDDEN_FEED_FIELDS.has(key)) return null
   if (key === 'intensity') return `${value}/10`
+  if (key === 'status') return STATUS_LABELS[value.toLowerCase()] ?? value
+  if (looksLikeIsoTimestamp(value)) {
+    return new Intl.DateTimeFormat('de-CH', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(value))
+  }
   return value
 }
 
@@ -49,7 +75,9 @@ function SymptomGroupRow({
       return a.localeCompare(b)
     })
 
-  const detailParts = detailEntries.map(([k, v]) => formatFeedFieldValue(k, v))
+  const detailParts = detailEntries
+    .map(([k, v]) => formatFeedFieldValue(k, v))
+    .filter((v): v is string => v !== null)
 
   return (
     <div>
@@ -131,28 +159,17 @@ export function FeedEventCard({ event }: Props) {
               {event.symptoms.map((s, i) => (
                 <SymptomGroupRow key={i} group={s} symbol={symbol} />
               ))}
-              {event.endedAt && (
-                <p className="text-xs text-muted-foreground">
-                  Dauer: {formatDuration(event.occurredAt, event.endedAt)}
-                </p>
-              )}
-            </div>
-          ) : event.symptoms.length > 1 ? (
-            <div className="space-y-1.5">
-              {event.symptoms.map((s, i) => (
-                <SymptomGroupRow key={i} group={s} symbol={symbol} />
-              ))}
-              {event.endedAt && (
-                <p className="text-xs text-muted-foreground">
-                  Dauer: {formatDuration(event.occurredAt, event.endedAt)}
-                </p>
-              )}
             </div>
           ) : (
             <SymptomGroupRow
               group={event.symptoms[0] ?? { displayName: null, fields: {} }}
               symbol={symbol}
             />
+          )}
+          {event.endedAt && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Dauer: {formatDuration(event.occurredAt, event.endedAt)}
+            </p>
           )}
         </div>
       </div>
