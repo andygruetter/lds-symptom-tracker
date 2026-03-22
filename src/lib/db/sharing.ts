@@ -612,7 +612,7 @@ export async function getSharedEventDetail(
         photos.push({
           id: photoRows[i].id,
           signedUrl: result.value,
-          createdAt: photoRows[i].created_at,
+          createdAt: photoRows[i].created_at ?? new Date().toISOString(),
         })
       }
     }

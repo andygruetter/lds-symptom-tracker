@@ -50,6 +50,8 @@ const baseSymptomEvent: EventDetail = {
     },
   ],
   photos: [],
+  totalPhotoCount: 0,
+  eventStatus: 'confirmed',
 }
 
 const baseMedicationEvent: EventDetail = {
@@ -70,6 +72,8 @@ const baseMedicationEvent: EventDetail = {
     },
   ],
   photos: [],
+  totalPhotoCount: 0,
+  eventStatus: 'confirmed',
 }
 
 describe('DoctorEventDetailView', () => {
@@ -124,8 +128,16 @@ describe('DoctorEventDetailView', () => {
     const eventMitFotos: EventDetail = {
       ...baseSymptomEvent,
       photos: [
-        { id: 'photo-1', signedUrl: 'https://signed.url/photo1.jpg' },
-        { id: 'photo-2', signedUrl: 'https://signed.url/photo2.jpg' },
+        {
+          id: 'photo-1',
+          signedUrl: 'https://signed.url/photo1.jpg',
+          createdAt: '2026-02-10T10:00:00Z',
+        },
+        {
+          id: 'photo-2',
+          signedUrl: 'https://signed.url/photo2.jpg',
+          createdAt: '2026-02-10T10:00:00Z',
+        },
       ],
     }
     render(<DoctorEventDetailView detail={eventMitFotos} />)
@@ -208,6 +220,8 @@ describe('DoctorEventDetailView', () => {
         },
       ],
       photos: [],
+      totalPhotoCount: 0,
+      eventStatus: 'confirmed',
     }
     render(<DoctorEventDetailView detail={multiSymptomEvent} />)
 
@@ -262,6 +276,8 @@ describe('DoctorEventDetailView', () => {
         },
       ],
       photos: [],
+      totalPhotoCount: 0,
+      eventStatus: 'confirmed',
     }
     render(<DoctorEventDetailView detail={multiWithSharedFields} />)
 

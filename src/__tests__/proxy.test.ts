@@ -32,7 +32,7 @@ const mockRedirect = vi.fn((url: string | URL) => {
 vi.mock('next/server', () => {
   const NextResponse = {
     next: vi.fn(() => new Response()),
-    redirect: (...args: unknown[]) => mockRedirect(...args),
+    redirect: (...args: [string | URL]) => mockRedirect(...args),
   }
   return { NextResponse }
 })
