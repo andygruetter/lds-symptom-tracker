@@ -67,7 +67,7 @@ jobs:
       - name: Generate coverage report
         if: always()
         run: npx vitest run --coverage --coverage.thresholds.100=false 2>/dev/null || true
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
