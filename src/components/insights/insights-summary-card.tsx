@@ -28,32 +28,22 @@ export async function InsightsSummaryCard({
   dateFrom,
   dateTo,
 }: InsightsSummaryCardProps) {
-  let summaryText: string
-  let eventCount: number
+  let summaryText: string | null = null
+  let eventCount = 0
+  let hasError = false
 
   try {
     const events = await getSharedEventsForSummary(accountId, dateFrom, dateTo)
     eventCount = events.length
-
-    if (eventCount === 0) {
-      return (
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">KI-Zusammenfassung</h2>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Keine Events im Zeitraum — bitte zuerst Symptome oder Medikamente
-            erfassen.
-          </p>
-        </div>
-      )
+    if (eventCount > 0) {
+      summaryText = await generateSummary(events)
     }
-
-    summaryText = await generateSummary(events)
   } catch (err) {
     console.error('[InsightsSummaryCard] Fehler bei Summary-Generierung:', err)
+    hasError = true
+  }
 
+  if (hasError) {
     return (
       <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-2">
@@ -65,6 +55,21 @@ export async function InsightsSummaryCard({
             Zusammenfassung konnte nicht generiert werden.
           </p>
         </div>
+      </div>
+    )
+  }
+
+  if (eventCount === 0 || !summaryText) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold">KI-Zusammenfassung</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Keine Events im Zeitraum — bitte zuerst Symptome oder Medikamente
+          erfassen.
+        </p>
       </div>
     )
   }
