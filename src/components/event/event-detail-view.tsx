@@ -107,6 +107,7 @@ export function EventDetailView({
 }: EventDetailViewProps) {
   const router = useRouter()
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
   const [photos, setPhotos] = useState<EventPhoto[]>(detail.photos)
   const [photoOffset, setPhotoOffset] = useState(detail.photos.length)
   const [totalPhotoCount, setTotalPhotoCount] = useState(detail.totalPhotoCount)
@@ -221,6 +222,63 @@ export function EventDetailView({
               />
             )}
           </div>
+
+          {/* Re-Run Buttons — nur wenn bereits verarbeitet */}
+          {(detail.eventStatus === 'extracted' ||
+            detail.eventStatus === 'confirmed') && (
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={isRetrying}
+                onClick={async () => {
+                  setIsRetrying(true)
+                  try {
+                    await fetch('/api/ai/extract', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        symptomEventId: detail.id,
+                        mode: 'extract',
+                      }),
+                    })
+                    router.refresh()
+                  } finally {
+                    setIsRetrying(false)
+                  }
+                }}
+                className="flex h-11 items-center justify-center rounded-xl border border-border px-6 text-sm font-medium text-foreground transition-colors active:bg-muted disabled:opacity-50"
+              >
+                {isRetrying ? 'Wird verarbeitet...' : 'Extraktion wiederholen'}
+              </button>
+              {detail.audioUrl && (
+                <button
+                  type="button"
+                  disabled={isRetrying}
+                  onClick={async () => {
+                    setIsRetrying(true)
+                    try {
+                      await fetch('/api/ai/extract', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          symptomEventId: detail.id,
+                          mode: 'transcribe',
+                        }),
+                      })
+                      router.refresh()
+                    } finally {
+                      setIsRetrying(false)
+                    }
+                  }}
+                  className="flex h-11 items-center justify-center rounded-xl border border-border px-6 text-sm font-medium text-foreground transition-colors active:bg-muted disabled:opacity-50"
+                >
+                  {isRetrying
+                    ? 'Wird verarbeitet...'
+                    : 'Transkription wiederholen'}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Bearbeiten-Link — nur für Symptom-Events */}
           {!isMedication && (

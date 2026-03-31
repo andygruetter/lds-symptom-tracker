@@ -75,6 +75,8 @@ export async function runExtractionPipeline(
     'transcribed',
     'extraction_failed',
     'transcription_failed',
+    'extracted', // NEU: Re-Run nach erfolgreicher Extraktion
+    'confirmed', // NEU: Re-Run nach Bestätigung
   ]
   if (!retriableStatuses.includes(event.status)) {
     return // Bereits verarbeitet oder bestätigt
