@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ChatBubble } from '@/components/capture/chat-bubble'
@@ -324,26 +324,85 @@ describe('ChatBubble', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('zeigt Overlay-Menu mit "Extraktion wiederholen" nach showRerunMenu-State', () => {
-    // Simulate menuOpen by rendering with a state trick:
-    // We can't easily trigger long press in unit tests, so we test the menu rendering
-    // by checking that props are correctly wired (menu appears when menuOpen is true)
-    // Testing via the component's internal state is tested in integration tests.
-    // Here we verify the component renders without errors with showRerunMenu=true.
+  it('zeigt Overlay-Menu nach Long-Press (1500ms) mit "Extraktion wiederholen"', async () => {
+    vi.useFakeTimers()
+    const onRetryExtraction = vi.fn()
     render(
       <ChatBubble
         variant="sent"
         content="Kopfschmerzen"
         showRerunMenu={true}
-        onRetryExtraction={vi.fn()}
+        onRetryExtraction={onRetryExtraction}
+        eventStatus="confirmed"
       />,
     )
 
-    // Menu is hidden by default (requires long press to open)
-    expect(screen.queryByText('Extraktion wiederholen')).not.toBeInTheDocument()
+    const inner = screen.getByRole('article').firstElementChild!
+
+    await act(async () => {
+      fireEvent.touchStart(inner)
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+
+    expect(screen.getByText('Extraktion wiederholen')).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
-  it('enthält kein "Transkription wiederholen" bei nicht-Voice-Events im Menu', () => {
+  it('zeigt "Transkription wiederholen" im Menu nur bei Voice-Events', async () => {
+    vi.useFakeTimers()
+    render(
+      <ChatBubble
+        variant="sent"
+        content="Sprachaufnahme"
+        showRerunMenu={true}
+        isVoiceEvent={true}
+        onRetryExtraction={vi.fn()}
+        onRetryTranscription={vi.fn()}
+        eventStatus="confirmed"
+      />,
+    )
+
+    const inner = screen.getByRole('article').firstElementChild!
+
+    await act(async () => {
+      fireEvent.touchStart(inner)
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+
+    expect(screen.getByText('Extraktion wiederholen')).toBeInTheDocument()
+    expect(screen.getByText('Transkription wiederholen')).toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
+  it('ruft onRetryExtraction auf beim Menu-Button-Klick', async () => {
+    vi.useFakeTimers()
+    const onRetryExtraction = vi.fn()
+    render(
+      <ChatBubble
+        variant="sent"
+        content="Kopfschmerzen"
+        showRerunMenu={true}
+        onRetryExtraction={onRetryExtraction}
+        eventStatus="confirmed"
+      />,
+    )
+
+    const inner = screen.getByRole('article').firstElementChild!
+
+    await act(async () => {
+      fireEvent.touchStart(inner)
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+
+    fireEvent.click(screen.getByText('Extraktion wiederholen'))
+    expect(onRetryExtraction).toHaveBeenCalledTimes(1)
+    // Menu should close after clicking
+    expect(screen.queryByText('Extraktion wiederholen')).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
+  it('enthält kein "Transkription wiederholen" bei nicht-Voice-Events im Menu', async () => {
+    vi.useFakeTimers()
     render(
       <ChatBubble
         variant="sent"
@@ -352,12 +411,22 @@ describe('ChatBubble', () => {
         isVoiceEvent={false}
         onRetryExtraction={vi.fn()}
         onRetryTranscription={vi.fn()}
+        eventStatus="confirmed"
       />,
     )
 
+    const inner = screen.getByRole('article').firstElementChild!
+
+    await act(async () => {
+      fireEvent.touchStart(inner)
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+
+    expect(screen.getByText('Extraktion wiederholen')).toBeInTheDocument()
     expect(
       screen.queryByText('Transkription wiederholen'),
     ).not.toBeInTheDocument()
+    vi.useRealTimers()
   })
 
   it('zeigt Foto-Indikator bei isPhoto ohne Content', () => {

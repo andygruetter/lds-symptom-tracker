@@ -108,6 +108,7 @@ export function EventDetailView({
   const router = useRouter()
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
+  const [retryError, setRetryError] = useState<string | null>(null)
   const [photos, setPhotos] = useState<EventPhoto[]>(detail.photos)
   const [photoOffset, setPhotoOffset] = useState(detail.photos.length)
   const [totalPhotoCount, setTotalPhotoCount] = useState(detail.totalPhotoCount)
@@ -232,8 +233,9 @@ export function EventDetailView({
                 disabled={isRetrying}
                 onClick={async () => {
                   setIsRetrying(true)
+                  setRetryError(null)
                   try {
-                    await fetch('/api/ai/extract', {
+                    const response = await fetch('/api/ai/extract', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
@@ -241,7 +243,13 @@ export function EventDetailView({
                         mode: 'extract',
                       }),
                     })
+                    if (!response.ok) {
+                      setRetryError('Erneuter Versuch fehlgeschlagen')
+                      return
+                    }
                     router.refresh()
+                  } catch {
+                    setRetryError('Netzwerkfehler — bitte erneut versuchen')
                   } finally {
                     setIsRetrying(false)
                   }
@@ -256,8 +264,9 @@ export function EventDetailView({
                   disabled={isRetrying}
                   onClick={async () => {
                     setIsRetrying(true)
+                    setRetryError(null)
                     try {
-                      await fetch('/api/ai/extract', {
+                      const response = await fetch('/api/ai/extract', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -265,7 +274,13 @@ export function EventDetailView({
                           mode: 'transcribe',
                         }),
                       })
+                      if (!response.ok) {
+                        setRetryError('Erneuter Versuch fehlgeschlagen')
+                        return
+                      }
                       router.refresh()
+                    } catch {
+                      setRetryError('Netzwerkfehler — bitte erneut versuchen')
                     } finally {
                       setIsRetrying(false)
                     }
@@ -278,6 +293,10 @@ export function EventDetailView({
                 </button>
               )}
             </div>
+          )}
+
+          {retryError && (
+            <p className="text-center text-sm text-destructive">{retryError}</p>
           )}
 
           {/* Bearbeiten-Link — nur für Symptom-Events */}

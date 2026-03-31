@@ -107,6 +107,7 @@ export function ChatFeed({
           const eventPhotos = photosMap[event.id]
 
           const isVoice = event.event_type === 'voice'
+          const hasAudio = !!event.audio_url
           const hasPhotos = eventPhotos && eventPhotos.length > 0
 
           return (
@@ -128,7 +129,7 @@ export function ChatFeed({
                 showRerunMenu={
                   event.status === 'extracted' || event.status === 'confirmed'
                 }
-                isVoiceEvent={isVoice}
+                isVoiceEvent={hasAudio}
                 onRetryExtraction={
                   onRetryExtraction
                     ? () => onRetryExtraction(event.id)

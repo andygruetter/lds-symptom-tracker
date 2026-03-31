@@ -13,6 +13,7 @@ interface UseLongPressResult {
     onTouchStart: (e: React.TouchEvent) => void
     onTouchEnd: () => void
     onTouchCancel: () => void
+    onTouchMove: (e: React.TouchEvent) => void
     onContextMenu: (e: React.SyntheticEvent) => void
   }
   isPressed: boolean
@@ -42,6 +43,7 @@ export function useLongPress(
   const rafRef = useRef<number | null>(null)
   const startTimeRef = useRef<number>(0)
   const firedRef = useRef(false)
+  const startPosRef = useRef<{ x: number; y: number } | null>(null)
 
   const cleanup = useCallback(() => {
     if (timerRef.current !== null) {
@@ -63,8 +65,13 @@ export function useLongPress(
   }, [cleanup])
 
   const onTouchStart = useCallback(
-    (_e: React.TouchEvent) => {
+    (e: React.TouchEvent) => {
       cleanup()
+
+      const touch = e.touches?.[0]
+      startPosRef.current = touch
+        ? { x: touch.clientX, y: touch.clientY }
+        : null
 
       startTimeRef.current = Date.now()
       firedRef.current = false
@@ -111,12 +118,33 @@ export function useLongPress(
     cleanup()
   }, [cleanup])
 
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!startPosRef.current || firedRef.current) return
+      const touch = e.touches?.[0]
+      if (!touch) return
+      const dx = touch.clientX - startPosRef.current.x
+      const dy = touch.clientY - startPosRef.current.y
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        onCancelRef.current?.()
+        cleanup()
+      }
+    },
+    [cleanup],
+  )
+
   const onContextMenu = useCallback((e: React.SyntheticEvent) => {
     e.preventDefault()
   }, [])
 
   return {
-    handlers: { onTouchStart, onTouchEnd, onTouchCancel, onContextMenu },
+    handlers: {
+      onTouchStart,
+      onTouchEnd,
+      onTouchCancel,
+      onTouchMove,
+      onContextMenu,
+    },
     isPressed,
     progress,
   }
