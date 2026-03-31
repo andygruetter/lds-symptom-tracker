@@ -1,11 +1,18 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { EventDetailView } from '@/components/event/event-detail-view'
 import type { EventDetail } from '@/types/analytics'
 
+const mockRefresh = vi.fn()
+const mockPush = vi.fn()
+
 vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(() => ({ back: vi.fn(), push: vi.fn() })),
+  useRouter: vi.fn(() => ({
+    back: vi.fn(),
+    push: mockPush,
+    refresh: mockRefresh,
+  })),
 }))
 
 vi.mock('@/components/event/audio-player', () => ({
@@ -151,6 +158,93 @@ describe('EventDetailView', () => {
       <EventDetailView detail={{ ...baseDetail, eventStatus: 'extracted' }} />,
     )
     expect(screen.queryByTestId('photo-picker')).toBeNull()
+  })
+
+  // --- Re-Run Button Tests ---
+
+  it('zeigt "Extraktion wiederholen" Button bei confirmed Event', () => {
+    render(<EventDetailView detail={baseDetail} />)
+
+    expect(screen.getByText('Extraktion wiederholen')).toBeTruthy()
+  })
+
+  it('zeigt "Extraktion wiederholen" Button auch bei extracted Event', () => {
+    render(
+      <EventDetailView detail={{ ...baseDetail, eventStatus: 'extracted' }} />,
+    )
+
+    expect(screen.getByText('Extraktion wiederholen')).toBeTruthy()
+  })
+
+  it('zeigt keinen Re-Run Button bei pending Event', () => {
+    render(
+      <EventDetailView detail={{ ...baseDetail, eventStatus: 'pending' }} />,
+    )
+
+    expect(screen.queryByText('Extraktion wiederholen')).toBeNull()
+  })
+
+  it('zeigt "Transkription wiederholen" nur wenn audioUrl vorhanden', () => {
+    const { rerender } = render(<EventDetailView detail={baseDetail} />)
+
+    // Kein audioUrl → kein Transkriptions-Button
+    expect(screen.queryByText('Transkription wiederholen')).toBeNull()
+
+    rerender(
+      <EventDetailView
+        detail={{ ...baseDetail, audioUrl: 'https://signed.url/audio.webm' }}
+      />,
+    )
+
+    // Mit audioUrl → Transkriptions-Button erscheint
+    expect(screen.getByText('Transkription wiederholen')).toBeTruthy()
+  })
+
+  it('Button-Click ruft fetch() mit korrektem mode-Parameter auf', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
+
+    render(<EventDetailView detail={baseDetail} />)
+
+    const extractionBtn = screen.getByText('Extraktion wiederholen')
+    await act(async () => {
+      extractionBtn.click()
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/ai/extract',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"mode":"extract"'),
+      }),
+    )
+
+    vi.unstubAllGlobals()
+  })
+
+  it('Transkription-Button-Click ruft fetch() mit mode=transcribe auf', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
+
+    render(
+      <EventDetailView
+        detail={{ ...baseDetail, audioUrl: 'https://signed.url/audio.webm' }}
+      />,
+    )
+
+    const transcriptionBtn = screen.getByText('Transkription wiederholen')
+    await act(async () => {
+      transcriptionBtn.click()
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/ai/extract',
+      expect.objectContaining({
+        body: expect.stringContaining('"mode":"transcribe"'),
+      }),
+    )
+
+    vi.unstubAllGlobals()
   })
 
   it('zeigt Medikament-Event korrekt (kein Bearbeiten-Link)', () => {

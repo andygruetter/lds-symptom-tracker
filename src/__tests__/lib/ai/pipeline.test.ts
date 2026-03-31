@@ -189,12 +189,12 @@ describe('runExtractionPipeline', () => {
     })
   })
 
-  it('überspringt bereits verarbeitete Events', async () => {
+  it('überspringt Events mit unbekanntem Status', async () => {
     const supabase = createMockSupabase()
     mockSingle.mockResolvedValue({
       data: {
         id: 'event-1',
-        status: 'extracted',
+        status: 'archived', // kein bekannter retriable-Status
         raw_input: 'Test',
       },
       error: null,
@@ -204,6 +204,71 @@ describe('runExtractionPipeline', () => {
     await runExtractionPipeline(supabase as never, 'event-1')
 
     expect(mockExtractSymptomData).not.toHaveBeenCalled()
+  })
+
+  it('verarbeitet Events mit Status extracted (Re-Run)', async () => {
+    const supabase = createMockSupabase()
+    mockSingle.mockResolvedValue({
+      data: {
+        id: 'event-1',
+        account_id: 'user-1',
+        raw_input: 'Kopfschmerzen rechts',
+        status: 'extracted',
+      },
+      error: null,
+    })
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'event-1')
+
+    expect(mockExtractSymptomData).toHaveBeenCalled()
+    expect(mockUpdate).toHaveBeenCalledWith({
+      status: 'extracted',
+      event_type: 'symptom',
+    })
+  })
+
+  it('verarbeitet Events mit Status confirmed (Re-Run)', async () => {
+    const supabase = createMockSupabase()
+    mockSingle.mockResolvedValue({
+      data: {
+        id: 'event-1',
+        account_id: 'user-1',
+        raw_input: 'Rückenschmerzen',
+        status: 'confirmed',
+      },
+      error: null,
+    })
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'event-1')
+
+    expect(mockExtractSymptomData).toHaveBeenCalled()
+  })
+
+  it('überspringt Transkription bei Voice-Event mit vorhandenem raw_input (Re-Extraction)', async () => {
+    const supabase = createMockSupabase()
+    mockSingle.mockResolvedValue({
+      data: {
+        id: 'voice-1',
+        account_id: 'user-1',
+        event_type: 'voice',
+        raw_input: 'Kopfschmerzen seit gestern',
+        audio_url: 'user-1/voice-1.webm',
+        status: 'extracted',
+      },
+      error: null,
+    })
+
+    const { runExtractionPipeline } = await import('@/lib/ai/pipeline')
+    await runExtractionPipeline(supabase as never, 'voice-1')
+
+    // raw_input ist bereits gesetzt → Transkription wird übersprungen
+    expect(mockTranscribeAudio).not.toHaveBeenCalled()
+    expect(mockExtractSymptomData).toHaveBeenCalledWith(
+      expect.stringContaining('Kopfschmerzen seit gestern'),
+      undefined,
+    )
   })
 
   it('setzt extraction_failed bei Timeout', async () => {
