@@ -247,6 +247,44 @@ describe('EventDetailView', () => {
     vi.unstubAllGlobals()
   })
 
+  it('zeigt Fehlermeldung bei fehlgeschlagenem Re-Run', async () => {
+    mockRefresh.mockClear()
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
+    vi.stubGlobal('fetch', mockFetch)
+
+    render(<EventDetailView detail={baseDetail} />)
+
+    const extractionBtn = screen.getByText('Extraktion wiederholen')
+    await act(async () => {
+      extractionBtn.click()
+    })
+
+    expect(screen.getByText('Erneuter Versuch fehlgeschlagen')).toBeTruthy()
+    expect(mockRefresh).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('zeigt Netzwerk-Fehlermeldung bei fetch-Exception', async () => {
+    mockRefresh.mockClear()
+    const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
+    vi.stubGlobal('fetch', mockFetch)
+
+    render(<EventDetailView detail={baseDetail} />)
+
+    const extractionBtn = screen.getByText('Extraktion wiederholen')
+    await act(async () => {
+      extractionBtn.click()
+    })
+
+    expect(
+      screen.getByText('Netzwerkfehler — bitte erneut versuchen'),
+    ).toBeTruthy()
+    expect(mockRefresh).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
   it('zeigt Medikament-Event korrekt (kein Bearbeiten-Link)', () => {
     const medDetail: EventDetail = {
       ...baseDetail,

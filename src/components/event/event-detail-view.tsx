@@ -108,6 +108,29 @@ export function EventDetailView({
   const router = useRouter()
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
+  const [retryError, setRetryError] = useState<string | null>(null)
+
+  const handleRetry = async (mode: 'extract' | 'transcribe') => {
+    setIsRetrying(true)
+    setRetryError(null)
+    try {
+      const response = await fetch('/api/ai/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptomEventId: detail.id, mode }),
+      })
+      if (!response.ok) {
+        setRetryError('Erneuter Versuch fehlgeschlagen')
+        return
+      }
+      router.refresh()
+    } catch {
+      setRetryError('Netzwerkfehler — bitte erneut versuchen')
+    } finally {
+      setIsRetrying(false)
+    }
+  }
+
   const [photos, setPhotos] = useState<EventPhoto[]>(detail.photos)
   const [photoOffset, setPhotoOffset] = useState(detail.photos.length)
   const [totalPhotoCount, setTotalPhotoCount] = useState(detail.totalPhotoCount)
@@ -230,22 +253,7 @@ export function EventDetailView({
               <button
                 type="button"
                 disabled={isRetrying}
-                onClick={async () => {
-                  setIsRetrying(true)
-                  try {
-                    await fetch('/api/ai/extract', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        symptomEventId: detail.id,
-                        mode: 'extract',
-                      }),
-                    })
-                    router.refresh()
-                  } finally {
-                    setIsRetrying(false)
-                  }
-                }}
+                onClick={() => handleRetry('extract')}
                 className="flex h-11 items-center justify-center rounded-xl border border-border px-6 text-sm font-medium text-foreground transition-colors active:bg-muted disabled:opacity-50"
               >
                 {isRetrying ? 'Wird verarbeitet...' : 'Extraktion wiederholen'}
@@ -254,22 +262,7 @@ export function EventDetailView({
                 <button
                   type="button"
                   disabled={isRetrying}
-                  onClick={async () => {
-                    setIsRetrying(true)
-                    try {
-                      await fetch('/api/ai/extract', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          symptomEventId: detail.id,
-                          mode: 'transcribe',
-                        }),
-                      })
-                      router.refresh()
-                    } finally {
-                      setIsRetrying(false)
-                    }
-                  }}
+                  onClick={() => handleRetry('transcribe')}
                   className="flex h-11 items-center justify-center rounded-xl border border-border px-6 text-sm font-medium text-foreground transition-colors active:bg-muted disabled:opacity-50"
                 >
                   {isRetrying
@@ -278,6 +271,10 @@ export function EventDetailView({
                 </button>
               )}
             </div>
+          )}
+
+          {retryError && (
+            <p className="text-center text-sm text-destructive">{retryError}</p>
           )}
 
           {/* Bearbeiten-Link — nur für Symptom-Events */}

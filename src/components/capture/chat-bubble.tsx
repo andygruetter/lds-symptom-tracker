@@ -388,6 +388,7 @@ export function ChatBubble({
     onNavigate && eventId && eventStatus && eventStatus !== 'pending'
 
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   // Ref to prevent navigation click firing right after a long press completes
   const longPressJustOccurredRef = useRef(false)
 
@@ -401,6 +402,25 @@ export function ChatBubble({
     isPressed,
     progress,
   } = useLongPress(handleLongPress, { delay: 1500 })
+
+  // Close menu on outside tap (F4: Click-Away-Handler)
+  useEffect(() => {
+    if (!menuOpen) return
+    const handleOutsideClick = (e: Event) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('touchstart', handleOutsideClick)
+      document.addEventListener('mousedown', handleOutsideClick)
+    }, 0)
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('touchstart', handleOutsideClick)
+      document.removeEventListener('mousedown', handleOutsideClick)
+    }
+  }, [menuOpen])
 
   const handleArticleClick = useCallback(() => {
     if (longPressJustOccurredRef.current) {
@@ -469,7 +489,10 @@ export function ChatBubble({
 
         {/* Re-Run Overlay-Menu nach Long-Press */}
         {showRerunMenu && menuOpen && (
-          <div className="absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-full flex-col gap-0.5 rounded-xl border border-border bg-popover p-1 shadow-lg">
+          <div
+            ref={menuRef}
+            className="absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-full flex-col gap-0.5 rounded-xl border border-border bg-popover p-1 shadow-lg"
+          >
             {onRetryExtraction && (
               <button
                 type="button"
