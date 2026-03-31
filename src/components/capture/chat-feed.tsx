@@ -16,6 +16,7 @@ interface ChatFeedProps {
   getSignedPhotoUrl?: (storagePath: string) => Promise<string>
   isLoading: boolean
   onRetryExtraction?: (eventId: string) => void
+  onRetryTranscription?: (eventId: string) => void
   onConfirmEvent?: (eventId: string) => void
   onCorrectField?: (
     eventId: string,
@@ -47,6 +48,7 @@ export function ChatFeed({
   getSignedPhotoUrl,
   isLoading,
   onRetryExtraction,
+  onRetryTranscription,
   onConfirmEvent,
   onCorrectField,
   onEndSymptom,
@@ -123,6 +125,20 @@ export function ChatFeed({
                 eventStatus={event.status}
                 onNavigate={onNavigateToEvent}
                 onAddPhoto={onAddPhotoToEvent}
+                showRerunMenu={
+                  event.status === 'extracted' || event.status === 'confirmed'
+                }
+                isVoiceEvent={isVoice}
+                onRetryExtraction={
+                  onRetryExtraction
+                    ? () => onRetryExtraction(event.id)
+                    : undefined
+                }
+                onRetryTranscription={
+                  onRetryTranscription
+                    ? () => onRetryTranscription(event.id)
+                    : undefined
+                }
               />
 
               {/* Processing indicator for pending/transcribed events

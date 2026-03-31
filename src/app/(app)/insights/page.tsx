@@ -1,11 +1,15 @@
+import { Suspense } from 'react'
+
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { FileDown } from 'lucide-react'
 
+import { InsightsSummaryCard } from '@/components/insights/insights-summary-card'
 import { MonthTimeline } from '@/components/insights/month-timeline'
 import { SymptomFeed } from '@/components/insights/symptom-feed'
 import { SymptomRanking } from '@/components/insights/symptom-ranking'
+import { AISummarySkeleton } from '@/components/sharing/ai-summary-skeleton'
 import { ShareSheet } from '@/components/sharing/share-sheet'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -15,6 +19,7 @@ import {
   getMonthlyTimeline,
   getSymptomRanking,
 } from '@/lib/db/insights'
+import { toLocalDateKey } from '@/lib/utils/date'
 
 export default async function InsightsPage() {
   const supabase = await createServerClient()
@@ -27,6 +32,11 @@ export default async function InsightsPage() {
   }
 
   const today = new Date()
+  const threeMonthsAgo = new Date(today)
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+  const summaryDateFrom = toLocalDateKey(threeMonthsAgo)
+  const summaryDateTo = toLocalDateKey(today)
+
   const [feed, timeline, ranking] = await Promise.all([
     getChronologicalFeed(supabase, user.id, { limit: 20 }),
     getMonthlyTimeline(
@@ -67,6 +77,9 @@ export default async function InsightsPage() {
             <TabsTrigger value="ranking" className="flex-1">
               Ranking
             </TabsTrigger>
+            <TabsTrigger value="ki" className="flex-1">
+              KI
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -84,6 +97,16 @@ export default async function InsightsPage() {
 
         <TabsContent value="ranking">
           <SymptomRanking initialRanking={ranking} />
+        </TabsContent>
+
+        <TabsContent value="ki" className="p-4">
+          <Suspense fallback={<AISummarySkeleton />}>
+            <InsightsSummaryCard
+              accountId={user.id}
+              dateFrom={summaryDateFrom}
+              dateTo={summaryDateTo}
+            />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
