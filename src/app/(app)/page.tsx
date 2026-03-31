@@ -15,6 +15,7 @@ import {
   createSymptomEvent,
   createVoiceSymptomEvent,
   endSymptomEvent,
+  retryExtraction,
 } from '@/lib/actions/symptom-actions'
 import { createBrowserClient } from '@/lib/db/client'
 import { getSignedPhotoUrl } from '@/lib/db/media'
@@ -120,17 +121,9 @@ export default function CapturePage() {
   }
 
   const handleRetryExtraction = async (eventId: string) => {
-    try {
-      const response = await fetch('/api/ai/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symptomEventId: eventId }),
-      })
-      if (!response.ok) {
-        console.error('[Retry] Extraction failed:', response.status)
-      }
-    } catch (err) {
-      console.error('[Retry] Network error:', err)
+    const result = await retryExtraction({ eventId })
+    if (result.error) {
+      console.error('[Retry] Extraction failed:', result.error)
     }
   }
 

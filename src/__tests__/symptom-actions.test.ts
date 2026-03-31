@@ -1155,3 +1155,116 @@ describe('addPhotosToEvent', () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith('/')
   })
 })
+
+describe('retryExtraction', () => {
+  it('gibt VALIDATION_ERROR zurück bei ungültiger Event-ID', async () => {
+    const { retryExtraction } = await import('@/lib/actions/symptom-actions')
+    const result = await retryExtraction({ eventId: 'keine-uuid' })
+
+    expect(result.error?.code).toBe('VALIDATION_ERROR')
+    expect(result.data).toBeNull()
+  })
+
+  it('gibt AUTH_REQUIRED zurück wenn kein User', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const { retryExtraction } = await import('@/lib/actions/symptom-actions')
+    const result = await retryExtraction({
+      eventId: '00000000-0000-0000-0000-000000000001',
+    })
+
+    expect(result.error?.code).toBe('AUTH_REQUIRED')
+    expect(result.data).toBeNull()
+  })
+
+  it('gibt NOT_FOUND zurück wenn Event nicht existiert oder nicht dem User gehört', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+    })
+    mockEq.mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }),
+    })
+
+    const { retryExtraction } = await import('@/lib/actions/symptom-actions')
+    const result = await retryExtraction({
+      eventId: '00000000-0000-0000-0000-000000000001',
+    })
+
+    expect(result.error?.code).toBe('NOT_FOUND')
+    expect(result.data).toBeNull()
+  })
+
+  it('gibt INVALID_STATUS zurück wenn Event nicht in fehlgeschlagenem Zustand', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+    })
+    mockEq.mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: { id: 'event-1', status: 'confirmed' },
+          error: null,
+        }),
+      }),
+    })
+
+    const { retryExtraction } = await import('@/lib/actions/symptom-actions')
+    const result = await retryExtraction({
+      eventId: '00000000-0000-0000-0000-000000000001',
+    })
+
+    expect(result.error?.code).toBe('INVALID_STATUS')
+    expect(result.data).toBeNull()
+  })
+
+  it('startet Pipeline und revalidiert Pfad bei extraction_failed', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+    })
+    mockEq.mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: { id: 'event-1', status: 'extraction_failed' },
+          error: null,
+        }),
+      }),
+    })
+
+    const { retryExtraction } = await import('@/lib/actions/symptom-actions')
+    const result = await retryExtraction({
+      eventId: '00000000-0000-0000-0000-000000000001',
+    })
+
+    expect(result.error).toBeNull()
+    expect(result.data).toBeNull()
+    expect(mockRunExtractionPipeline).toHaveBeenCalledWith(
+      expect.anything(),
+      '00000000-0000-0000-0000-000000000001',
+    )
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/')
+  })
+
+  it('startet Pipeline und revalidiert Pfad bei transcription_failed', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+    })
+    mockEq.mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: { id: 'event-1', status: 'transcription_failed' },
+          error: null,
+        }),
+      }),
+    })
+
+    const { retryExtraction } = await import('@/lib/actions/symptom-actions')
+    const result = await retryExtraction({
+      eventId: '00000000-0000-0000-0000-000000000001',
+    })
+
+    expect(result.error).toBeNull()
+    expect(mockRunExtractionPipeline).toHaveBeenCalled()
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/')
+  })
+})

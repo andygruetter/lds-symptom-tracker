@@ -19,6 +19,7 @@ import {
   createSymptomEventSchema,
   createVoiceSymptomEventSchema,
   endSymptomEventSchema,
+  retryExtractionSchema,
 } from '@/types/symptom'
 
 export async function createSymptomEvent(
@@ -854,6 +855,74 @@ export async function deleteEventPhoto(
   await supabase.from('event_photos').delete().eq('id', photoId)
 
   revalidatePath(`/event/${photo.symptom_event_id}`)
+
+  return { data: null, error: null }
+}
+
+export async function retryExtraction(
+  input: unknown,
+): Promise<ActionResult<null>> {
+  // 1. Zod validation
+  const parsed = retryExtractionSchema.safeParse(input)
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { error: 'Ungültige Event-ID', code: 'VALIDATION_ERROR' },
+    }
+  }
+
+  const { eventId } = parsed.data
+
+  // 2. Auth-Check
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      data: null,
+      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
+    }
+  }
+
+  // 3. Ownership-Check + Status-Check
+  const { data: event } = await supabase
+    .from('symptom_events')
+    .select('id, status')
+    .eq('id', eventId)
+    .eq('account_id', user.id)
+    .single()
+
+  if (!event) {
+    return {
+      data: null,
+      error: { error: 'Event nicht gefunden', code: 'NOT_FOUND' },
+    }
+  }
+
+  const retriableStatuses = ['extraction_failed', 'transcription_failed']
+  if (!retriableStatuses.includes(event.status)) {
+    return {
+      data: null,
+      error: {
+        error: 'Event ist nicht in einem fehlgeschlagenen Zustand',
+        code: 'INVALID_STATUS',
+      },
+    }
+  }
+
+  // 4. Pipeline mit Service Client ausführen (RLS bypassed)
+  const serviceClient = createServiceClient()
+  after(async () => {
+    try {
+      await runExtractionPipeline(serviceClient, eventId)
+    } catch (err) {
+      console.error('[Retry Extraction Pipeline] Failed:', err)
+    }
+  })
+
+  revalidatePath('/')
 
   return { data: null, error: null }
 }

@@ -59,3 +59,8 @@ export const createVoiceSymptomEventSchema = z.object({
 export const addPhotosToEventSchema = z.object({
   eventId: z.string().uuid('Ungültige Event-ID'),
 })
+
+// Zod Schema für retryExtraction Action
+export const retryExtractionSchema = z.object({
+  eventId: z.string().uuid('Ungültige Event-ID'),
+})
