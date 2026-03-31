@@ -137,6 +137,58 @@ describe('useLongPress', () => {
     expect(callback).not.toHaveBeenCalled()
   })
 
+  it('bricht Long-Press bei Scroll (TouchMove > 10px) ab', async () => {
+    const callback = vi.fn()
+    const { result } = renderHook(() => useLongPress(callback))
+
+    act(() => {
+      result.current.handlers.onTouchStart({
+        touches: [{ clientX: 100, clientY: 100 }],
+      } as unknown as React.TouchEvent)
+    })
+
+    expect(result.current.isPressed).toBe(true)
+
+    act(() => {
+      result.current.handlers.onTouchMove({
+        touches: [{ clientX: 100, clientY: 125 }],
+      } as unknown as React.TouchEvent)
+    })
+
+    expect(result.current.isPressed).toBe(false)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+
+    expect(callback).not.toHaveBeenCalled()
+  })
+
+  it('bricht Long-Press NICHT bei kleiner Bewegung (< 10px) ab', async () => {
+    const callback = vi.fn()
+    const { result } = renderHook(() => useLongPress(callback))
+
+    act(() => {
+      result.current.handlers.onTouchStart({
+        touches: [{ clientX: 100, clientY: 100 }],
+      } as unknown as React.TouchEvent)
+    })
+
+    act(() => {
+      result.current.handlers.onTouchMove({
+        touches: [{ clientX: 105, clientY: 105 }],
+      } as unknown as React.TouchEvent)
+    })
+
+    expect(result.current.isPressed).toBe(true)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
+
   it('respektiert custom delay Option', async () => {
     const callback = vi.fn()
     const { result } = renderHook(() => useLongPress(callback, { delay: 3000 }))
