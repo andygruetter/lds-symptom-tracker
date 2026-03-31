@@ -124,10 +124,25 @@ export default function CapturePage() {
       const response = await fetch('/api/ai/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symptomEventId: eventId }),
+        body: JSON.stringify({ symptomEventId: eventId, mode: 'extract' }),
       })
       if (!response.ok) {
         console.error('[Retry] Extraction failed:', response.status)
+      }
+    } catch (err) {
+      console.error('[Retry] Network error:', err)
+    }
+  }
+
+  const handleRetryTranscription = async (eventId: string) => {
+    try {
+      const response = await fetch('/api/ai/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptomEventId: eventId, mode: 'transcribe' }),
+      })
+      if (!response.ok) {
+        console.error('[Retry] Transcription failed:', response.status)
       }
     } catch (err) {
       console.error('[Retry] Network error:', err)
@@ -144,6 +159,7 @@ export default function CapturePage() {
         getSignedPhotoUrl={handleGetSignedPhotoUrl}
         isLoading={isLoading}
         onRetryExtraction={handleRetryExtraction}
+        onRetryTranscription={handleRetryTranscription}
         onConfirmEvent={handleConfirmEvent}
         onCorrectField={handleCorrectField}
         onEndSymptom={handleEndSymptom}

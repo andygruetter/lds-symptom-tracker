@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Camera, ChevronRight, Mic, Pill, X } from 'lucide-react'
 
+import { useLongPress } from '@/hooks/use-long-press'
 import { getFieldLabel } from '@/lib/field-config'
 import { cn } from '@/lib/utils'
 import type { ExtractedData } from '@/types/ai'
@@ -23,6 +24,9 @@ interface ChatBubbleProps {
   isExtractionFailed?: boolean
   isTranscriptionFailed?: boolean
   onRetryExtraction?: () => void
+  onRetryTranscription?: () => void
+  isVoiceEvent?: boolean
+  showRerunMenu?: boolean
   activeSinceLabel?: string
   durationLabel?: string
   onEndSymptom?: () => void
@@ -369,6 +373,9 @@ export function ChatBubble({
   isExtractionFailed = false,
   isTranscriptionFailed = false,
   onRetryExtraction,
+  onRetryTranscription,
+  isVoiceEvent = false,
+  showRerunMenu = false,
   activeSinceLabel,
   durationLabel,
   onEndSymptom,
@@ -380,6 +387,35 @@ export function ChatBubble({
   const isNavigable =
     onNavigate && eventId && eventStatus && eventStatus !== 'pending'
 
+  const [menuOpen, setMenuOpen] = useState(false)
+  // Ref to prevent navigation click firing right after a long press completes
+  const longPressJustOccurredRef = useRef(false)
+
+  const handleLongPress = useCallback(() => {
+    longPressJustOccurredRef.current = true
+    setMenuOpen(true)
+  }, [])
+
+  const {
+    handlers: longPressHandlers,
+    isPressed,
+    progress,
+  } = useLongPress(handleLongPress, { delay: 1500 })
+
+  const handleArticleClick = useCallback(() => {
+    if (longPressJustOccurredRef.current) {
+      longPressJustOccurredRef.current = false
+      return
+    }
+    if (menuOpen) {
+      setMenuOpen(false)
+      return
+    }
+    if (isNavigable && onNavigate && eventId) {
+      onNavigate(eventId)
+    }
+  }, [menuOpen, isNavigable, onNavigate, eventId])
+
   return (
     <div
       role="article"
@@ -390,7 +426,7 @@ export function ChatBubble({
         variant === 'received' && 'justify-start',
         variant === 'system' && 'justify-center',
       )}
-      onClick={isNavigable ? () => onNavigate(eventId) : undefined}
+      onClick={isNavigable || menuOpen ? handleArticleClick : undefined}
       onKeyDown={
         isNavigable
           ? (e) => {
@@ -418,7 +454,50 @@ export function ChatBubble({
           variant === 'system' && 'rounded-xl bg-muted text-foreground',
           isNavigable && 'pr-8',
         )}
+        {...(showRerunMenu ? longPressHandlers : {})}
       >
+        {/* Progress-Ring während Long-Press */}
+        {showRerunMenu && isPressed && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-2xl"
+            style={{
+              background: `conic-gradient(from -90deg, rgba(255,255,255,0.35) ${progress * 360}deg, transparent ${progress * 360}deg)`,
+            }}
+          />
+        )}
+
+        {/* Re-Run Overlay-Menu nach Long-Press */}
+        {showRerunMenu && menuOpen && (
+          <div className="absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-full flex-col gap-0.5 rounded-xl border border-border bg-popover p-1 shadow-lg">
+            {onRetryExtraction && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onRetryExtraction()
+                }}
+                className="rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted"
+              >
+                Extraktion wiederholen
+              </button>
+            )}
+            {isVoiceEvent && onRetryTranscription && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onRetryTranscription()
+                }}
+                className="rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted"
+              >
+                Transkription wiederholen
+              </button>
+            )}
+          </div>
+        )}
         {isProcessing ? (
           <ProcessingDots />
         ) : isExtractionFailed ? (
