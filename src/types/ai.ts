@@ -112,6 +112,7 @@ export interface ClarificationQuestion {
 // Zod Schema für API Route Input
 export const extractRequestSchema = z.object({
   symptomEventId: z.string().uuid('Ungültige Event-ID'),
+  mode: z.enum(['extract', 'transcribe']).optional().default('extract'),
 })
 
 export type ExtractRequest = z.infer<typeof extractRequestSchema>
