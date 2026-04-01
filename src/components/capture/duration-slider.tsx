@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import {
   DURATION_STEPS,
@@ -18,10 +18,6 @@ export function DurationSlider({ value, onChange }: DurationSliderProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(
     value !== undefined ? minutesToStepIndex(value) : null,
   )
-
-  useEffect(() => {
-    setSelectedIndex(value !== undefined ? minutesToStepIndex(value) : null)
-  }, [value])
 
   const currentLabel =
     selectedIndex !== null

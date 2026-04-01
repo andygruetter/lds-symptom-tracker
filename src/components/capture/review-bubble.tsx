@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { Clock, MapPin } from 'lucide-react'
 
@@ -334,19 +334,6 @@ export function ReviewBubble({
   const [editingField, setEditingField] = useState<string | null>(null)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [sliderDuration, setSliderDuration] = useState<number | null>(null)
-
-  // Reset slider if a real duration field appears (e.g. after extraction re-run)
-  useEffect(() => {
-    const hasExtractedDuration = extractedFields.some(
-      (f) =>
-        f.field_name === 'duration' &&
-        f.value !== '<UNKNOWN>' &&
-        f.value !== 'UNKNOWN',
-    )
-    if (hasExtractedDuration) {
-      setSliderDuration(null)
-    }
-  }, [extractedFields])
 
   const avgConfidence = getAverageConfidence(extractedFields)
   const hasClarifications = clarificationQuestions.length > 0
