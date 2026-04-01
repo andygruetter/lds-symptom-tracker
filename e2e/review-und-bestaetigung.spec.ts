@@ -32,6 +32,7 @@ test.describe('Review und Bestätigung', () => {
       { field_name: 'symptom_name', value: 'Kopfschmerzen', confidence: 95 },
       { field_name: 'Körperregion', value: 'Kopf', confidence: 90 },
       { field_name: 'Seite', value: 'rechts', confidence: 85 },
+      { field_name: 'duration', value: '30', confidence: 80 },
     ])
 
     await capturePage.goto()
@@ -77,6 +78,7 @@ test.describe('Review und Bestätigung', () => {
         value: 'Kopfschmerzen',
         confidence: 95,
       },
+      { field_name: 'duration', value: '30', confidence: 80 },
     ])
 
     await capturePage.goto()
@@ -96,6 +98,7 @@ test.describe('Review und Bestätigung', () => {
         value: 'Knieschmerzen',
         confidence: 95,
       },
+      { field_name: 'duration', value: '15', confidence: 80 },
     ])
 
     await capturePage.goto()
@@ -110,6 +113,7 @@ test.describe('Review und Bestätigung', () => {
     })
     await createTestExtractedData(event.id, [
       { field_name: 'symptom_name', value: 'Schmerzen', confidence: 85 },
+      { field_name: 'duration', value: '60', confidence: 80 },
     ])
 
     await capturePage.goto()

@@ -49,14 +49,6 @@ export class CapturePage {
     await this.page.getByText('Gespeichert ✓').waitFor()
   }
 
-  async endSymptom() {
-    await this.page.getByRole('button', { name: 'Symptom beendet' }).click()
-  }
-
-  async waitForEndedMessage() {
-    await this.page.getByText(/Symptom beendet — Dauer:/).waitFor()
-  }
-
   async retryExtraction() {
     await this.page.getByText('Erneut versuchen').click()
   }
