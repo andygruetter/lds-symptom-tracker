@@ -23,11 +23,6 @@ export const confirmSymptomEventSchema = z.object({
   eventId: z.string().uuid('Ungültige Event-ID'),
 })
 
-// Zod Schema für endSymptomEvent Action
-export const endSymptomEventSchema = z.object({
-  eventId: z.string().uuid('Ungültige Event-ID'),
-})
-
 // Zod Schema für correctExtractedField Action
 export const correctExtractedFieldSchema = z.object({
   eventId: z.string().uuid('Ungültige Event-ID'),

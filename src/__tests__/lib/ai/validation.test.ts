@@ -168,19 +168,21 @@ describe('validateExtractionFields', () => {
   })
 
   describe('duration', () => {
-    it('akzeptiert gültige Werte im Bereich 1-43200', () => {
+    it('akzeptiert gültige Werte im Bereich 0-43200', () => {
       const fields: ExtractionField[] = [
+        field({ fieldName: 'duration', value: '0', confidence: 80 }),
         field({ fieldName: 'duration', value: '1', confidence: 80 }),
         field({ fieldName: 'duration', value: '60', confidence: 85 }),
         field({ fieldName: 'duration', value: '43200', confidence: 90 }),
       ]
       const result = validateExtractionFields(fields)
-      expect(result).toHaveLength(3)
-      expect(result[0].value).toBe('1')
+      expect(result).toHaveLength(4)
+      expect(result[0].value).toBe('0')
       expect(result[0].confidence).toBe(80)
-      expect(result[1].value).toBe('60')
-      expect(result[2].value).toBe('43200')
-      expect(result[2].confidence).toBe(90)
+      expect(result[1].value).toBe('1')
+      expect(result[2].value).toBe('60')
+      expect(result[3].value).toBe('43200')
+      expect(result[3].confidence).toBe(90)
     })
 
     it('filtert NaN-Werte heraus', () => {
@@ -192,17 +194,14 @@ describe('validateExtractionFields', () => {
       expect(result).toHaveLength(0)
     })
 
-    it('clampt Werte unter Minimum auf 1', () => {
+    it('clampt negative Werte auf 0 mit reduzierter Konfidenz', () => {
       const fields: ExtractionField[] = [
-        field({ fieldName: 'duration', value: '0', confidence: 70 }),
         field({ fieldName: 'duration', value: '-10', confidence: 85 }),
       ]
       const result = validateExtractionFields(fields)
-      expect(result).toHaveLength(2)
-      expect(result[0].value).toBe('1')
+      expect(result).toHaveLength(1)
+      expect(result[0].value).toBe('0')
       expect(result[0].confidence).toBe(40)
-      expect(result[1].value).toBe('1')
-      expect(result[1].confidence).toBe(40)
     })
 
     it('clampt Werte über Maximum auf 43200', () => {

@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react'
 import { ChatBubble } from '@/components/capture/chat-bubble'
 import { ReviewBubble } from '@/components/capture/review-bubble'
 import { generateClarificationQuestions } from '@/lib/ai/clarification'
-import { formatActiveSince, formatDuration } from '@/lib/utils/duration'
 import type { ExtractedData } from '@/types/ai'
 import type { EventPhoto, SymptomEvent } from '@/types/symptom'
 
@@ -23,7 +22,6 @@ interface ChatFeedProps {
     fieldName: string,
     newValue: string,
   ) => void
-  onEndSymptom?: (eventId: string) => void
   onAnswerClarification?: (
     eventId: string,
     fieldName: string,
@@ -51,7 +49,6 @@ export function ChatFeed({
   onRetryTranscription,
   onConfirmEvent,
   onCorrectField,
-  onEndSymptom,
   onAnswerClarification,
   onNavigateToEvent,
   onAddPhotoToEvent,
@@ -60,23 +57,11 @@ export function ChatFeed({
   const [confirmingEventId, setConfirmingEventId] = useState<string | null>(
     null,
   )
-  const [, setTick] = useState(0)
 
   // Auto-scroll bei neuen Events
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [events.length])
-
-  // Update "Aktiv seit" badges every minute
-  const hasActiveEvents = events.some(
-    (e) =>
-      e.status === 'confirmed' && !e.ended_at && e.event_type !== 'medication',
-  )
-  useEffect(() => {
-    if (!hasActiveEvents) return
-    const interval = setInterval(() => setTick((t) => t + 1), 60_000)
-    return () => clearInterval(interval)
-  }, [hasActiveEvents])
 
   if (isLoading) {
     return (
@@ -188,39 +173,11 @@ export function ChatFeed({
                   content="Gespeichert ✓"
                   isMedication={isMedication}
                   extractedFields={extractedFields}
-                  activeSinceLabel={
-                    !isMedication && !event.ended_at
-                      ? formatActiveSince(new Date(event.created_at))
-                      : undefined
-                  }
-                  durationLabel={
-                    !isMedication && event.ended_at
-                      ? formatDuration(
-                          new Date(event.created_at),
-                          new Date(event.ended_at),
-                        )
-                      : undefined
-                  }
-                  onEndSymptom={
-                    !isMedication && !event.ended_at && onEndSymptom
-                      ? () => onEndSymptom(event.id)
-                      : undefined
-                  }
                   eventId={event.id}
                   eventStatus={event.status}
                   onNavigate={onNavigateToEvent}
                 />
               )}
-
-              {/* System-Bubble: Symptom beendet */}
-              {event.status === 'confirmed' &&
-                event.ended_at &&
-                !isMedication && (
-                  <ChatBubble
-                    variant="system"
-                    content={`✓ Symptom beendet — Dauer: ${formatDuration(new Date(event.created_at), new Date(event.ended_at))}`}
-                  />
-                )}
 
               {/* Extraction failed */}
               {event.status === 'extraction_failed' && (

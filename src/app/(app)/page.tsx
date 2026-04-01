@@ -14,7 +14,6 @@ import {
   correctExtractedField,
   createSymptomEvent,
   createVoiceSymptomEvent,
-  endSymptomEvent,
 } from '@/lib/actions/symptom-actions'
 import { createBrowserClient } from '@/lib/db/client'
 import { getSignedPhotoUrl } from '@/lib/db/media'
@@ -92,13 +91,6 @@ export default function CapturePage() {
     await refreshExtractedData([eventId])
   }
 
-  const handleEndSymptom = async (eventId: string) => {
-    const result = await endSymptomEvent({ eventId })
-    if (result.error) {
-      console.error('[EndSymptom] Fehler:', result.error.error)
-    }
-  }
-
   const handleAnswerClarification = async (
     eventId: string,
     fieldName: string,
@@ -162,7 +154,6 @@ export default function CapturePage() {
         onRetryTranscription={handleRetryTranscription}
         onConfirmEvent={handleConfirmEvent}
         onCorrectField={handleCorrectField}
-        onEndSymptom={handleEndSymptom}
         onAnswerClarification={handleAnswerClarification}
         onNavigateToEvent={handleNavigateToEvent}
         onAddPhotoToEvent={handleAddPhotoToEvent}

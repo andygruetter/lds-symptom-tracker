@@ -27,9 +27,6 @@ interface ChatBubbleProps {
   onRetryTranscription?: () => void
   isVoiceEvent?: boolean
   showRerunMenu?: boolean
-  activeSinceLabel?: string
-  durationLabel?: string
-  onEndSymptom?: () => void
   eventId?: string
   eventStatus?: string
   onNavigate?: (eventId: string) => void
@@ -376,9 +373,6 @@ export function ChatBubble({
   onRetryTranscription,
   isVoiceEvent = false,
   showRerunMenu = false,
-  activeSinceLabel,
-  durationLabel,
-  onEndSymptom,
   eventId,
   eventStatus,
   onNavigate,
@@ -599,32 +593,6 @@ export function ChatBubble({
                 fields={extractedFields}
                 isMedication={isMedication}
               />
-            )}
-            {activeSinceLabel && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-success/10 px-3 py-1 text-xs text-success">
-                  {activeSinceLabel}
-                </span>
-                {onEndSymptom && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEndSymptom()
-                    }}
-                    className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/80"
-                  >
-                    Symptom beendet
-                  </button>
-                )}
-              </div>
-            )}
-            {durationLabel && (
-              <div className="mt-2">
-                <span className="inline-flex items-center rounded-full bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
-                  Dauer: {durationLabel}
-                </span>
-              </div>
             )}
             {timestamp && (
               <div className="mt-1 flex items-center gap-1.5">

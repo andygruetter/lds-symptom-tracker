@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { formatActiveSince, formatDuration } from '@/lib/utils/duration'
+import { formatDuration } from '@/lib/utils/duration'
 
 describe('formatDuration', () => {
   it('gibt Minuten zurück für kurze Dauern', () => {
@@ -48,27 +48,5 @@ describe('formatDuration', () => {
   it('gibt "0 Minuten" zurück für gleiche Zeitpunkte', () => {
     const date = new Date('2026-03-02T10:00:00Z')
     expect(formatDuration(date, date)).toBe('0 Minuten')
-  })
-})
-
-describe('formatActiveSince', () => {
-  it('gibt "Aktiv seit X" String zurück', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-03-02T12:30:00Z'))
-
-    const start = new Date('2026-03-02T10:00:00Z')
-    expect(formatActiveSince(start)).toBe('Aktiv seit 2 Std. 30 Min.')
-
-    vi.useRealTimers()
-  })
-
-  it('zeigt Minuten für kurze Dauer', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-03-02T10:05:00Z'))
-
-    const start = new Date('2026-03-02T10:00:00Z')
-    expect(formatActiveSince(start)).toBe('Aktiv seit 5 Minuten')
-
-    vi.useRealTimers()
   })
 })
