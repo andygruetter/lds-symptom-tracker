@@ -35,7 +35,8 @@ export function formatSymptomTimestamp(isoString: string): string {
 
 export function formatDurationMinutes(minutesStr: string): string | null {
   const minutes = parseInt(minutesStr, 10)
-  if (isNaN(minutes) || minutes <= 0) return null
+  if (isNaN(minutes) || minutes < 0) return null
+  if (minutes === 0) return '< 30 Sek.'
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
   if (hours > 0 && mins > 0) return `${hours} Std. ${mins} Min.`

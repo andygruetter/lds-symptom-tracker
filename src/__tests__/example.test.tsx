@@ -36,7 +36,6 @@ vi.mock('@/lib/actions/symptom-actions', () => ({
   addPhotosToEvent: vi.fn(),
   confirmSymptomEvent: vi.fn(),
   correctExtractedField: vi.fn(),
-  endSymptomEvent: vi.fn(),
   answerClarification: vi.fn(),
 }))
 

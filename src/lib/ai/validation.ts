@@ -6,7 +6,7 @@ const VALID_STATUSES = new Set(['active', 'resolved', 'improving', 'worsening'])
 
 const NUMERIC_FIELDS: Record<string, { min: number; max: number }> = {
   intensity: { min: 1, max: 10 },
-  duration: { min: 1, max: 43200 }, // max 30 Tage in Minuten
+  duration: { min: 0, max: 43200 }, // max 30 Tage in Minuten
 }
 
 /**

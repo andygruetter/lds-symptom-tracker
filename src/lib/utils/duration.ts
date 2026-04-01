@@ -12,7 +12,3 @@ export function formatDuration(start: Date, end: Date): string {
   }
   return `${minutes} Minute${minutes !== 1 ? 'n' : ''}`
 }
-
-export function formatActiveSince(start: Date): string {
-  return `Aktiv seit ${formatDuration(start, new Date())}`
-}

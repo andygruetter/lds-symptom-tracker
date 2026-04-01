@@ -110,8 +110,11 @@ describe('event-detail-utils', () => {
 
     it('gibt null bei ungültiger Eingabe zurück', () => {
       expect(formatDurationMinutes('abc')).toBeNull()
-      expect(formatDurationMinutes('0')).toBeNull()
       expect(formatDurationMinutes('-5')).toBeNull()
+    })
+
+    it('gibt "< 30 Sek." für Wert 0 zurück', () => {
+      expect(formatDurationMinutes('0')).toBe('< 30 Sek.')
     })
   })
 

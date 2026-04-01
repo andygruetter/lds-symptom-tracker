@@ -124,60 +124,7 @@ describe('ChatBubble', () => {
     expect(screen.getByText('Erneut versuchen')).toBeInTheDocument()
   })
 
-  it('zeigt Aktiv-Badge wenn activeSinceLabel gesetzt', () => {
-    render(
-      <ChatBubble
-        variant="received"
-        content="Gespeichert ✓"
-        activeSinceLabel="Aktiv seit 2 Std. 30 Min."
-      />,
-    )
-
-    expect(screen.getByText('Aktiv seit 2 Std. 30 Min.')).toBeInTheDocument()
-  })
-
-  it('zeigt Beenden-Button bei aktivem Symptom', () => {
-    const onEnd = vi.fn()
-    render(
-      <ChatBubble
-        variant="received"
-        content="Gespeichert ✓"
-        activeSinceLabel="Aktiv seit 15 Minuten"
-        onEndSymptom={onEnd}
-      />,
-    )
-
-    const button = screen.getByText('Symptom beendet')
-    expect(button).toBeInTheDocument()
-    fireEvent.click(button)
-    expect(onEnd).toHaveBeenCalledTimes(1)
-  })
-
-  it('zeigt keinen Beenden-Button ohne onEndSymptom', () => {
-    render(
-      <ChatBubble
-        variant="received"
-        content="Gespeichert ✓"
-        activeSinceLabel="Aktiv seit 5 Minuten"
-      />,
-    )
-
-    expect(screen.queryByText('Symptom beendet')).not.toBeInTheDocument()
-  })
-
-  it('zeigt Dauer-Badge für beendetes Symptom', () => {
-    render(
-      <ChatBubble
-        variant="received"
-        content="Gespeichert ✓"
-        durationLabel="3 Std. 20 Min."
-      />,
-    )
-
-    expect(screen.getByText('Dauer: 3 Std. 20 Min.')).toBeInTheDocument()
-  })
-
-  it('zeigt weder Aktiv-Badge noch Dauer-Badge wenn beide nicht gesetzt', () => {
+  it('zeigt weder Aktiv-Badge noch Dauer-Badge', () => {
     render(<ChatBubble variant="received" content="Gespeichert ✓" />)
 
     expect(screen.queryByText(/Aktiv seit/)).not.toBeInTheDocument()
@@ -527,26 +474,6 @@ describe('ChatBubble', () => {
     )
 
     fireEvent.click(screen.getByRole('article'))
-    expect(onNavigate).not.toHaveBeenCalled()
-  })
-
-  it('stopPropagation auf Symptom-beendet-Button verhindert Navigation', () => {
-    const onNavigate = vi.fn()
-    const onEndSymptom = vi.fn()
-    render(
-      <ChatBubble
-        variant="received"
-        content="Gespeichert ✓"
-        activeSinceLabel="Aktiv seit 10 Min."
-        onEndSymptom={onEndSymptom}
-        eventId="event-1"
-        eventStatus="confirmed"
-        onNavigate={onNavigate}
-      />,
-    )
-
-    fireEvent.click(screen.getByText('Symptom beendet'))
-    expect(onEndSymptom).toHaveBeenCalledTimes(1)
     expect(onNavigate).not.toHaveBeenCalled()
   })
 })

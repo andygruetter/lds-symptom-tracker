@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Clock, MapPin } from 'lucide-react'
 
 import { ClarificationInline } from '@/components/capture/clarification-inline'
+import { DurationSlider } from '@/components/capture/duration-slider'
 import { FIELD_LABELS, SymptomTag } from '@/components/capture/symptom-tag'
 import { cn } from '@/lib/utils'
 import type { ClarificationQuestion, ExtractedData } from '@/types/ai'
@@ -68,7 +69,8 @@ function formatSymptomTimestamp(isoString: string): string {
 
 function formatDurationMinutes(minutesStr: string): string | null {
   const minutes = parseInt(minutesStr, 10)
-  if (isNaN(minutes) || minutes <= 0) return null
+  if (isNaN(minutes) || minutes < 0) return null
+  if (minutes === 0) return '< 30 Sek.'
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
   if (hours > 0 && mins > 0) return `${hours} Std. ${mins} Min.`
@@ -141,11 +143,17 @@ function SingleSymptomReview({
   editingField,
   setEditingField,
   handleEdit,
+  sliderDuration,
+  onSliderCommit,
+  suppressSlider,
 }: {
   fields: ExtractedData[]
   editingField: string | null
   setEditingField: (id: string | null) => void
   handleEdit: (fieldName: string, newValue: string) => void
+  sliderDuration: number | null
+  onSliderCommit: (minutes: number) => void
+  suppressSlider: boolean
 }) {
   const visibleFields = fields.filter(
     (f) => f.value !== '<UNKNOWN>' && f.value !== 'UNKNOWN',
@@ -158,6 +166,12 @@ function SingleSymptomReview({
   const intensity = getFieldValue(fields, 'intensity')
   const symptomTime = getFieldValue(fields, 'symptom_time')
   const duration = getFieldValue(fields, 'duration')
+  const durationField = fields.find(
+    (f) =>
+      f.field_name === 'duration' &&
+      f.value !== '<UNKNOWN>' &&
+      f.value !== 'UNKNOWN',
+  )
 
   const locationParts = [bodyRegion, side].filter(Boolean)
   if (symptomType) locationParts.push(symptomType)
@@ -245,12 +259,47 @@ function SingleSymptomReview({
         </div>
       )}
 
-      {(formattedTime || formattedDuration) && (
+      {formattedTime && (
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <Clock className="size-3 shrink-0" aria-hidden="true" />
-          {[formattedTime, formattedDuration].filter(Boolean).join(' · ')}
+          {formattedTime}
         </p>
       )}
+
+      {/* Duration: Slider im Edit-Modus oder wenn kein Wert vorhanden */}
+      {durationField && editingField === durationField.id ? (
+        <DurationSlider
+          value={duration !== undefined ? parseInt(duration, 10) : undefined}
+          onChange={(minutes) => {
+            handleEdit('duration', String(minutes))
+          }}
+        />
+      ) : durationField && !durationField.confirmed ? (
+        <button
+          type="button"
+          onClick={() => setEditingField(durationField.id)}
+          className="min-h-[44px] w-full text-left active:opacity-60"
+          aria-label="Dauer ändern"
+        >
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="size-3 shrink-0" aria-hidden="true" />
+            {formattedDuration}
+          </p>
+        </button>
+      ) : durationField ? (
+        formattedDuration && (
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="size-3 shrink-0" aria-hidden="true" />
+            {formattedDuration}
+          </p>
+        )
+      ) : !suppressSlider ? (
+        /* Kein Duration-Feld, kein Medication/Frequency: Slider ohne Vorauswahl */
+        <DurationSlider
+          value={sliderDuration !== null ? sliderDuration : undefined}
+          onChange={onSliderCommit}
+        />
+      ) : null}
 
       {extraFields.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -284,6 +333,20 @@ export function ReviewBubble({
 }: ReviewBubbleProps) {
   const [editingField, setEditingField] = useState<string | null>(null)
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [sliderDuration, setSliderDuration] = useState<number | null>(null)
+
+  // Reset slider if a real duration field appears (e.g. after extraction re-run)
+  useEffect(() => {
+    const hasExtractedDuration = extractedFields.some(
+      (f) =>
+        f.field_name === 'duration' &&
+        f.value !== '<UNKNOWN>' &&
+        f.value !== 'UNKNOWN',
+    )
+    if (hasExtractedDuration) {
+      setSliderDuration(null)
+    }
+  }, [extractedFields])
 
   const avgConfidence = getAverageConfidence(extractedFields)
   const hasClarifications = clarificationQuestions.length > 0
@@ -294,6 +357,11 @@ export function ReviewBubble({
   function handleEdit(fieldName: string, newValue: string) {
     onCorrect(eventId, fieldName, newValue)
     setEditingField(null)
+  }
+
+  function handleSliderCommit(minutes: number) {
+    setSliderDuration(minutes)
+    onCorrect(eventId, 'duration', String(minutes))
   }
 
   async function handleClarificationAnswer(fieldName: string, answer: string) {
@@ -318,6 +386,21 @@ export function ReviewBubble({
   )
   const hasVisibleFields = visibleFields.length > 0
 
+  const isMedication = extractedFields.some(
+    (f) => f.field_name === 'medication_name',
+  )
+  const hasFrequency = extractedFields.some((f) => f.field_name === 'frequency')
+  const hasDuration =
+    isMedication ||
+    hasFrequency ||
+    extractedFields.some(
+      (f) =>
+        f.field_name === 'duration' &&
+        f.value !== '<UNKNOWN>' &&
+        f.value !== 'UNKNOWN',
+    ) ||
+    sliderDuration !== null
+
   const symptomGroups = groupBySymptomIndex(visibleFields)
   const confidenceInfo = getConfidenceLabel(avgConfidence)
 
@@ -334,6 +417,9 @@ export function ReviewBubble({
                   editingField={editingField}
                   setEditingField={setEditingField}
                   handleEdit={handleEdit}
+                  sliderDuration={sliderDuration}
+                  onSliderCommit={handleSliderCommit}
+                  suppressSlider={isMedication || hasFrequency}
                 />
               </div>
             ))}
@@ -384,29 +470,42 @@ export function ReviewBubble({
 
         {/* Action buttons */}
         {allClarificationsAnswered && (
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onClick={() => onConfirm(eventId)}
-              disabled={isConfirming}
-              className="min-h-[48px] min-w-[48px] rounded-full bg-[#3A856F] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
-              {isConfirming ? 'Wird bestätigt...' : 'Bestätigen'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const firstUnconfirmed = extractedFields.find(
-                  (f) => !f.confirmed,
-                )
-                if (firstUnconfirmed) {
-                  setEditingField(firstUnconfirmed.id)
+          <div className="mt-3 flex flex-col gap-1">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onConfirm(eventId)}
+                disabled={isConfirming || !hasDuration}
+                aria-describedby={
+                  !hasDuration ? `duration-hint-${eventId}` : undefined
                 }
-              }}
-              className="min-h-[48px] min-w-[48px] rounded-full bg-muted px-4 py-2 text-sm font-medium text-foreground"
-            >
-              Ändern
-            </button>
+                className="min-h-[48px] min-w-[48px] rounded-full bg-[#3A856F] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {isConfirming ? 'Wird bestätigt...' : 'Bestätigen'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const firstUnconfirmed = extractedFields.find(
+                    (f) => !f.confirmed,
+                  )
+                  if (firstUnconfirmed) {
+                    setEditingField(firstUnconfirmed.id)
+                  }
+                }}
+                className="min-h-[48px] min-w-[48px] rounded-full bg-muted px-4 py-2 text-sm font-medium text-foreground"
+              >
+                Ändern
+              </button>
+            </div>
+            {!hasDuration && !isConfirming && (
+              <p
+                id={`duration-hint-${eventId}`}
+                className="text-xs text-muted-foreground"
+              >
+                Bitte zuerst Dauer angeben
+              </p>
+            )}
           </div>
         )}
       </div>

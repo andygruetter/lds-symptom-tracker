@@ -35,6 +35,65 @@ const mockFields: ExtractedData[] = [
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
   },
+  {
+    id: 'field-4',
+    symptom_event_id: 'event-1',
+    field_name: 'duration',
+    value: '30',
+    confidence: 85,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
+  },
+]
+
+const mockFieldsWithoutDuration: ExtractedData[] = [
+  {
+    id: 'field-1',
+    symptom_event_id: 'event-1',
+    field_name: 'symptom_name',
+    value: 'Rückenschmerzen',
+    confidence: 92,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
+  },
+]
+
+const mockFieldsWithFrequency: ExtractedData[] = [
+  {
+    id: 'field-1',
+    symptom_event_id: 'event-1',
+    field_name: 'symptom_name',
+    value: 'Kopfschmerzen',
+    confidence: 90,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
+  },
+  {
+    id: 'field-freq',
+    symptom_event_id: 'event-1',
+    field_name: 'frequency',
+    value: 'täglich',
+    confidence: 85,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
+  },
+]
+
+const mockMedicationFields: ExtractedData[] = [
+  {
+    id: 'field-med',
+    symptom_event_id: 'event-1',
+    field_name: 'medication_name',
+    value: 'Ibuprofen',
+    confidence: 90,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
+  },
 ]
 
 describe('ReviewBubble', () => {
@@ -149,5 +208,86 @@ describe('ReviewBubble', () => {
     ]
     render(<ReviewBubble {...defaultProps} extractedFields={fieldsWithExtra} />)
     expect(screen.getByText('nach dem Sport')).toBeInTheDocument()
+  })
+
+  describe('Duration-Slider und Pflichtfeld', () => {
+    it('zeigt DurationSlider wenn kein Duration-Feld in extractedFields', () => {
+      render(
+        <ReviewBubble
+          {...defaultProps}
+          extractedFields={mockFieldsWithoutDuration}
+        />,
+      )
+      expect(screen.getByRole('slider')).toBeInTheDocument()
+    })
+
+    it('zeigt formatierten Duration-Wert wenn Duration-Feld vorhanden', () => {
+      render(<ReviewBubble {...defaultProps} />)
+      expect(screen.getByText('30 Min.')).toBeInTheDocument()
+      expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    })
+
+    it('Bestätigen-Button disabled wenn keine Duration gesetzt', () => {
+      render(
+        <ReviewBubble
+          {...defaultProps}
+          extractedFields={mockFieldsWithoutDuration}
+        />,
+      )
+      expect(
+        screen.getByRole('button', { name: /^bestätigen$/i }),
+      ).toBeDisabled()
+    })
+
+    it('Bestätigen-Button enabled wenn Duration-Feld vorhanden', () => {
+      render(<ReviewBubble {...defaultProps} />)
+      expect(
+        screen.getByRole('button', { name: /^bestätigen$/i }),
+      ).not.toBeDisabled()
+    })
+
+    it('zeigt keinen DurationSlider für Medikamenten-Events', () => {
+      render(
+        <ReviewBubble
+          {...defaultProps}
+          extractedFields={mockMedicationFields}
+        />,
+      )
+      expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    })
+
+    it('Bestätigen-Button enabled für Medikamente (kein Duration nötig)', () => {
+      render(
+        <ReviewBubble
+          {...defaultProps}
+          extractedFields={mockMedicationFields}
+        />,
+      )
+      expect(
+        screen.getByRole('button', { name: /^bestätigen$/i }),
+      ).not.toBeDisabled()
+    })
+
+    it('Bestätigen-Button enabled bei frequency-Feld (chronisches Symptom)', () => {
+      render(
+        <ReviewBubble
+          {...defaultProps}
+          extractedFields={mockFieldsWithFrequency}
+        />,
+      )
+      expect(
+        screen.getByRole('button', { name: /^bestätigen$/i }),
+      ).not.toBeDisabled()
+    })
+
+    it('zeigt keinen DurationSlider bei Events mit frequency-Feld', () => {
+      render(
+        <ReviewBubble
+          {...defaultProps}
+          extractedFields={mockFieldsWithFrequency}
+        />,
+      )
+      expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    })
   })
 })

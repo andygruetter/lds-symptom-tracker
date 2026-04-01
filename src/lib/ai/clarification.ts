@@ -147,16 +147,6 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       'Kribbelnd',
     ],
   },
-  duration: {
-    question: 'Wie lange hat das Symptom angedauert?',
-    options: [
-      'Wenige Minuten',
-      '30 Minuten',
-      '1 Stunde',
-      'Mehrere Stunden',
-      'Mehrere Tage',
-    ],
-  },
   trigger: {
     question: 'Was hast du gemacht als das Symptom aufgetreten ist?',
     options: [

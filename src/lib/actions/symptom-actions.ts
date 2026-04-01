@@ -18,7 +18,6 @@ import {
   correctExtractedFieldSchema,
   createSymptomEventSchema,
   createVoiceSymptomEventSchema,
-  endSymptomEventSchema,
 } from '@/types/symptom'
 
 export async function createSymptomEvent(
@@ -252,73 +251,6 @@ export async function confirmSymptomEvent(
 
   revalidatePath('/')
   revalidatePath(`/event/${eventId}`)
-
-  return { data: data as SymptomEvent, error: null }
-}
-
-export async function endSymptomEvent(
-  input: unknown,
-): Promise<ActionResult<SymptomEvent>> {
-  // 1. Zod validation
-  const parsed = endSymptomEventSchema.safeParse(input)
-  if (!parsed.success) {
-    return {
-      data: null,
-      error: { error: 'Ungültige Event-ID', code: 'VALIDATION_ERROR' },
-    }
-  }
-
-  const { eventId } = parsed.data
-
-  // 2. Auth-Check
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return {
-      data: null,
-      error: { error: 'Nicht authentifiziert', code: 'AUTH_REQUIRED' },
-    }
-  }
-
-  // 3. Validate: confirmed + ended_at IS NULL + eigenes Event
-  const { data: event } = await supabase
-    .from('symptom_events')
-    .select('*')
-    .eq('id', eventId)
-    .eq('account_id', user.id)
-    .eq('status', 'confirmed')
-    .is('ended_at', null)
-    .single()
-
-  if (!event) {
-    return {
-      data: null,
-      error: {
-        error: 'Event nicht gefunden oder bereits beendet',
-        code: 'NOT_FOUND',
-      },
-    }
-  }
-
-  // 4. Update ended_at
-  const { data, error } = await supabase
-    .from('symptom_events')
-    .update({ ended_at: new Date().toISOString() })
-    .eq('id', eventId)
-    .select()
-    .single()
-
-  if (error) {
-    return {
-      data: null,
-      error: { error: 'Beenden fehlgeschlagen', code: 'UPDATE_FAILED' },
-    }
-  }
-
-  revalidatePath('/')
 
   return { data: data as SymptomEvent, error: null }
 }
