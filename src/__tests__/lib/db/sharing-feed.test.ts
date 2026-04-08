@@ -43,15 +43,23 @@ describe('getSharedFeedEvents', () => {
       },
       {
         id: 'evt-2',
-        event_type: 'medication',
+        event_type: 'symptom',
         occurred_at: '2026-02-09T08:00:00Z',
         created_at: '2026-02-09T08:00:00Z',
         ended_at: null,
         raw_input: 'Ibuprofen 400mg',
         audio_url: 'audio/path.webm',
         extracted_data: [
-          { field_name: 'medication', value: 'Ibuprofen' },
-          { field_name: 'dosage', value: '400mg' },
+          {
+            field_name: 'medication_taken',
+            value: 'Ibuprofen',
+            medication_index: 0,
+          },
+          {
+            field_name: 'medication_dosage',
+            value: '400mg',
+            medication_index: 0,
+          },
         ],
         event_photos: [],
       },
@@ -86,11 +94,9 @@ describe('getSharedFeedEvents', () => {
     expect(result[0].photoCount).toBe(1)
     expect(result[0].hasAudio).toBe(false)
 
-    // Medication-Event
+    // Medikament-Einnahme (als Symptom-Event mit medication_index-Feldern)
     expect(result[1].id).toBe('evt-2')
-    expect(result[1].eventType).toBe('medication')
-    expect(result[1].symptoms[0].displayName).toBe('Ibuprofen')
-    expect(result[1].symptoms[0].fields['dosage']).toBe('400mg')
+    expect(result[1].eventType).toBe('symptom')
     expect(result[1].hasAudio).toBe(true)
   })
 
@@ -189,7 +195,7 @@ describe('getSharedFeedEvents', () => {
     await getSharedFeedEvents('user-1', '2026-01-01', '2026-03-15')
 
     expect(builder.select).toHaveBeenCalledWith(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index, medication_index), event_photos(id)',
     )
   })
 })

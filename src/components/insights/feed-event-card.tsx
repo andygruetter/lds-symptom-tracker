@@ -103,12 +103,10 @@ type Props = {
 
 export function FeedEventCard({ event }: Props) {
   const router = useRouter()
-  const isMedication = event.eventType === 'medication'
-
-  const accentColor = isMedication ? '#4A7FA5' : '#C06A3C'
-  const badgeBg = isMedication ? 'bg-[#4A7FA5]/10' : 'bg-[#C06A3C]/10'
-  const badgeText = isMedication ? 'text-[#4A7FA5]' : 'text-[#C06A3C]'
-  const badgeLabel = isMedication ? 'Medikament' : 'Symptom'
+  const accentColor = '#C06A3C'
+  const badgeBg = 'bg-[#C06A3C]/10'
+  const badgeText = 'text-[#C06A3C]'
+  const badgeLabel = 'Symptom'
 
   return (
     <button

@@ -46,22 +46,30 @@ test.describe('Event Detail View (Story 4.4)', () => {
     await expect(page.getByText('Symptom', { exact: true })).toBeVisible()
   })
 
-  test('Typ-Badge zeigt "Medikament" für Medikament-Events', async ({
+  test('Typ-Badge zeigt "Symptom" für Event mit Medikamenten-Feldern', async ({
     page,
   }) => {
     const event = await createTestSymptomEvent(userId, {
       status: 'confirmed',
-      raw_input: 'Ibuprofen 400mg',
-      event_type: 'medication',
+      raw_input: 'Ibuprofen 400mg eingenommen',
+      event_type: 'symptom',
     })
+    await createTestExtractedData(event.id, [
+      {
+        field_name: 'medication_taken',
+        value: 'Ibuprofen',
+        confidence: 95,
+        confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
+      },
+    ])
 
     await page.goto(`/event/${event.id}`)
     await page.getByRole('heading', { name: 'Event-Details' }).waitFor()
 
-    // Type badge (also matches field label "Medikament" in extracted data section)
-    await expect(
-      page.getByText('Medikament', { exact: true }).first(),
-    ).toBeVisible()
+    // Type badge is always "Symptom" now
+    await expect(page.getByText('Symptom', { exact: true })).toBeVisible()
   })
 
   test('Ursprüngliche Meldung wird angezeigt', async ({ page }) => {
@@ -180,20 +188,6 @@ test.describe('Event Detail View (Story 4.4)', () => {
     expect(page.url()).toContain(`/event/${event.id}/edit`)
   })
 
-  test('Kein "Bearbeiten"-Link für Medikament-Events', async ({ page }) => {
-    const event = await createTestSymptomEvent(userId, {
-      status: 'confirmed',
-      raw_input: 'Ibuprofen 400mg',
-      event_type: 'medication',
-    })
-
-    await page.goto(`/event/${event.id}`)
-    await page.getByRole('heading', { name: 'Event-Details' }).waitFor()
-
-    // "Bearbeiten" should NOT be visible
-    await expect(page.getByText('Bearbeiten')).not.toBeVisible()
-  })
-
   test('Zurück-Button navigiert zurück', async ({ page }) => {
     const event = await createTestSymptomEvent(userId, {
       status: 'confirmed',
@@ -265,35 +259,36 @@ test.describe('Event Detail View (Story 4.4)', () => {
     await expect(page.getByText(/Fotos \(1\)/)).toBeVisible()
   })
 
-  test('Medikament-Event zeigt Medikament-Felder', async ({ page }) => {
+  test('Symptom-Event zeigt Medikament-Felder', async ({ page }) => {
     const event = await createTestSymptomEvent(userId, {
       status: 'confirmed',
       raw_input: 'Schmerzmittel eingenommen',
-      event_type: 'medication',
+      event_type: 'symptom',
     })
     await createTestExtractedData(event.id, [
       {
-        field_name: 'medication',
+        field_name: 'medication_taken',
         value: 'Ibuprofen',
         confidence: 95,
         confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
       },
       {
-        field_name: 'dosage',
+        field_name: 'medication_dosage',
         value: '400mg',
         confidence: 88,
         confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
       },
     ])
 
     await page.goto(`/event/${event.id}`)
     await page.getByRole('heading', { name: 'Event-Details' }).waitFor()
 
-    // Medication-specific field labels (badge + field label both say "Medikament")
-    await expect(page.getByText('Medikament').first()).toBeVisible()
-    await expect(page.getByText('Dosierung')).toBeVisible()
-
-    // Field values
+    // Medication group section header and combined display (💊 Ibuprofen · 400mg)
+    await expect(page.getByText('Medikamente')).toBeVisible()
     await expect(page.getByText('Ibuprofen')).toBeVisible()
     await expect(page.getByText('400mg')).toBeVisible()
   })

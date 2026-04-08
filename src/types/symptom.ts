@@ -29,6 +29,7 @@ export const correctExtractedFieldSchema = z.object({
   fieldName: z.string().min(1, 'Feldname darf nicht leer sein'),
   newValue: z.string().min(1, 'Neuer Wert darf nicht leer sein'),
   symptomIndex: z.number().int().min(0).optional().default(0),
+  medicationIndex: z.number().int().min(0).nullable().optional().default(null),
 })
 
 export type CorrectExtractedFieldInput = z.infer<
@@ -40,6 +41,7 @@ export const answerClarificationSchema = z.object({
   eventId: z.string().uuid('Ungültige Event-ID'),
   fieldName: z.string().min(1, 'Feldname darf nicht leer sein'),
   answer: z.string().min(1, 'Antwort darf nicht leer sein'),
+  medicationIndex: z.number().int().min(0).nullable().optional().default(null),
 })
 
 // Zod Schema für createVoiceSymptomEvent Action (FormData-basiert)

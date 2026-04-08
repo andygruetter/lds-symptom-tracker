@@ -29,6 +29,7 @@ describe('event-detail-utils', () => {
           confidence: 90,
           confirmed: true,
           symptomIndex: 0,
+          medicationIndex: null,
         },
         {
           fieldName: 'symptom_name',
@@ -36,6 +37,7 @@ describe('event-detail-utils', () => {
           confidence: 80,
           confirmed: false,
           symptomIndex: 1,
+          medicationIndex: null,
         },
         {
           fieldName: 'intensity',
@@ -43,6 +45,7 @@ describe('event-detail-utils', () => {
           confidence: 70,
           confirmed: false,
           symptomIndex: 0,
+          medicationIndex: null,
         },
       ]
       const groups = groupBySymptomIndex(fields)
@@ -59,6 +62,7 @@ describe('event-detail-utils', () => {
           confidence: 90,
           confirmed: true,
           symptomIndex: undefined as unknown as number,
+          medicationIndex: null,
         },
       ]
       const groups = groupBySymptomIndex(fields)
@@ -126,6 +130,7 @@ describe('event-detail-utils', () => {
         confidence: 90,
         confirmed: true,
         symptomIndex: 0,
+        medicationIndex: null,
       }
       expect(formatFieldValue(field)).toBe('7/10')
     })
@@ -137,6 +142,7 @@ describe('event-detail-utils', () => {
         confidence: null,
         confirmed: false,
         symptomIndex: 0,
+        medicationIndex: null,
       }
       expect(formatFieldValue(field)).toBe('Nicht erfasst')
     })
@@ -148,6 +154,7 @@ describe('event-detail-utils', () => {
         confidence: 90,
         confirmed: true,
         symptomIndex: 0,
+        medicationIndex: null,
       }
       const result = formatFieldValue(field)
       expect(result).not.toBe('2026-03-14T09:30:00Z')
@@ -160,6 +167,7 @@ describe('event-detail-utils', () => {
         confidence: 80,
         confirmed: false,
         symptomIndex: 0,
+        medicationIndex: null,
       }
       expect(formatFieldValue(field)).toBe('1 Std. 30 Min.')
     })
@@ -171,6 +179,7 @@ describe('event-detail-utils', () => {
         confidence: 85,
         confirmed: true,
         symptomIndex: 0,
+        medicationIndex: null,
       }
       expect(formatFieldValue(field)).toBe('Rücken')
     })

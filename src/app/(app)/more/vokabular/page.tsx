@@ -12,10 +12,9 @@ const fieldLabels: Record<string, string> = {
   side: 'Seite',
   symptom_type: 'Art',
   intensity: 'Intensität',
-  medication_name: 'Medikament',
-  action: 'Aktion',
-  dosage: 'Dosis',
-  reason: 'Grund',
+  precursor: 'Vorzeichen',
+  medication_taken: 'Medikament',
+  medication_dosage: 'Dosierung',
 }
 
 export default async function VokabularPage() {

@@ -11,10 +11,8 @@ vi.mock('@/lib/actions/insights-actions', () => ({
   loadSymptomRanking: vi.fn(async () => ({
     data: {
       symptoms: [],
-      medications: [],
       timeRange: '30d',
       totalSymptomEvents: 0,
-      totalMedicationEvents: 0,
     },
     error: null,
   })),
@@ -35,40 +33,24 @@ const fullRanking: SymptomRanking = {
       avgIntensity: 6.5,
     },
   ],
-  medications: [
-    {
-      name: 'Dafalgan 1g',
-      totalCount: 4,
-      monthlyCounts: [
-        { year: 2026, month: 2, count: 2 },
-        { year: 2026, month: 3, count: 2 },
-      ],
-      trend: 'stable',
-    },
-  ],
   timeRange: '3m',
   totalSymptomEvents: 12,
-  totalMedicationEvents: 4,
 }
 
 const emptyRanking: SymptomRanking = {
   symptoms: [],
-  medications: [],
   timeRange: '3m',
   totalSymptomEvents: 0,
-  totalMedicationEvents: 0,
 }
 
 describe('SymptomRanking', () => {
-  it('rendert Ranking mit Symptomen und Medikamenten', async () => {
+  it('rendert Ranking mit Symptomen', async () => {
     const { SymptomRanking } =
       await import('@/components/insights/symptom-ranking')
     render(<SymptomRanking initialRanking={fullRanking} />)
 
     expect(screen.getByText('Symptome')).toBeInTheDocument()
     expect(screen.getByText('Rückenschmerzen')).toBeInTheDocument()
-    expect(screen.getByText('Medikamente')).toBeInTheDocument()
-    expect(screen.getByText('Dafalgan 1g')).toBeInTheDocument()
   })
 
   it('zeigt Zeitraum-Filter Buttons', async () => {

@@ -133,18 +133,26 @@ describe('getChronologicalFeed', () => {
     })
   })
 
-  it('mappt DB-Zeile korrekt zu FeedEvent (Medikament mit Audio)', async () => {
+  it('mappt DB-Zeile korrekt zu FeedEvent (Medikament-Felder mit Audio)', async () => {
     const dbRow = {
       id: 'event-2',
-      event_type: 'medication',
+      event_type: 'symptom',
       occurred_at: '2026-03-13T20:15:00Z',
       created_at: '2026-03-13T20:15:00Z',
       ended_at: null,
       raw_input: 'Dafalgan 1g',
       audio_url: 'audio/user-1/event-2/recording.webm',
       extracted_data: [
-        { field_name: 'medication', value: 'Dafalgan' },
-        { field_name: 'dosage', value: '1g' },
+        {
+          field_name: 'medication_taken',
+          value: 'Dafalgan',
+          medication_index: 0,
+        },
+        {
+          field_name: 'medication_dosage',
+          value: '1g',
+          medication_index: 0,
+        },
       ],
       event_photos: [],
     }
@@ -155,14 +163,12 @@ describe('getChronologicalFeed', () => {
 
     expect(result.events[0]).toMatchObject({
       id: 'event-2',
-      eventType: 'medication',
+      eventType: 'symptom',
       photoCount: 0,
       hasAudio: true,
     })
-    expect(result.events[0].symptoms[0]).toMatchObject({
-      displayName: 'Dafalgan',
-      fields: { medication: 'Dafalgan', dosage: '1g' },
-    })
+    // Medication fields are filtered out from symptom groups (medication_index != null)
+    expect(result.events[0].symptoms).toHaveLength(0)
   })
 
   it('mappt event_type "voice" als "symptom"', async () => {
@@ -310,7 +316,7 @@ describe('getDayEvents', () => {
       },
       {
         id: 'ev-2',
-        event_type: 'medication',
+        event_type: 'symptom',
         occurred_at: '2026-03-13T23:00:00.000+01:00',
         created_at: '2026-03-13T23:00:00.000+01:00',
         ended_at: null,
@@ -425,9 +431,7 @@ describe('aggregateRankingFromRows', () => {
     const result = aggregateRankingFromRows([], '2026-01-01')
 
     expect(result.symptoms).toHaveLength(0)
-    expect(result.medications).toHaveLength(0)
     expect(result.totalSymptomEvents).toBe(0)
-    expect(result.totalMedicationEvents).toBe(0)
   })
 
   it('filtert Rows vor dateFrom aus', async () => {
@@ -510,9 +514,7 @@ describe('getSymptomRanking', () => {
     const result = await getSymptomRanking(supabase as never, 'user-1', '3m')
 
     expect(result.symptoms).toHaveLength(0)
-    expect(result.medications).toHaveLength(0)
     expect(result.totalSymptomEvents).toBe(0)
-    expect(result.totalMedicationEvents).toBe(0)
     expect(result.timeRange).toBe('3m')
     // F5: getSymptomRanking darf kein .lte() verwenden (kein oberes Datumslimit)
     expect(supabase._builder.lte).not.toHaveBeenCalled()
@@ -556,18 +558,12 @@ describe('getSymptomRanking', () => {
     expect(result.symptoms[1].totalCount).toBe(1)
   })
 
-  it('aggregiert Medikamente separat von Symptomen', async () => {
+  it('zählt nur Events mit symptom_name im Ranking', async () => {
     const dbRows = [
       {
         id: 'ev-1',
-        event_type: 'medication',
-        occurred_at: '2026-03-14T09:00:00.000+01:00',
-        extracted_data: [{ field_name: 'medication', value: 'Dafalgan' }],
-      },
-      {
-        id: 'ev-2',
         event_type: 'symptom',
-        occurred_at: '2026-03-14T10:00:00.000+01:00',
+        occurred_at: '2026-03-14T09:00:00.000+01:00',
         extracted_data: [
           { field_name: 'symptom_name', value: 'Kopfschmerzen' },
         ],
@@ -580,8 +576,6 @@ describe('getSymptomRanking', () => {
 
     expect(result.symptoms).toHaveLength(1)
     expect(result.symptoms[0].name).toBe('Kopfschmerzen')
-    expect(result.medications).toHaveLength(1)
-    expect(result.medications[0].name).toBe('Dafalgan')
   })
 
   it('gibt leeres Ranking zurück bei DB-Fehler', async () => {
@@ -594,7 +588,6 @@ describe('getSymptomRanking', () => {
     const result = await getSymptomRanking(supabase as never, 'user-1', '3m')
 
     expect(result.symptoms).toHaveLength(0)
-    expect(result.medications).toHaveLength(0)
   })
 })
 
@@ -611,13 +604,11 @@ describe('getSymptomRankingByAccount', () => {
     )
 
     expect(result.symptoms).toHaveLength(0)
-    expect(result.medications).toHaveLength(0)
     expect(result.totalSymptomEvents).toBe(0)
-    expect(result.totalMedicationEvents).toBe(0)
     expect(result.timeRange).toBe('30d')
   })
 
-  it('aggregiert Symptome und Medikamente korrekt mit dateFrom/dateTo Filter', async () => {
+  it('aggregiert Symptome korrekt mit dateFrom/dateTo Filter', async () => {
     const dbRows = [
       {
         id: 'ev-1',
@@ -629,14 +620,8 @@ describe('getSymptomRankingByAccount', () => {
         ],
       },
       {
-        id: 'ev-2',
-        event_type: 'medication',
-        occurred_at: '2026-02-15T09:00:00.000+01:00',
-        extracted_data: [{ field_name: 'medication', value: 'Dafalgan' }],
-      },
-      {
         // außerhalb des Zeitraums — soll gefiltert werden
-        id: 'ev-3',
+        id: 'ev-2',
         event_type: 'symptom',
         occurred_at: '2025-12-31T09:00:00.000+01:00',
         extracted_data: [
@@ -665,10 +650,7 @@ describe('getSymptomRankingByAccount', () => {
     ])
     // F6: trend-Feld verifizieren
     expect(result.symptoms[0].trend).toBe('stable')
-    expect(result.medications).toHaveLength(1)
-    expect(result.medications[0].name).toBe('Dafalgan')
     expect(result.totalSymptomEvents).toBe(1)
-    expect(result.totalMedicationEvents).toBe(1)
   })
 
   it('gibt leeres Ranking zurück bei DB-Fehler', async () => {
@@ -686,7 +668,6 @@ describe('getSymptomRankingByAccount', () => {
     )
 
     expect(result.symptoms).toHaveLength(0)
-    expect(result.medications).toHaveLength(0)
     expect(result.timeRange).toBe('30d')
   })
 })
@@ -710,7 +691,7 @@ describe('getMonthlyTimeline', () => {
     expect(result.days.every((d) => d.totalCount === 0)).toBe(true)
   })
 
-  it('aggregiert Symptom- und Medikament-Events korrekt', async () => {
+  it('aggregiert mehrere Events am gleichen Tag korrekt', async () => {
     const dbRows = [
       {
         id: 'ev-1',
@@ -720,7 +701,7 @@ describe('getMonthlyTimeline', () => {
       },
       {
         id: 'ev-2',
-        event_type: 'medication',
+        event_type: 'symptom',
         occurred_at: '2026-03-14T20:00:00.000+01:00',
         extracted_data: [],
       },
@@ -738,8 +719,7 @@ describe('getMonthlyTimeline', () => {
     // Beide Events am 14. März (lokale Zeit +01:00)
     const day14 = result.days.find((d) => d.date === '2026-03-14')
     expect(day14).toBeDefined()
-    expect(day14!.symptomCount).toBe(1)
-    expect(day14!.medicationCount).toBe(1)
+    expect(day14!.symptomCount).toBe(2)
     expect(day14!.totalCount).toBe(2)
   })
 
@@ -793,7 +773,6 @@ describe('getMonthlyTimeline', () => {
 
     const day10 = result.days.find((d) => d.date === '2026-03-10')
     expect(day10!.symptomCount).toBe(1)
-    expect(day10!.medicationCount).toBe(0)
   })
 })
 
@@ -972,22 +951,31 @@ describe('getEventDetail', () => {
     expect(result).toBeNull()
   })
 
-  it('lädt Medikament-Event korrekt', async () => {
+  it('lädt Medikament-Felder in Symptom-Event korrekt', async () => {
     const medicationEvent = {
       ...baseEvent,
       id: 'med-event-1',
-      event_type: 'medication',
+      event_type: 'symptom',
       raw_input: 'Dafalgan 1g',
       audio_url: null,
     }
     const extractedRows = [
       {
-        field_name: 'medication',
+        field_name: 'medication_taken',
         value: 'Dafalgan',
         confidence: 95,
         confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
       },
-      { field_name: 'dosage', value: '1g', confidence: 85, confirmed: false },
+      {
+        field_name: 'medication_dosage',
+        value: '1g',
+        confidence: 85,
+        confirmed: false,
+        symptom_index: 0,
+        medication_index: 0,
+      },
     ]
     const supabase = createMockSupabaseEventDetail({
       eventRow: medicationEvent,
@@ -1003,9 +991,10 @@ describe('getEventDetail', () => {
     )
 
     expect(result).not.toBeNull()
-    expect(result!.eventType).toBe('medication')
+    expect(result!.eventType).toBe('symptom')
     expect(
-      result!.extractedFields.find((f) => f.fieldName === 'medication')?.value,
+      result!.extractedFields.find((f) => f.fieldName === 'medication_taken')
+        ?.value,
     ).toBe('Dafalgan')
   })
 

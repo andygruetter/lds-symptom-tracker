@@ -7,7 +7,7 @@ import type {
 /** Detail eines einzelnen Events für den PDF-Report */
 export type PdfEventDetail = {
   id: string
-  eventType: 'symptom' | 'medication'
+  eventType: 'symptom'
   occurredAt: string
   endedAt: string | null
   rawInput: string | null

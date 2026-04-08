@@ -36,15 +36,15 @@ describe('EventTypeBadge', () => {
     expect(screen.getByText('Symptom')).toBeInTheDocument()
   })
 
-  it('zeigt Medikament-Badge', () => {
+  it('zeigt Symptom-Badge für alle Event-Typen', () => {
     render(
       <EventTypeBadge
-        eventType="medication"
+        eventType="symptom"
         endedAt={null}
         occurredAt="2026-03-14T09:30:00Z"
       />,
     )
-    expect(screen.getByText('Medikament')).toBeInTheDocument()
+    expect(screen.getByText('Symptom')).toBeInTheDocument()
   })
 
   it('zeigt Dauer wenn endedAt vorhanden', () => {
@@ -92,6 +92,7 @@ describe('ExtractedDataSection', () => {
       confidence: 90,
       confirmed: true,
       symptomIndex: 0,
+      medicationIndex: null,
     },
     {
       fieldName: 'body_region',
@@ -99,6 +100,7 @@ describe('ExtractedDataSection', () => {
       confidence: 85,
       confirmed: false,
       symptomIndex: 0,
+      medicationIndex: null,
     },
   ]
 
@@ -144,6 +146,7 @@ describe('ExtractedDataSection', () => {
         confidence: 90,
         confirmed: true,
         symptomIndex: 0,
+        medicationIndex: null,
       },
       {
         fieldName: 'symptom_name',
@@ -151,6 +154,7 @@ describe('ExtractedDataSection', () => {
         confidence: 80,
         confirmed: false,
         symptomIndex: 1,
+        medicationIndex: null,
       },
     ]
     render(

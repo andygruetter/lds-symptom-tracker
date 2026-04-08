@@ -12,10 +12,10 @@ export interface ExtractionField {
   value: string
   confidence: number
   symptomIndex: number
+  medicationIndex: number | null
 }
 
 export interface ExtractionResult {
-  eventType: 'symptom' | 'medication'
   fields: ExtractionField[]
 }
 
@@ -26,6 +26,7 @@ const rawExtractionFieldSchema = z.object({
   value: z.string().nullable(),
   confidence: z.number().min(0).max(100),
   symptomIndex: z.number().int().min(0).optional().default(0),
+  medicationIndex: z.number().int().min(0).nullable().optional().default(null),
 })
 
 export const extractionFieldSchema = z.object({
@@ -33,10 +34,10 @@ export const extractionFieldSchema = z.object({
   value: z.string(),
   confidence: z.number().min(0).max(100),
   symptomIndex: z.number().int().min(0).default(0),
+  medicationIndex: z.number().int().min(0).nullable().default(null),
 })
 
 export const extractionResultSchema = z.object({
-  eventType: z.enum(['symptom', 'medication']),
   fields: z
     .array(rawExtractionFieldSchema)
     .min(1)
@@ -49,6 +50,7 @@ export const extractionResultSchema = z.object({
           value: string
           confidence: number
           symptomIndex: number
+          medicationIndex: number | null
         } => f.value !== null,
       ),
     ),

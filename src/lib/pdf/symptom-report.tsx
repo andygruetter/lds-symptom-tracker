@@ -156,9 +156,6 @@ function TimelineSection({ timeline }: { timeline: MonthTimeline[] }) {
           <Text style={[pdfStyles.tableHeaderCell, pdfStyles.colSymptoms]}>
             Symptome
           </Text>
-          <Text style={[pdfStyles.tableHeaderCell, pdfStyles.colMedications]}>
-            Medikamente
-          </Text>
           <Text style={[pdfStyles.tableHeaderCell, pdfStyles.colTotal]}>
             Total
           </Text>
@@ -170,9 +167,6 @@ function TimelineSection({ timeline }: { timeline: MonthTimeline[] }) {
             </Text>
             <Text style={[pdfStyles.tableCell, pdfStyles.colSymptoms]}>
               {month.days.reduce((sum, d) => sum + d.symptomCount, 0)}
-            </Text>
-            <Text style={[pdfStyles.tableCell, pdfStyles.colMedications]}>
-              {month.days.reduce((sum, d) => sum + d.medicationCount, 0)}
             </Text>
             <Text style={[pdfStyles.tableCell, pdfStyles.colTotal]}>
               {month.totalEvents}
@@ -236,12 +230,9 @@ function SymptomGroupLine({ group }: { group: FeedSymptomGroup }) {
 }
 
 function EventCard({ event }: { event: PdfEventDetail }) {
-  const isMultiSymptom =
-    event.eventType === 'symptom' && event.symptoms.length > 1
+  const isMultiSymptom = event.symptoms.length > 1
 
-  const singleTitle =
-    event.symptoms[0]?.displayName ??
-    (event.eventType === 'medication' ? 'Medikament' : 'Symptom')
+  const singleTitle = event.symptoms[0]?.displayName ?? 'Symptom'
 
   const singleMetaParts: string[] = []
   if (!isMultiSymptom && event.symptoms[0]) {

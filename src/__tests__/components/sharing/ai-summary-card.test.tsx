@@ -6,7 +6,7 @@ import type { CachedSummary, SummaryEventData } from '@/types/summary'
 // Mock dependencies
 const mockGetCachedSummary = vi.fn<() => Promise<CachedSummary | null>>()
 const mockCheckSummaryFreshness = vi.fn<() => Promise<boolean>>()
-const mockSaveSummary = vi.fn<() => Promise<void>>()
+const mockSaveSummary = vi.fn()
 const mockGetSharedEventsForSummary = vi.fn<() => Promise<SummaryEventData[]>>()
 const mockGenerateSummary = vi.fn<() => Promise<string>>()
 

@@ -9,7 +9,6 @@ import type {
   ExtractedField,
   FeedEvent,
   FeedSymptomGroup,
-  MedicationRankingEntry,
   MonthlyCount,
   MonthTimeline,
   PaginatedFeed,
@@ -24,6 +23,7 @@ export type ExtractedDataRow = {
   field_name: string
   value: string
   symptom_index?: number
+  medication_index?: number | null
 }
 export type PhotoRow = { id: string }
 
@@ -48,12 +48,13 @@ export type RawFeedRow = {
 
 export function groupExtractedBySymptomIndex(
   rows: ExtractedDataRow[] | null,
-  eventType: string,
 ): FeedSymptomGroup[] {
   if (!rows || rows.length === 0) return []
 
+  // Nur Nicht-Medikament-Felder für Symptom-Gruppen (medication_index IS NULL)
+  const symptomRows = rows.filter((r) => r.medication_index == null)
   const groups = new Map<number, Map<string, string>>()
-  for (const r of rows) {
+  for (const r of symptomRows) {
     const idx = r.symptom_index ?? 0
     if (!groups.has(idx)) groups.set(idx, new Map())
     groups.get(idx)!.set(r.field_name, r.value)
@@ -63,21 +64,17 @@ export function groupExtractedBySymptomIndex(
     .sort(([a], [b]) => a - b)
     .map(([, map]) => {
       const fields = Object.fromEntries(map.entries())
-      const displayName =
-        eventType === 'medication'
-          ? (map.get('medication_name') ?? map.get('medication') ?? null)
-          : (map.get('symptom_name') ?? null)
+      const displayName = map.get('symptom_name') ?? null
       return { displayName, fields }
     })
 }
 
 export function mapRowToFeedEvent(row: RawFeedRow): FeedEvent {
-  const eventType = row.event_type === 'medication' ? 'medication' : 'symptom'
-  const symptoms = groupExtractedBySymptomIndex(row.extracted_data, eventType)
+  const symptoms = groupExtractedBySymptomIndex(row.extracted_data)
 
   return {
     id: row.id,
-    eventType,
+    eventType: 'symptom',
     occurredAt: row.occurred_at,
     createdAt: row.created_at,
     endedAt: row.ended_at,
@@ -99,7 +96,7 @@ export async function getChronologicalFeed(
   let query = supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index, medication_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -142,7 +139,9 @@ export async function getMonthlyTimeline(
 
   const { data, error } = await supabase
     .from('symptom_events')
-    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .select(
+      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index, medication_index)',
+    )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
     .is('deleted_at', null)
@@ -167,7 +166,6 @@ export async function getMonthlyTimeline(
     string,
     {
       symptomCount: number
-      medicationCount: number
       totalCount: number
       maxIntensity: number | null
     }
@@ -181,18 +179,12 @@ export async function getMonthlyTimeline(
 
     const existing = dayMap.get(dateKey) ?? {
       symptomCount: 0,
-      medicationCount: 0,
       totalCount: 0,
       maxIntensity: null,
     }
-    const isMedication = row.event_type === 'medication'
 
     existing.totalCount += 1
-    if (isMedication) {
-      existing.medicationCount += 1
-    } else {
-      existing.symptomCount += 1
-    }
+    existing.symptomCount += 1
 
     // Intensität aus extracted_data
     const intensityRaw = row.extracted_data?.find(
@@ -225,7 +217,6 @@ export async function getMonthlyTimeline(
       days.push({
         date: dateKey,
         symptomCount: 0,
-        medicationCount: 0,
         totalCount: 0,
         maxIntensity: null,
       })
@@ -283,7 +274,7 @@ function getTimeRangeStart(timeRange: TimeRange): Date {
 }
 
 /**
- * Aggregiert TimelineRawRow[] zu Symptom- und Medikamenten-Rankings.
+ * Aggregiert TimelineRawRow[] zu Symptom-Rankings.
  * @param rows - Rohdaten aus der DB (bereits als TimelineRawRow gecasted)
  * @param dateFrom - Untere Datumsgrenze (YYYY-MM-DD), inklusive. Muss ein gültiges Datum sein.
  * @param dateTo - Obere Datumsgrenze (YYYY-MM-DD), inklusive. Wenn nicht angegeben, kein oberes Limit.
@@ -294,17 +285,11 @@ export function aggregateRankingFromRows(
   dateTo?: string,
 ): {
   symptoms: SymptomRankingEntry[]
-  medications: MedicationRankingEntry[]
   totalSymptomEvents: number
-  totalMedicationEvents: number
 } {
   const symptomMap = new Map<
     string,
     { monthlyCounts: Map<string, number>; intensities: number[] }
-  >()
-  const medicationMap = new Map<
-    string,
-    { monthlyCounts: Map<string, number> }
   >()
 
   for (const row of rows) {
@@ -315,39 +300,25 @@ export function aggregateRankingFromRows(
     const fieldMap = new Map(
       (row.extracted_data ?? []).map((r) => [r.field_name, r.value]),
     )
-    const isMedication = row.event_type === 'medication'
     const [yearStr, monthStr] = localKey.split('-')
     const year = parseInt(yearStr, 10)
     const month = parseInt(monthStr, 10)
     const monthKey = `${year}-${String(month).padStart(2, '0')}`
 
-    if (isMedication) {
-      const name = fieldMap.get('medication') ?? 'Unbekannt'
-      let entry = medicationMap.get(name)
-      if (!entry) {
-        entry = { monthlyCounts: new Map() }
-        medicationMap.set(name, entry)
-      }
-      entry.monthlyCounts.set(
-        monthKey,
-        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
-      )
-    } else {
-      const name = fieldMap.get('symptom_name') ?? 'Unbekannt'
-      let entry = symptomMap.get(name)
-      if (!entry) {
-        entry = { monthlyCounts: new Map(), intensities: [] }
-        symptomMap.set(name, entry)
-      }
-      entry.monthlyCounts.set(
-        monthKey,
-        (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
-      )
-      const intensityRaw = fieldMap.get('intensity')
-      if (intensityRaw !== undefined) {
-        const int = parseFloat(intensityRaw)
-        if (!isNaN(int)) entry.intensities.push(int)
-      }
+    const name = fieldMap.get('symptom_name') ?? 'Unbekannt'
+    let entry = symptomMap.get(name)
+    if (!entry) {
+      entry = { monthlyCounts: new Map(), intensities: [] }
+      symptomMap.set(name, entry)
+    }
+    entry.monthlyCounts.set(
+      monthKey,
+      (entry.monthlyCounts.get(monthKey) ?? 0) + 1,
+    )
+    const intensityRaw = fieldMap.get('intensity')
+    if (intensityRaw !== undefined) {
+      const int = parseFloat(intensityRaw)
+      if (!isNaN(int)) entry.intensities.push(int)
     }
   }
 
@@ -380,26 +351,9 @@ export function aggregateRankingFromRows(
     })
     .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
 
-  const medications: MedicationRankingEntry[] = Array.from(
-    medicationMap.entries(),
-  )
-    .map(([name, { monthlyCounts }]) => {
-      const counts = toSortedMonthlyCounts(monthlyCounts)
-      const totalCount = counts.reduce((s, c) => s + c.count, 0)
-      return {
-        name,
-        totalCount,
-        monthlyCounts: counts,
-        trend: calculateTrend(counts),
-      }
-    })
-    .sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name))
-
   return {
     symptoms,
-    medications,
     totalSymptomEvents: symptoms.reduce((s, e) => s + e.totalCount, 0),
-    totalMedicationEvents: medications.reduce((s, e) => s + e.totalCount, 0),
   }
 }
 
@@ -415,7 +369,9 @@ export async function getSymptomRanking(
 
   const { data, error } = await supabase
     .from('symptom_events')
-    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .select(
+      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index, medication_index)',
+    )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
     .is('deleted_at', null)
@@ -426,13 +382,7 @@ export async function getSymptomRanking(
     if (error) {
       console.error('[Insights] Ranking-Abfrage fehlgeschlagen:', error.message)
     }
-    return {
-      symptoms: [],
-      medications: [],
-      timeRange,
-      totalSymptomEvents: 0,
-      totalMedicationEvents: 0,
-    }
+    return { symptoms: [], timeRange, totalSymptomEvents: 0 }
   }
 
   const rows = data as unknown as TimelineRawRow[]
@@ -459,7 +409,9 @@ export async function getSymptomRankingByAccount(
 
   const { data, error } = await supabase
     .from('symptom_events')
-    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .select(
+      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index, medication_index)',
+    )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
     .is('deleted_at', null)
@@ -474,13 +426,7 @@ export async function getSymptomRankingByAccount(
         error.message,
       )
     }
-    return {
-      symptoms: [],
-      medications: [],
-      timeRange: '30d',
-      totalSymptomEvents: 0,
-      totalMedicationEvents: 0,
-    }
+    return { symptoms: [], timeRange: '30d', totalSymptomEvents: 0 }
   }
 
   const rows = data as unknown as TimelineRawRow[]
@@ -532,7 +478,7 @@ export async function getSymptomEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index, medication_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -559,12 +505,7 @@ export async function getSymptomEvents(
     const fieldMap = new Map(
       (row.extracted_data ?? []).map((r) => [r.field_name, r.value]),
     )
-    const isMed = row.event_type === 'medication'
-    if (isMed) {
-      return fieldMap.get('medication') === symptomName
-    } else {
-      return fieldMap.get('symptom_name') === symptomName
-    }
+    return fieldMap.get('symptom_name') === symptomName
   })
 
   return filtered.slice(0, limit).map(mapRowToFeedEvent)
@@ -596,7 +537,9 @@ export async function getEventDetail(
   ] = await Promise.all([
     supabase
       .from('extracted_data')
-      .select('field_name, value, confidence, confirmed, symptom_index')
+      .select(
+        'field_name, value, confidence, confirmed, symptom_index, medication_index',
+      )
       .eq('symptom_event_id', eventId),
     supabase
       .from('event_photos')
@@ -644,13 +587,12 @@ export async function getEventDetail(
     confidence: r.confidence,
     confirmed: r.confirmed ?? false,
     symptomIndex: r.symptom_index ?? 0,
+    medicationIndex: r.medication_index ?? null,
   }))
-
-  const eventType = event.event_type === 'medication' ? 'medication' : 'symptom'
 
   return {
     id: event.id,
-    eventType,
+    eventType: 'symptom',
     occurredAt: event.occurred_at,
     createdAt: event.created_at,
     endedAt: event.ended_at,
@@ -671,7 +613,6 @@ function buildEmptyTimeline(year: number, month: number): MonthTimeline {
     days.push({
       date: dateKey,
       symptomCount: 0,
-      medicationCount: 0,
       totalCount: 0,
       maxIntensity: null,
     })
@@ -695,7 +636,7 @@ export async function getDayEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index, medication_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')

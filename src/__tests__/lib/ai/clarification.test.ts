@@ -16,6 +16,7 @@ function makeField(
     confirmed: false,
     created_at: '2026-03-03T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
     ...overrides,
   }
 }

@@ -177,7 +177,7 @@ test.describe('Insights Ranking (Story 4.3)', () => {
     await expect(page.getByText('Letzte Einträge:')).not.toBeVisible()
   })
 
-  test('Medikamente-Sektion erscheint wenn Medikamente vorhanden', async ({
+  test('Symptom mit Medikamenten-Feld erscheint im Symptome-Ranking', async ({
     page,
   }) => {
     const now = new Date()
@@ -187,16 +187,24 @@ test.describe('Insights Ranking (Story 4.3)', () => {
 
     const event = await createTestSymptomEvent(userId, {
       status: 'confirmed',
-      raw_input: 'Ibuprofen 400mg',
-      event_type: 'medication',
+      raw_input: 'Kopfschmerzen mit Ibuprofen',
+      event_type: 'symptom',
       occurred_at: todayNoon,
     })
     await createTestExtractedData(event.id, [
       {
-        field_name: 'medication',
+        field_name: 'symptom_name',
+        value: 'Kopfschmerzen',
+        confidence: 90,
+        confirmed: true,
+      },
+      {
+        field_name: 'medication_taken',
         value: 'Ibuprofen',
         confidence: 95,
         confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
       },
     ])
 
@@ -204,13 +212,11 @@ test.describe('Insights Ranking (Story 4.3)', () => {
     await insightsPage.waitForLoaded()
     await insightsPage.switchToRanking()
 
-    // Medikamente section heading
-    await expect(
-      page.getByRole('heading', { name: 'Medikamente' }),
-    ).toBeVisible()
+    // Symptome section heading (no separate Medikamente section anymore)
+    await expect(page.getByRole('heading', { name: 'Symptome' })).toBeVisible()
 
-    // Medication name and count
-    await expect(page.getByText('Ibuprofen')).toBeVisible()
+    // Symptom name and count
+    await expect(page.getByText('Kopfschmerzen')).toBeVisible()
     await expect(page.getByText('1x')).toBeVisible()
   })
 

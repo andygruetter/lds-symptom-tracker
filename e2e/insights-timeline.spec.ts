@@ -54,26 +54,23 @@ test.describe('Insights Timeline (Story 4.2)', () => {
     ).toBeVisible()
   })
 
-  test('Tag mit Events zeigt Symptom-Dot und Medikament-Dot', async ({
-    page,
-  }) => {
+  test('Tag mit Events zeigt Symptom-Dot', async ({ page }) => {
     const now = new Date()
     const todayNoon = new Date(
       Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
     ).toISOString()
 
-    // Create a symptom event
+    // Create two symptom events (all events are symptom type now)
     await createTestSymptomEvent(userId, {
       status: 'confirmed',
       raw_input: 'Kopfschmerzen',
       occurred_at: todayNoon,
     })
 
-    // Create a medication event on the same day
     await createTestSymptomEvent(userId, {
       status: 'confirmed',
-      raw_input: 'Ibuprofen',
-      event_type: 'medication',
+      raw_input: 'Rückenschmerzen',
+      event_type: 'symptom',
       occurred_at: todayNoon,
     })
 
@@ -81,9 +78,8 @@ test.describe('Insights Timeline (Story 4.2)', () => {
     await insightsPage.waitForLoaded()
     await insightsPage.switchToTimeline()
 
-    // Symptom dot and medication dot should be visible
+    // Symptom dot should be visible (no separate medication dot anymore)
     await expect(page.getByTestId('symptom-dot').first()).toBeVisible()
-    await expect(page.getByTestId('medication-dot').first()).toBeVisible()
   })
 
   test('Tap auf Tag mit Events öffnet Drill-Down Panel', async ({ page }) => {

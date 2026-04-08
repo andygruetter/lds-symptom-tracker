@@ -107,12 +107,11 @@ async function loadPdfEvents(
   }
 
   return rows.map((row): PdfEventDetail => {
-    const eventType = row.event_type === 'medication' ? 'medication' : 'symptom'
-    const symptoms = groupExtractedBySymptomIndex(row.extracted_data, eventType)
+    const symptoms = groupExtractedBySymptomIndex(row.extracted_data)
 
     return {
       id: row.id,
-      eventType,
+      eventType: 'symptom',
       occurredAt: row.occurred_at,
       endedAt: row.ended_at,
       rawInput: row.raw_input,
@@ -183,8 +182,6 @@ function buildStatisticalSummary(
   dateFrom: string,
   dateTo: string,
 ): string {
-  const symptomEvents = events.filter((e) => e.eventType === 'symptom')
-  const medEvents = events.filter((e) => e.eventType === 'medication')
   const fromStr = new Date(dateFrom).toLocaleDateString('de-CH')
   const toStr = new Date(dateTo).toLocaleDateString('de-CH')
 
@@ -193,7 +190,7 @@ function buildStatisticalSummary(
   }
 
   const symptomCounts = new Map<string, number>()
-  for (const e of symptomEvents) {
+  for (const e of events) {
     const name = e.symptoms[0]?.fields['symptom_name'] ?? 'Unbekannt'
     symptomCounts.set(name, (symptomCounts.get(name) ?? 0) + 1)
   }
@@ -202,8 +199,7 @@ function buildStatisticalSummary(
   )[0]
 
   return [
-    `Im Zeitraum ${fromStr} bis ${toStr} wurden insgesamt ${events.length} Events erfasst`,
-    `(${symptomEvents.length} Symptome, ${medEvents.length} Medikamenten-Einnahmen).`,
+    `Im Zeitraum ${fromStr} bis ${toStr} wurden insgesamt ${events.length} Symptom-Events erfasst.`,
     topSymptom
       ? `Das häufigste Symptom war "${topSymptom[0]}" (${topSymptom[1]}x).`
       : '',

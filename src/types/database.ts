@@ -145,6 +145,7 @@ export type Database = {
           created_at: string
           field_name: string
           id: string
+          medication_index: number | null
           symptom_event_id: string
           symptom_index: number
           value: string
@@ -155,6 +156,7 @@ export type Database = {
           created_at?: string
           field_name: string
           id?: string
+          medication_index?: number | null
           symptom_event_id: string
           symptom_index?: number
           value: string
@@ -165,6 +167,7 @@ export type Database = {
           created_at?: string
           field_name?: string
           id?: string
+          medication_index?: number | null
           symptom_event_id?: string
           symptom_index?: number
           value?: string

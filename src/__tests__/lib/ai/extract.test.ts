@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  medicationExtraction,
   symptomExtraction,
+  symptomWithMedicationExtraction,
 } from '@/lib/ai/__fixtures__/extractions'
 
 // Mock the Claude provider
@@ -24,7 +24,6 @@ describe('extractSymptomData', () => {
     const { extractSymptomData } = await import('@/lib/ai/extract')
     const result = await extractSymptomData('Kopfschmerzen rechts stechend')
 
-    expect(result.eventType).toBe('symptom')
     expect(result.fields).toHaveLength(5)
     expect(result.fields[0].fieldName).toBe('symptom_name')
     expect(result.fields[0].value).toBe('Kopfschmerzen')
@@ -45,15 +44,14 @@ describe('extractSymptomData', () => {
     expect(mockExtract).toHaveBeenCalledWith('Rügge tuet weh', context)
   })
 
-  it('extrahiert Medikamenten-Daten via Provider', async () => {
-    mockExtract.mockResolvedValue(medicationExtraction)
+  it('extrahiert Symptom-mit-Medikament-Daten via Provider', async () => {
+    mockExtract.mockResolvedValue(symptomWithMedicationExtraction)
 
     const { extractSymptomData } = await import('@/lib/ai/extract')
     const result = await extractSymptomData('Habe Ibuprofen 400mg genommen')
 
-    expect(result.eventType).toBe('medication')
-    expect(result.fields).toHaveLength(3)
-    expect(result.fields[0].fieldName).toBe('medication_name')
+    expect(result.fields).toHaveLength(4)
+    expect(result.fields[0].fieldName).toBe('symptom_name')
   })
 
   it('propagiert Provider-Fehler', async () => {

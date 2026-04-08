@@ -1,11 +1,8 @@
-import type {
-  MedicationRankingEntry,
-  SymptomRankingEntry,
-} from '@/types/analytics'
+import type { SymptomRankingEntry } from '@/types/analytics'
 
 type Props = {
-  entry: SymptomRankingEntry | MedicationRankingEntry
-  variant: 'symptom' | 'medication'
+  entry: SymptomRankingEntry
+  variant: 'symptom'
   isExpanded: boolean
   onToggle: () => void
 }
@@ -79,10 +76,9 @@ export function SymptomRankingCard({
   isExpanded,
   onToggle,
 }: Props) {
-  const accentColor = variant === 'symptom' ? '#C06A3C' : '#4A7FA5'
+  const accentColor = '#C06A3C'
   const sparklineColor = accentColor
-  const avgIntensity =
-    variant === 'symptom' ? (entry as SymptomRankingEntry).avgIntensity : null
+  const avgIntensity = entry.avgIntensity
 
   return (
     <button

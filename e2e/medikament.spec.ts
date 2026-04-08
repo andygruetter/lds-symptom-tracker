@@ -21,26 +21,30 @@ test.describe('Medikamenten-Erfassung', () => {
     await cleanupTestData(userId)
   })
 
-  test('zeigt Medikamenten-Bubble bei medication event_type', async ({
+  test('zeigt Medikamenten-Bubble bei Symptom mit medication_taken Feld', async ({
     page,
   }) => {
     const event = await createTestSymptomEvent(userId, {
       raw_input: 'Ibuprofen 400mg eingenommen',
       status: 'confirmed',
-      event_type: 'medication',
+      event_type: 'symptom',
     })
     await createTestExtractedData(event.id, [
       {
-        field_name: 'medication_name',
+        field_name: 'medication_taken',
         value: 'Ibuprofen',
         confidence: 95,
         confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
       },
       {
-        field_name: 'dosage',
+        field_name: 'medication_dosage',
         value: '400mg',
         confidence: 90,
         confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
       },
     ])
 
@@ -56,26 +60,31 @@ test.describe('Medikamenten-Erfassung', () => {
     const event = await createTestSymptomEvent(userId, {
       raw_input: 'Paracetamol 500mg',
       status: 'extracted',
-      event_type: 'medication',
+      event_type: 'symptom',
     })
     await createTestExtractedData(event.id, [
       {
-        field_name: 'medication_name',
+        field_name: 'medication_taken',
         value: 'Paracetamol',
         confidence: 95,
+        symptom_index: 0,
+        medication_index: 0,
       },
-      { field_name: 'dosage', value: '500mg', confidence: 85 },
+      {
+        field_name: 'medication_dosage',
+        value: '500mg',
+        confidence: 85,
+        symptom_index: 0,
+        medication_index: 0,
+      },
     ])
 
     await capturePage.goto()
 
-    // SymptomTag buttons have aria-label using getFieldLabel() (German labels)
-    await expect(
-      page.getByRole('button', { name: 'Medikament ändern' }),
-    ).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: 'Dosierung ändern' }),
-    ).toBeVisible()
+    // MedicationGroup renders medication fields as plain text (not SymptomTag buttons)
+    await expect(page.getByText('Medikamente')).toBeVisible()
+    // Combined medication display "💊 Paracetamol · 500mg" (use .first() to avoid strict mode with raw_input bubble)
+    await expect(page.getByText(/Paracetamol.*500mg/).first()).toBeVisible()
     await expect(
       page.getByRole('button', { name: /Bestätigen/i }),
     ).toBeVisible()

@@ -1,8 +1,10 @@
 import { AudioPlayer } from '@/components/event/audio-player'
 import {
   EVENT_LEVEL_FIELDS,
+  MEDICATION_FIELDS,
   formatFieldValue,
   getConfidenceColor,
+  groupByMedicationIndex,
   groupBySymptomIndex,
 } from '@/components/event/event-detail-utils'
 import { PhotoGallery } from '@/components/event/photo-gallery'
@@ -55,7 +57,6 @@ function ConfidenceIndicator({
 /* ------------------------------------------------------------------ */
 
 export function EventTypeBadge({
-  eventType,
   endedAt,
   occurredAt,
 }: {
@@ -63,18 +64,14 @@ export function EventTypeBadge({
   endedAt: string | null
   occurredAt: string
 }) {
-  const isMedication = eventType === 'medication'
-  const typeBadgeColor = isMedication ? '#4A7FA5' : '#C06A3C'
-  const typeLabel = isMedication ? 'Medikament' : 'Symptom'
-
   return (
     <div className="flex items-center justify-between gap-2">
       <span
         className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold text-white"
-        style={{ backgroundColor: typeBadgeColor }}
+        style={{ backgroundColor: '#C06A3C' }}
       >
         <span className="size-2 rounded-full bg-white/70" aria-hidden="true" />
-        {typeLabel}
+        Symptom
       </span>
       {endedAt && (
         <span className="text-xs text-muted-foreground">
@@ -131,22 +128,23 @@ interface ExtractedDataSectionProps {
 
 export function ExtractedDataSection({
   extractedFields,
-  eventType,
   showConfidencePercentage = false,
 }: ExtractedDataSectionProps) {
-  const isMedication = eventType === 'medication'
-
-  const symptomGroups = isMedication
-    ? null
-    : groupBySymptomIndex(extractedFields)
-  const sortedGroupKeys = symptomGroups
-    ? [...symptomGroups.keys()].sort((a, b) => a - b)
-    : []
+  const symptomGroups = groupBySymptomIndex(extractedFields)
+  const sortedGroupKeys = [...symptomGroups.keys()].sort((a, b) => a - b)
   const isMultiSymptom = sortedGroupKeys.length > 1
 
-  const fieldMap = new Map(extractedFields.map((f) => [f.fieldName, f]))
+  const medicationGroups = groupByMedicationIndex(extractedFields)
+  const sortedMedKeys = [...medicationGroups.keys()].sort((a, b) => a - b)
+
+  const nonMedFields = extractedFields.filter(
+    (f) => f.medicationIndex === null || f.medicationIndex === undefined,
+  )
+  const fieldMap = new Map(nonMedFields.map((f) => [f.fieldName, f]))
   const displayFields = sortByFieldOrder(
-    extractedFields.filter((f) => !!f.value).map((f) => f.fieldName),
+    nonMedFields
+      .filter((f) => !!f.value && !MEDICATION_FIELDS.has(f.fieldName))
+      .map((f) => f.fieldName),
   )
     .map((name) => fieldMap.get(name)!)
     .filter(Boolean)
@@ -286,6 +284,35 @@ export function ExtractedDataSection({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Medikamenten-Gruppe */}
+      {sortedMedKeys.length > 0 && (
+        <div className="mt-3">
+          <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
+            Medikamente
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {sortedMedKeys.map((medIdx) => {
+              const medFields = medicationGroups.get(medIdx)!
+              const medMap = new Map(medFields.map((f) => [f.fieldName, f]))
+              const name = medMap.get('medication_taken')?.value ?? '—'
+              const dosage = medMap.get('medication_dosage')?.value
+              return (
+                <div
+                  key={medIdx}
+                  className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5"
+                >
+                  <span className="text-sm">💊</span>
+                  <span className="text-sm text-foreground">
+                    {name}
+                    {dosage ? ` · ${dosage}` : ''}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -151,11 +151,7 @@ export function MonthTimeline({ initialTimeline }: Props) {
               const isSelected = day.date === selectedDate
               const hasEvents = day.totalCount > 0
 
-              const ariaLabel = buildAriaLabel(
-                day.date,
-                day.symptomCount,
-                day.medicationCount,
-              )
+              const ariaLabel = buildAriaLabel(day.date, day.symptomCount)
 
               return (
                 <button
@@ -192,14 +188,6 @@ export function MonthTimeline({ initialTimeline }: Props) {
                           aria-hidden="true"
                         />
                       )}
-                      {day.medicationCount > 0 && (
-                        <span
-                          data-testid="medication-dot"
-                          className={`rounded-full ${getDotSize(day.medicationCount)}`}
-                          style={{ backgroundColor: '#4A7FA5' }}
-                          aria-hidden="true"
-                        />
-                      )}
                     </div>
                   )}
                 </button>
@@ -220,11 +208,7 @@ export function MonthTimeline({ initialTimeline }: Props) {
   )
 }
 
-function buildAriaLabel(
-  date: string,
-  symptomCount: number,
-  medicationCount: number,
-): string {
+function buildAriaLabel(date: string, symptomCount: number): string {
   const [year, month, day] = date.split('-').map(Number)
   const formatted = new Intl.DateTimeFormat('de-CH', {
     day: 'numeric',
@@ -235,11 +219,7 @@ function buildAriaLabel(
   const parts: string[] = [formatted]
   if (symptomCount > 0)
     parts.push(`${symptomCount} Symptom${symptomCount !== 1 ? 'e' : ''}`)
-  if (medicationCount > 0)
-    parts.push(
-      `${medicationCount} Medikament${medicationCount !== 1 ? 'e' : ''}`,
-    )
-  if (symptomCount === 0 && medicationCount === 0) parts.push('Keine Einträge')
+  if (symptomCount === 0) parts.push('Keine Einträge')
 
   return parts.join(', ')
 }

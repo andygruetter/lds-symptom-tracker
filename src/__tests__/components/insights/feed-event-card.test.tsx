@@ -32,7 +32,7 @@ const symptomEvent: FeedEvent = {
 
 const medicationEvent: FeedEvent = {
   id: 'event-2',
-  eventType: 'medication',
+  eventType: 'symptom',
   occurredAt: '2026-03-13T20:15:00Z',
   createdAt: '2026-03-13T20:15:00Z',
   endedAt: null,
@@ -65,8 +65,8 @@ describe('FeedEventCard', () => {
       await import('@/components/insights/feed-event-card')
     render(<FeedEventCard event={medicationEvent} />)
 
-    expect(screen.getByText(/Dafalgan/)).toBeInTheDocument()
-    expect(screen.getByText('1g')).toBeInTheDocument()
+    expect(screen.getAllByText(/Dafalgan/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/1g/)).toBeInTheDocument()
   })
 
   it('zeigt Typ-Badge Symptom', async () => {
@@ -77,12 +77,12 @@ describe('FeedEventCard', () => {
     expect(screen.getByText('Symptom')).toBeInTheDocument()
   })
 
-  it('zeigt Typ-Badge Medikament', async () => {
+  it('zeigt Typ-Badge Symptom auch für Medikament-Events', async () => {
     const { FeedEventCard } =
       await import('@/components/insights/feed-event-card')
     render(<FeedEventCard event={medicationEvent} />)
 
-    expect(screen.getByText('Medikament')).toBeInTheDocument()
+    expect(screen.getByText('Symptom')).toBeInTheDocument()
   })
 
   it('zeigt Chevron-Right als Tap-Affordance', async () => {

@@ -94,13 +94,14 @@ describe('claudeSummaryProvider', () => {
       },
       {
         id: 'evt-3',
-        eventType: 'medication',
+        eventType: 'symptom',
         occurredAt: '2026-03-03T09:00:00Z',
         endedAt: null,
-        rawInput: 'Ibuprofen genommen',
+        rawInput: 'Ibuprofen genommen gegen Kopfschmerzen',
         extractedFields: [
-          { fieldName: 'medication_name', value: 'Ibuprofen', confidence: 95 },
-          { fieldName: 'action', value: 'eingenommen', confidence: 95 },
+          { fieldName: 'symptom_name', value: 'Kopfschmerzen', confidence: 90 },
+          { fieldName: 'medication_taken', value: 'Ibuprofen', confidence: 95 },
+          { fieldName: 'medication_dosage', value: '400mg', confidence: 85 },
         ],
       },
     ]
@@ -112,7 +113,7 @@ describe('claudeSummaryProvider', () => {
     // Prompt sollte alle Events enthalten
     const callArgs = mockCreate.mock.calls[0][0]
     expect(callArgs.messages[0].content).toContain('SYMPTOM')
-    expect(callArgs.messages[0].content).toContain('MEDICATION')
+    expect(callArgs.messages[0].content).toContain('medication_taken')
   })
 
   it('wirft Fehler wenn kein Text-Block zurückkommt', async () => {

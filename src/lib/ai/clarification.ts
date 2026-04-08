@@ -5,6 +5,7 @@ const CONFIDENCE_THRESHOLD = 70
 const MAX_QUESTIONS = 2
 
 // Priorität: symptom_time > body_region > side > symptom_type > intensity > duration > other
+// Medikamenten- und Vorzeichen-Felder haben niedrige Priorität (erst nach Kern-Symptom-Feldern)
 // Keys matchen Claude-Output (englische field_name Werte)
 const FIELD_PRIORITY: Record<string, number> = {
   symptom_time: 0,
@@ -17,6 +18,9 @@ const FIELD_PRIORITY: Record<string, number> = {
   trigger: 7,
   frequency: 8,
   status: 9,
+  precursor: 10,
+  medication_taken: 11,
+  medication_dosage: 12,
 }
 
 function getFieldPriority(fieldName: string): number {
@@ -168,6 +172,33 @@ const clarificationTemplates: Record<string, ClarificationTemplate> = {
       'Mehrmals täglich',
       'Seit mehreren Tagen',
     ],
+  },
+  precursor: {
+    question: 'Hattest du Vorzeichen bevor das Symptom aufgetreten ist?',
+    options: [
+      'Aura/Sehstörungen',
+      'Übelkeit',
+      'Druckgefühl',
+      'Stimmungsschwankung',
+      'Müdigkeit',
+      'Nein, keine Vorzeichen',
+    ],
+  },
+  medication_taken: {
+    question: 'Hast du ein Medikament eingenommen?',
+    options: [
+      'Ibuprofen',
+      'Paracetamol/Dafalgan',
+      'Aspirin',
+      'Novalgin',
+      'Triptan',
+      'Nein',
+    ],
+  },
+  medication_dosage: {
+    question: (value) =>
+      value ? `Welche Dosierung von ${value}?` : 'Welche Dosierung?',
+    options: ['200mg', '400mg', '500mg', '1g', '1 Tablette', '2 Tabletten'],
   },
 }
 
