@@ -83,8 +83,8 @@ test.describe('Medikamenten-Erfassung', () => {
 
     // MedicationGroup renders medication fields as plain text (not SymptomTag buttons)
     await expect(page.getByText('Medikamente')).toBeVisible()
-    await expect(page.getByText('Paracetamol')).toBeVisible()
-    await expect(page.getByText('500mg')).toBeVisible()
+    // Use regex to match the combined medication display "💊 Paracetamol · 500mg"
+    await expect(page.getByText(/Paracetamol.*500mg/)).toBeVisible()
     await expect(
       page.getByRole('button', { name: /Bestätigen/i }),
     ).toBeVisible()
