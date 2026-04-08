@@ -196,10 +196,8 @@ describe('loadSymptomRanking', () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     const rankingResult = {
       symptoms: [],
-      medications: [],
       timeRange: '3m',
       totalSymptomEvents: 0,
-      totalMedicationEvents: 0,
     }
     mockGetSymptomRanking.mockResolvedValue(rankingResult)
 

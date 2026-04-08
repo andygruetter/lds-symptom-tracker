@@ -139,7 +139,9 @@ export async function getMonthlyTimeline(
 
   const { data, error } = await supabase
     .from('symptom_events')
-    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .select(
+      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index, medication_index)',
+    )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
     .is('deleted_at', null)
@@ -367,7 +369,9 @@ export async function getSymptomRanking(
 
   const { data, error } = await supabase
     .from('symptom_events')
-    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .select(
+      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index, medication_index)',
+    )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
     .is('deleted_at', null)
@@ -405,7 +409,9 @@ export async function getSymptomRankingByAccount(
 
   const { data, error } = await supabase
     .from('symptom_events')
-    .select('id, event_type, occurred_at, extracted_data(field_name, value)')
+    .select(
+      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index, medication_index)',
+    )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
     .is('deleted_at', null)

@@ -354,7 +354,7 @@ export async function getSharedSymptomEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, ended_at, raw_input, audio_url, status, extracted_data(field_name, value)',
+      'id, event_type, occurred_at, ended_at, raw_input, audio_url, status, extracted_data(field_name, value, symptom_index, medication_index)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -406,7 +406,7 @@ export async function getSharedFeedEvents(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index), event_photos(id)',
+      'id, event_type, occurred_at, created_at, ended_at, raw_input, audio_url, extracted_data(field_name, value, symptom_index, medication_index), event_photos(id)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')
@@ -498,7 +498,7 @@ export async function getSharedSymptomRanking(
   const { data, error } = await supabase
     .from('symptom_events')
     .select(
-      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index)',
+      'id, event_type, occurred_at, extracted_data(field_name, value, symptom_index, medication_index)',
     )
     .eq('account_id', accountId)
     .eq('status', 'confirmed')

@@ -278,9 +278,13 @@ function SingleSymptomReview({
           </p>,
         )}
 
-      {precursor && (
-        <p className="text-xs text-muted-foreground">Vorzeichen: {precursor}</p>
-      )}
+      {precursor &&
+        renderEditableField(
+          'precursor',
+          <p className="text-xs text-muted-foreground">
+            Vorzeichen: {precursor}
+          </p>,
+        )}
 
       {(locationParts.length > 0 || severityInfo) && (
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
