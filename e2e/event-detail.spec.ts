@@ -287,11 +287,8 @@ test.describe('Event Detail View (Story 4.4)', () => {
     await page.goto(`/event/${event.id}`)
     await page.getByRole('heading', { name: 'Event-Details' }).waitFor()
 
-    // Medication field labels (medication_taken → "Medikament", medication_dosage → "Dosierung")
-    await expect(page.getByText('Medikament').first()).toBeVisible()
-    await expect(page.getByText('Dosierung')).toBeVisible()
-
-    // Field values
+    // Medication group section header and combined display (💊 Ibuprofen · 400mg)
+    await expect(page.getByText('Medikamente')).toBeVisible()
     await expect(page.getByText('Ibuprofen')).toBeVisible()
     await expect(page.getByText('400mg')).toBeVisible()
   })

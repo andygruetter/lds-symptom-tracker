@@ -105,7 +105,7 @@ test.describe('Insights Feed (Story 4.1)', () => {
     await expect(page.getByText('Symptom')).toBeVisible()
   })
 
-  test('Symptom-Karte zeigt Medikament-Felder mit "Symptom"-Badge', async ({
+  test('Symptom-Karte mit Medikament-Feldern zeigt "Symptom"-Badge', async ({
     page,
   }) => {
     const now = new Date()
@@ -115,11 +115,18 @@ test.describe('Insights Feed (Story 4.1)', () => {
 
     const event = await createTestSymptomEvent(userId, {
       status: 'confirmed',
-      raw_input: 'Ibuprofen 400mg',
+      raw_input: 'Kopfschmerzen, Ibuprofen 400mg',
       event_type: 'symptom',
       occurred_at: todayNoon,
     })
     await createTestExtractedData(event.id, [
+      {
+        field_name: 'symptom_name',
+        value: 'Kopfschmerzen',
+        confidence: 95,
+        confirmed: true,
+        symptom_index: 0,
+      },
       {
         field_name: 'medication_taken',
         value: 'Ibuprofen',
@@ -141,9 +148,8 @@ test.describe('Insights Feed (Story 4.1)', () => {
     await insightsPage.goto()
     await insightsPage.waitForLoaded()
 
-    // Medication field values
-    await expect(page.getByText('Ibuprofen')).toBeVisible()
-    await expect(page.getByText('400mg')).toBeVisible()
+    // Feed card shows symptom name (medication fields are excluded from feed groups by design)
+    await expect(page.getByText('Kopfschmerzen')).toBeVisible()
     // Type badge is always "Symptom" now
     await expect(page.getByText('Symptom')).toBeVisible()
   })
