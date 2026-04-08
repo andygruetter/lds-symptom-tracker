@@ -105,7 +105,7 @@ test.describe('Insights Feed (Story 4.1)', () => {
     await expect(page.getByText('Symptom')).toBeVisible()
   })
 
-  test('Medikament-Karte zeigt Medikamentname mit "Medikament"-Badge', async ({
+  test('Symptom-Karte zeigt Medikament-Felder mit "Symptom"-Badge', async ({
     page,
   }) => {
     const now = new Date()
@@ -116,33 +116,36 @@ test.describe('Insights Feed (Story 4.1)', () => {
     const event = await createTestSymptomEvent(userId, {
       status: 'confirmed',
       raw_input: 'Ibuprofen 400mg',
-      event_type: 'medication',
+      event_type: 'symptom',
       occurred_at: todayNoon,
     })
     await createTestExtractedData(event.id, [
       {
-        field_name: 'medication',
+        field_name: 'medication_taken',
         value: 'Ibuprofen',
         confidence: 95,
         confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
       },
       {
-        field_name: 'dosage',
+        field_name: 'medication_dosage',
         value: '400mg',
         confidence: 90,
         confirmed: true,
+        symptom_index: 0,
+        medication_index: 0,
       },
     ])
 
     await insightsPage.goto()
     await insightsPage.waitForLoaded()
 
-    // Medication name
+    // Medication field values
     await expect(page.getByText('Ibuprofen')).toBeVisible()
-    // Dosage
     await expect(page.getByText('400mg')).toBeVisible()
-    // Type badge
-    await expect(page.getByText('Medikament')).toBeVisible()
+    // Type badge is always "Symptom" now
+    await expect(page.getByText('Symptom')).toBeVisible()
   })
 
   test('Tap auf Event-Karte navigiert zu /event/{id}', async ({ page }) => {

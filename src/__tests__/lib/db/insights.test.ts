@@ -316,7 +316,7 @@ describe('getDayEvents', () => {
       },
       {
         id: 'ev-2',
-        event_type: 'medication',
+        event_type: 'symptom',
         occurred_at: '2026-03-13T23:00:00.000+01:00',
         created_at: '2026-03-13T23:00:00.000+01:00',
         ended_at: null,

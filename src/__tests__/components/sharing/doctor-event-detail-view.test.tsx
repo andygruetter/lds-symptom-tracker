@@ -66,12 +66,12 @@ const baseMedicationEvent: EventDetail = {
   audioUrl: null,
   extractedFields: [
     {
-      fieldName: 'medication',
+      fieldName: 'medication_taken',
       value: 'Ibuprofen 400mg',
       confidence: 95,
       confirmed: true,
       symptomIndex: 0,
-      medicationIndex: null,
+      medicationIndex: 0,
     },
   ],
   photos: [],
@@ -102,8 +102,10 @@ describe('DoctorEventDetailView', () => {
   it('rendert Medikament-Felder im Symptom-Event korrekt', () => {
     render(<DoctorEventDetailView detail={baseMedicationEvent} />)
 
+    // Medication value rendered in Medikamente section
     expect(screen.getByText('Ibuprofen 400mg')).toBeInTheDocument()
-    expect(screen.getByText('95%')).toBeInTheDocument()
+    // Section heading for medications
+    expect(screen.getByText('Medikamente')).toBeInTheDocument()
   })
 
   it('rendert AudioPlayer wenn audioUrl vorhanden', () => {

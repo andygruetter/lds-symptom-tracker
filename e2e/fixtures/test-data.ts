@@ -38,6 +38,7 @@ interface ExtractedField {
   confidence: number
   confirmed?: boolean
   symptom_index?: number
+  medication_index?: number
 }
 
 export async function getTestUserId(): Promise<string> {
@@ -87,6 +88,9 @@ export async function createTestExtractedData(
     confidence: f.confidence,
     confirmed: f.confirmed ?? false,
     symptom_index: f.symptom_index ?? 0,
+    ...(f.medication_index !== undefined
+      ? { medication_index: f.medication_index }
+      : {}),
   }))
 
   const { data, error } = await supabase
