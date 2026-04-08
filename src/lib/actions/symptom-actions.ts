@@ -280,7 +280,8 @@ export async function correctExtractedField(
     }
   }
 
-  const { eventId, fieldName, newValue, symptomIndex } = parsed.data
+  const { eventId, fieldName, newValue, symptomIndex, medicationIndex } =
+    parsed.data
 
   // 3. Ownership-Check (F5-Fix): Sicherstellen dass Event dem User gehört
   const { data: ownedEvent } = await supabase
@@ -298,13 +299,20 @@ export async function correctExtractedField(
   }
 
   // 4. Load current extracted_data row (falls vorhanden)
-  const { data: currentField } = await supabase
+  let fieldQuery = supabase
     .from('extracted_data')
     .select()
     .eq('symptom_event_id', eventId)
     .eq('field_name', fieldName)
     .eq('symptom_index', symptomIndex)
-    .single()
+
+  if (medicationIndex !== null && medicationIndex !== undefined) {
+    fieldQuery = fieldQuery.eq('medication_index', medicationIndex)
+  } else {
+    fieldQuery = fieldQuery.is('medication_index', null)
+  }
+
+  const { data: currentField } = await fieldQuery.single()
 
   let resultField: ExtractedData
 
@@ -319,6 +327,7 @@ export async function correctExtractedField(
         confidence: 100,
         confirmed: true,
         symptom_index: symptomIndex,
+        medication_index: medicationIndex ?? null,
       })
       .select()
       .single()
@@ -365,12 +374,20 @@ export async function correctExtractedField(
     // Bestehender UPDATE-Pfad
     const originalValue = (currentField as ExtractedData).value
 
-    const { data: updatedField, error: updateError } = await supabase
+    let updateQuery = supabase
       .from('extracted_data')
       .update({ value: newValue, confirmed: true })
       .eq('symptom_event_id', eventId)
       .eq('field_name', fieldName)
       .eq('symptom_index', symptomIndex)
+
+    if (medicationIndex !== null && medicationIndex !== undefined) {
+      updateQuery = updateQuery.eq('medication_index', medicationIndex)
+    } else {
+      updateQuery = updateQuery.is('medication_index', null)
+    }
+
+    const { data: updatedField, error: updateError } = await updateQuery
       .select()
       .single()
 
@@ -469,7 +486,7 @@ export async function answerClarification(
     }
   }
 
-  const { eventId, fieldName, answer } = parsed.data
+  const { eventId, fieldName, answer, medicationIndex } = parsed.data
 
   // 3. Ownership check: Verify user owns this event
   const { data: event } = await supabase
@@ -487,12 +504,20 @@ export async function answerClarification(
   }
 
   // 4. Load current extracted_data row
-  const { data: currentField, error: fetchError } = await supabase
+  let clarFetchQuery = supabase
     .from('extracted_data')
     .select()
     .eq('symptom_event_id', eventId)
     .eq('field_name', fieldName)
-    .single()
+
+  if (medicationIndex !== null && medicationIndex !== undefined) {
+    clarFetchQuery = clarFetchQuery.eq('medication_index', medicationIndex)
+  } else {
+    clarFetchQuery = clarFetchQuery.is('medication_index', null)
+  }
+
+  const { data: currentField, error: fetchError } =
+    await clarFetchQuery.single()
 
   if (fetchError || !currentField) {
     return {
@@ -504,11 +529,19 @@ export async function answerClarification(
   const originalValue = (currentField as ExtractedData).value
 
   // 5. Update extracted_data: value = answer, confirmed = true
-  const { data: updatedField, error: updateError } = await supabase
+  let clarUpdateQuery = supabase
     .from('extracted_data')
     .update({ value: answer, confirmed: true })
     .eq('symptom_event_id', eventId)
     .eq('field_name', fieldName)
+
+  if (medicationIndex !== null && medicationIndex !== undefined) {
+    clarUpdateQuery = clarUpdateQuery.eq('medication_index', medicationIndex)
+  } else {
+    clarUpdateQuery = clarUpdateQuery.is('medication_index', null)
+  }
+
+  const { data: updatedField, error: updateError } = await clarUpdateQuery
     .select()
     .single()
 

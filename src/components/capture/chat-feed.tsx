@@ -87,7 +87,6 @@ export function ChatFeed({
       <div ref={bottomRef} />
       <div className="flex flex-col gap-3">
         {[...events].reverse().map((event) => {
-          const isMedication = event.event_type === 'medication'
           const extractedFields = extractedDataMap[event.id]
           const eventPhotos = photosMap[event.id]
 
@@ -102,7 +101,6 @@ export function ChatFeed({
                 variant="sent"
                 content={event.raw_input ?? undefined}
                 timestamp={formatTimestamp(event.created_at)}
-                isMedication={isMedication}
                 isVoice={isVoice}
                 isPhoto={!!hasPhotos}
                 photos={eventPhotos}
@@ -171,7 +169,6 @@ export function ChatFeed({
                 <ChatBubble
                   variant="received"
                   content="Gespeichert ✓"
-                  isMedication={isMedication}
                   extractedFields={extractedFields}
                   eventId={event.id}
                   eventStatus={event.status}

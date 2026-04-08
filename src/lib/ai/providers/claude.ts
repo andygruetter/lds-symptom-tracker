@@ -277,12 +277,11 @@ const SYMPTOM_TAXONOMY = {
 
 const systemPrompt = `Du bist ein medizinischer Daten-Extraktor. Analysiere die Patienteneingabe und extrahiere strukturierte Daten.
 
-## Schritt 1: Event-Typ bestimmen
-Entscheide ob es sich um ein Symptom oder ein Medikament handelt.
+Jede Eingabe ist ein Symptom-Event. Extrahiere alle relevanten Informationen als Felder.
 
-## Schritt 2: Felder extrahieren
+## Felder extrahieren
 
-### Bei Symptomen extrahiere:
+### Symptom-Felder (mit symptomIndex):
 - symptom_name: Bezeichnung des Symptoms. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.symptomNames.join(', ')}
 - body_region: Körperregion. Bevorzuge diese Begriffe: ${SYMPTOM_TAXONOMY.bodyRegions.join(', ')}
 - side: "links", "rechts", "beidseits" oder null
@@ -298,12 +297,13 @@ Entscheide ob es sich um ein Symptom oder ein Medikament handelt.
   Null wenn nicht bestimmbar.
 - trigger: Auslöser oder Kontext ("nach dem Sport", "bei Stress", "nach dem Essen", "beim Aufstehen"). Null wenn nicht erwähnt.
 - frequency: Häufigkeitsmuster ("erstmalig", "täglich", "gelegentlich", "jede Nacht", "seit 3 Wochen"). Null wenn nicht erwähnt.
+- precursor: Vorzeichen oder Vorboten, die dem Symptom vorausgingen (z.B. Aura, Lichtblitze, Übelkeit vor dem Kopfschmerz, Druckgefühl, Sehstörungen, Stimmungsschwankung). Verwende den gleichen symptomIndex wie das zugehörige Symptom. Null wenn nicht erwähnt.
 
-### Bei Medikamenten extrahiere:
-- medication_name: Name des Medikaments
-- action: "eingenommen" oder "vergessen"
-- dosage: Dosis (falls erwähnt)
-- reason: Grund der Einnahme (falls erwähnt)
+### Medikamenten-Felder (mit medicationIndex):
+Falls der Patient ein oder mehrere Medikamente erwähnt, extrahiere pro Medikament:
+- medication_taken: Name des eingenommenen Medikaments. Verwende medicationIndex 0 für das erste, 1 für das zweite Medikament usw.
+- medication_dosage: Dosierung (z.B. "500mg", "400mg", "2 Tabletten"). Gleicher medicationIndex wie das zugehörige medication_taken. Null wenn nicht erwähnt.
+Wenn kein Medikament erwähnt → keine medication_taken/medication_dosage Felder. medicationIndex bleibt null für alle Symptom-Felder.
 
 ## Negationen und Status erkennen
 WICHTIG: Erkenne ob der Patient über ein AKTUELLES oder VERGANGENES Symptom spricht:
@@ -335,7 +335,7 @@ Für alle anderen Felder:
 ## Beispiele
 
 Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T14:30:00+01:00\\n\\nHab seit gestern Morgen so ein Stechen im unteren Rücken links, so 6 von 10"
-→ eventType: "symptom", symptomIndex: 0
+→ symptomIndex: 0, medicationIndex: null für alle Felder
   - symptom_name: "Rückenschmerzen" (95)
   - body_region: "unterer Rücken" (95)
   - side: "links" (95)
@@ -345,11 +345,9 @@ Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T14:30:00+01:00\\n\\nHab seit
   - status: "active" (90)
 
 Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T20:00:00+01:00\\n\\nKopfweh und Übelkeit nach dem Joggen, wird schlimmer"
-→ eventType: "symptom"
-  symptomIndex 0:
+→ symptomIndex 0:
   - symptom_name: "Kopfschmerzen" (95)
   - body_region: "Kopf" (90)
-  - symptom_type: null
   - status: "worsening" (85)
   - trigger: "nach dem Joggen" (90)
   symptomIndex 1:
@@ -357,19 +355,30 @@ Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T20:00:00+01:00\\n\\nKopfweh 
   - status: "worsening" (75)
   - trigger: "nach dem Joggen" (85)
 
-Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T09:00:00+01:00\\n\\nMeine Rückenschmerzen sind seit heute Morgen weg"
-→ eventType: "symptom", symptomIndex: 0
+Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-15T09:00:00+01:00\\n\\nHatte wieder Migräne mit Aura, hab Dafalgan 1g genommen"
+→ symptomIndex 0 (Symptom-Felder, medicationIndex: null):
+  - symptom_name: "Migräne" (95)
+  - precursor: "Aura" (95)
+  - status: "active" (80)
+  medicationIndex 0 (Medikament-Felder):
+  - medication_taken: "Dafalgan" (95)
+  - medication_dosage: "1g" (95)
+
+Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-12T11:00:00+01:00\\n\\nIbuprofen 400 und Paracetamol 500 gegen Kopfschmerzen"
+→ symptomIndex 0 (Symptom-Felder):
+  - symptom_name: "Kopfschmerzen" (90)
+  medicationIndex 0:
+  - medication_taken: "Ibuprofen" (95)
+  - medication_dosage: "400mg" (95)
+  medicationIndex 1:
+  - medication_taken: "Paracetamol" (95)
+  - medication_dosage: "500mg" (95)
+
+Eingabe: "Referenzzeitpunkt der Meldung: 2026-03-10T09:00:00+01:00\\n\\nRückenschmerzen seit gestern"
+→ symptomIndex 0 (keine Medikamente → keine medication_taken/medication_dosage Felder):
   - symptom_name: "Rückenschmerzen" (95)
   - body_region: "Rücken" (80)
-  - status: "resolved" (95)
-  - symptom_time: "2026-03-10T07:00:00+01:00" (70)
-
-Eingabe: "Hab um 8 Ibuprofen 400 genommen gegen die Kopfschmerzen"
-→ eventType: "medication"
-  - medication_name: "Ibuprofen" (95)
-  - action: "eingenommen" (95)
-  - dosage: "400mg" (90)
-  - reason: "Kopfschmerzen" (90)
+  - status: "active" (90)
 
 ## Krankheitskontext: Loeys-Dietz-Syndrom (LDS) / Marfan-Syndrom
 
@@ -418,15 +427,10 @@ Sprache: Der Patient schreibt auf Deutsch (möglicherweise Schweizerdeutsch).
 const extractionTool: Anthropic.Messages.Tool = {
   name: 'extract_symptom_data',
   description:
-    'Extrahiert strukturierte medizinische Daten aus Freitext. Unterstützt mehrere Symptome pro Eingabe via symptomIndex.',
+    'Extrahiert strukturierte medizinische Daten aus Freitext. Unterstützt mehrere Symptome (symptomIndex) und mehrere Medikamente (medicationIndex) pro Eingabe.',
   input_schema: {
     type: 'object' as const,
     properties: {
-      eventType: {
-        type: 'string',
-        enum: ['symptom', 'medication'],
-        description: 'Art des Events: Symptom oder Medikament',
-      },
       fields: {
         type: 'array',
         items: {
@@ -435,7 +439,7 @@ const extractionTool: Anthropic.Messages.Tool = {
             fieldName: {
               type: 'string',
               description:
-                'Name des extrahierten Feldes. Für Symptome: symptom_name, body_region, side, symptom_type, intensity, symptom_time, duration, status, trigger, frequency. Für Medikamente: medication_name, action, dosage, reason.',
+                'Name des extrahierten Feldes. Symptom-Felder: symptom_name, body_region, side, symptom_type, intensity, symptom_time, duration, status, trigger, frequency, precursor. Medikamenten-Felder: medication_taken, medication_dosage.',
             },
             value: {
               type: 'string',
@@ -454,13 +458,19 @@ const extractionTool: Anthropic.Messages.Tool = {
                 'Index des Symptoms bei Multi-Symptom-Eingaben. 0 = Hauptsymptom (Standard), 1+ = weitere Symptome.',
               default: 0,
             },
+            medicationIndex: {
+              type: 'integer',
+              minimum: 0,
+              description:
+                'Index des Medikaments bei Multi-Medikament-Eingaben. 0 = erstes Medikament. Nur für medication_taken und medication_dosage Felder setzen. Für alle anderen Felder weglassen (null).',
+            },
           },
           required: ['fieldName', 'value', 'confidence'],
         },
         description: 'Array der extrahierten Felder',
       },
     },
-    required: ['eventType', 'fields'],
+    required: ['fields'],
   },
 }
 
@@ -483,16 +493,18 @@ function createClient(): Anthropic {
 
 const summarySystemPrompt = `Du bist ein medizinischer Assistent, der strukturierte Patientendaten in eine prägnante ärztliche Zusammenfassung auf Deutsch umwandelt.
 
+Eingenommene Medikamente und deren Dosierung sind als Teil der Symptom-Events erfasst (Felder: medication_taken, medication_dosage).
+
 Erstelle eine professionelle Zusammenfassung mit folgender Struktur (2-4 Absätze):
 
 **Abschnitt 1 — Gesamtüberblick:**
-Gib eine kurze Übersicht über den Zeitraum: Anzahl der Symptom-Events und Medikamenten-Events, grobe zeitliche Verteilung.
+Gib eine kurze Übersicht über den Zeitraum: Anzahl der Symptom-Events, grobe zeitliche Verteilung.
 
 **Abschnitt 2 — Häufigste Beschwerden:**
-Liste die Top-3 bis 5 häufigsten Symptome auf, mit durchschnittlicher Intensität (falls vorhanden) und Häufigkeit.
+Liste die Top-3 bis 5 häufigsten Symptome auf, mit durchschnittlicher Intensität (falls vorhanden) und Häufigkeit. Erwähne häufig eingesetzte Medikamente wo relevant.
 
-**Abschnitt 3 — Zeitliche Muster:**
-Beschreibe erkennbare Trends: zunehmend, abnehmend, stabil, Cluster-Muster, Tageszeit-Abhängigkeiten.
+**Abschnitt 3 — Zeitliche Muster & Vorzeichen:**
+Beschreibe erkennbare Trends: zunehmend, abnehmend, stabil, Cluster-Muster, Tageszeit-Abhängigkeiten. Falls Vorzeichen/Vorboten (precursor) ein Muster zeigen (z.B. wiederkehrende Aura vor Migräne, Druckgefühl vor Brustschmerzen), erwähne dieses Muster explizit.
 
 **Abschnitt 4 — LDS/Marfan-relevante Marker (nur wenn vorhanden):**
 Hebe kardiovaskuläre (Aorta, Herzrhythmus, Synkope), zerebrovaskuläre (pulsierendes Rauschen, Vernichtungskopfschmerz, Sprachstörungen) oder muskuloskelettale Auffälligkeiten besonders hervor.

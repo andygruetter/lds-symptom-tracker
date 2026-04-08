@@ -28,7 +28,7 @@ const symptomEvent: FeedEvent = {
 
 const medicationEvent: FeedEvent = {
   id: 'event-2',
-  eventType: 'medication',
+  eventType: 'symptom',
   occurredAt: '2026-03-13T20:15:00Z',
   createdAt: '2026-03-13T20:15:00Z',
   endedAt: null,
@@ -86,8 +86,8 @@ describe('DoctorEventCard', () => {
       await import('@/components/sharing/doctor-event-card')
     render(<DoctorEventCard event={medicationEvent} />)
 
-    expect(screen.getByText(/Dafalgan/)).toBeInTheDocument()
-    expect(screen.getByText('1g')).toBeInTheDocument()
+    expect(screen.getAllByText(/Dafalgan/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/1g/)).toBeInTheDocument()
   })
 
   it('zeigt Typ-Badge "Symptom" für Symptom-Events', async () => {
@@ -98,12 +98,12 @@ describe('DoctorEventCard', () => {
     expect(screen.getByText('Symptom')).toBeInTheDocument()
   })
 
-  it('zeigt Typ-Badge "Medikament" für Medication-Events', async () => {
+  it('zeigt Typ-Badge "Symptom" für alle Event-Typen', async () => {
     const { DoctorEventCard } =
       await import('@/components/sharing/doctor-event-card')
     render(<DoctorEventCard event={medicationEvent} />)
 
-    expect(screen.getByText('Medikament')).toBeInTheDocument()
+    expect(screen.getByText('Symptom')).toBeInTheDocument()
   })
 
   it('hat KEINEN Chevron-Right (kein klickbares Element)', async () => {
@@ -149,14 +149,14 @@ describe('DoctorEventCard', () => {
     expect(card?.getAttribute('style')).toContain('rgb(192, 106, 60)')
   })
 
-  it('zeigt linke Farbkante — Medikament blau', async () => {
+  it('zeigt linke Farbkante — immer orange (Terracotta)', async () => {
     const { DoctorEventCard } =
       await import('@/components/sharing/doctor-event-card')
     const { container } = render(<DoctorEventCard event={medicationEvent} />)
 
     const card = container.querySelector('[style*="border-left"]')
     expect(card).toBeTruthy()
-    expect(card?.getAttribute('style')).toContain('rgb(74, 127, 165)')
+    expect(card?.getAttribute('style')).toContain('rgb(192, 106, 60)')
   })
 
   it('formatiert Uhrzeit korrekt', async () => {

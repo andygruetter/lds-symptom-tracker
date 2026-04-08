@@ -816,9 +816,7 @@ describe('getSharedSymptomRanking', () => {
     )
 
     expect(result.symptoms).toEqual([])
-    expect(result.medications).toEqual([])
     expect(result.totalSymptomEvents).toBe(0)
-    expect(result.totalMedicationEvents).toBe(0)
     expect(result.timeRange).toBe('all')
   })
 
@@ -834,10 +832,9 @@ describe('getSharedSymptomRanking', () => {
     )
 
     expect(result.symptoms).toEqual([])
-    expect(result.medications).toEqual([])
   })
 
-  it('trennt Symptome und Medikamente korrekt', async () => {
+  it('aggregiert Symptome korrekt nach symptom_name', async () => {
     const mockRows = [
       {
         id: 'e1',
@@ -857,14 +854,6 @@ describe('getSharedSymptomRanking', () => {
           { field_name: 'intensity', value: '5' },
         ],
       },
-      {
-        id: 'e3',
-        event_type: 'medication',
-        occurred_at: '2026-02-20T08:00:00Z',
-        extracted_data: [
-          { field_name: 'medication', value: 'Ibuprofen 400mg' },
-        ],
-      },
     ]
     const builder = createRankingBuilder(mockRows)
     mockServiceFrom.mockReturnValue(builder)
@@ -881,12 +870,7 @@ describe('getSharedSymptomRanking', () => {
     expect(result.symptoms[0].totalCount).toBe(2)
     expect(result.symptoms[0].avgIntensity).toBeCloseTo(6.0)
 
-    expect(result.medications).toHaveLength(1)
-    expect(result.medications[0].name).toBe('Ibuprofen 400mg')
-    expect(result.medications[0].totalCount).toBe(1)
-
     expect(result.totalSymptomEvents).toBe(2)
-    expect(result.totalMedicationEvents).toBe(1)
   })
 
   it('sortiert nach totalCount absteigend, dann alphabetisch', async () => {

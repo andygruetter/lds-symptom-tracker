@@ -62,7 +62,6 @@ const sampleData: PdfReportData = {
         {
           date: '2026-02-15',
           symptomCount: 2,
-          medicationCount: 1,
           totalCount: 3,
           maxIntensity: 7,
         },
@@ -219,7 +218,7 @@ describe('SymptomReportDocument', () => {
       events: [
         {
           id: 'med-1',
-          eventType: 'medication',
+          eventType: 'symptom',
           occurredAt: '2026-02-15T08:00:00Z',
           endedAt: null,
           rawInput: 'Ibuprofen 400 genommen',

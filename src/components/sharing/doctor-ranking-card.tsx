@@ -1,11 +1,8 @@
-import type {
-  MedicationRankingEntry,
-  SymptomRankingEntry,
-} from '@/types/analytics'
+import type { SymptomRankingEntry } from '@/types/analytics'
 
 type Props = {
-  entry: SymptomRankingEntry | MedicationRankingEntry
-  variant: 'symptom' | 'medication'
+  entry: SymptomRankingEntry
+  variant: 'symptom'
 }
 
 function TrendArrow({
@@ -70,10 +67,9 @@ function Sparkline({
   )
 }
 
-export function DoctorRankingCard({ entry, variant }: Props) {
-  const accentColor = variant === 'symptom' ? '#C06A3C' : '#4A7FA5'
-  const avgIntensity =
-    variant === 'symptom' ? (entry as SymptomRankingEntry).avgIntensity : null
+export function DoctorRankingCard({ entry }: Props) {
+  const accentColor = '#C06A3C'
+  const avgIntensity = entry.avgIntensity
 
   return (
     <div

@@ -38,11 +38,6 @@ export default async function EventEditPage({
     notFound()
   }
 
-  // Medikamenten-Events sind in dieser Iteration nicht unterstützt
-  if (event.event_type === 'medication') {
-    notFound()
-  }
-
   // extracted_data laden
   const { data: extractedFields } = await supabase
     .from('extracted_data')

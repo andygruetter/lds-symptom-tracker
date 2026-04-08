@@ -21,27 +21,24 @@ vi.mock('@/lib/actions/insights-actions', () => ({
 function makeTimeline(
   year: number,
   month: number,
-  overrides: Partial<{ symptomCount: number; medicationCount: number }> = {},
+  overrides: Partial<{ symptomCount: number }> = {},
 ): MonthTimeline {
   const daysInMonth = new Date(year, month, 0).getDate()
   const days = Array.from({ length: daysInMonth }, (_, i) => ({
     date: `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`,
     symptomCount: 0,
-    medicationCount: 0,
     totalCount: 0,
     maxIntensity: null,
   }))
 
   // Set events on day 14 if overrides provided
-  if (overrides.symptomCount || overrides.medicationCount) {
+  if (overrides.symptomCount) {
     const day14 = days.find(
       (d) => d.date === `${year}-${String(month).padStart(2, '0')}-14`,
     )
     if (day14) {
       day14.symptomCount = overrides.symptomCount ?? 0
-      day14.medicationCount = overrides.medicationCount ?? 0
-      day14.totalCount =
-        (overrides.symptomCount ?? 0) + (overrides.medicationCount ?? 0)
+      day14.totalCount = overrides.symptomCount ?? 0
     }
   }
 
@@ -49,8 +46,7 @@ function makeTimeline(
     year,
     month,
     days,
-    totalEvents:
-      (overrides.symptomCount ?? 0) + (overrides.medicationCount ?? 0),
+    totalEvents: overrides.symptomCount ?? 0,
   }
 }
 
@@ -81,18 +77,16 @@ describe('MonthTimeline', () => {
     expect(screen.getByText(/März 2026/i)).toBeInTheDocument()
   })
 
-  it('zeigt Event-Punkte für Symptome und Medikamente', async () => {
+  it('zeigt Event-Punkte für Symptome', async () => {
     const { MonthTimeline } =
       await import('@/components/insights/month-timeline')
     const timeline = makeTimeline(2026, 3, {
       symptomCount: 2,
-      medicationCount: 1,
     })
     render(<MonthTimeline initialTimeline={timeline} />)
 
-    // Symptom-Punkt und Medikament-Punkt vorhanden
+    // Symptom-Punkt vorhanden
     expect(screen.getAllByTestId('symptom-dot').length).toBeGreaterThan(0)
-    expect(screen.getAllByTestId('medication-dot').length).toBeGreaterThan(0)
   })
 
   it('markiert heutigen Tag mit aria-current="date"', async () => {
@@ -148,7 +142,6 @@ describe('MonthTimeline', () => {
       await import('@/components/insights/month-timeline')
     const timeline = makeTimeline(2026, 3, {
       symptomCount: 1,
-      medicationCount: 0,
     })
     render(<MonthTimeline initialTimeline={timeline} />)
 

@@ -6,10 +6,8 @@ import type { SymptomRanking } from '@/types/analytics'
 function makeRanking(overrides: Partial<SymptomRanking> = {}): SymptomRanking {
   return {
     symptoms: [],
-    medications: [],
     timeRange: 'all',
     totalSymptomEvents: 0,
-    totalMedicationEvents: 0,
     ...overrides,
   }
 }
@@ -59,12 +57,11 @@ describe('DoctorRanking', () => {
     ).toBeGreaterThanOrEqual(1)
   })
 
-  it('rendert Medikamente-Sektion nur wenn Medikamente vorhanden', async () => {
+  it('zeigt keine Medikamente-Sektion (Medikamente sind in Symptom-Events eingebettet)', async () => {
     const { DoctorRanking } =
       await import('@/components/sharing/doctor-ranking')
 
-    // Ohne Medikamente: Sektion nicht sichtbar
-    const rankingOhne = makeRanking({
+    const ranking = makeRanking({
       symptoms: [
         {
           name: 'Kopfschmerzen',
@@ -76,35 +73,8 @@ describe('DoctorRanking', () => {
       ],
       totalSymptomEvents: 5,
     })
-    const { rerender } = render(<DoctorRanking ranking={rankingOhne} />)
+    render(<DoctorRanking ranking={ranking} />)
     expect(screen.queryByText('Medikamente')).not.toBeInTheDocument()
-
-    // Mit Medikamenten: Sektion sichtbar
-    const rankingMit = makeRanking({
-      symptoms: [
-        {
-          name: 'Kopfschmerzen',
-          totalCount: 5,
-          monthlyCounts: [],
-          trend: 'stable',
-          avgIntensity: null,
-        },
-      ],
-      medications: [
-        {
-          name: 'Ibuprofen',
-          totalCount: 3,
-          monthlyCounts: [],
-          trend: 'stable',
-        },
-      ],
-      totalSymptomEvents: 5,
-      totalMedicationEvents: 3,
-    })
-    rerender(<DoctorRanking ranking={rankingMit} />)
-    expect(screen.getByText('Medikamente')).toBeInTheDocument()
-    // Mobile + Desktop zeigen denselben Text
-    expect(screen.getAllByText('Ibuprofen').length).toBeGreaterThanOrEqual(1)
   })
 
   it('verwendet Arzt-Theme: border und rounded-lg statt shadow-sm', async () => {

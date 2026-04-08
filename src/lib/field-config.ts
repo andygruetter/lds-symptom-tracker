@@ -12,16 +12,15 @@ export const FIELD_LABELS: Record<string, string> = {
   trigger: 'Auslöser',
   frequency: 'Häufigkeit',
   status: 'Verlauf',
-  medication: 'Medikament',
-  medication_name: 'Medikament',
-  dosage: 'Dosierung',
-  action: 'Aktion',
-  reason: 'Grund',
+  precursor: 'Vorzeichen',
+  medication_taken: 'Medikament',
+  medication_dosage: 'Dosierung',
 }
 
 /** Canonical display order for extracted fields */
 export const FIELD_ORDER: string[] = [
   'symptom_name',
+  'precursor',
   'body_region',
   'side',
   'symptom_type',
@@ -31,11 +30,8 @@ export const FIELD_ORDER: string[] = [
   'status',
   'symptom_time',
   'duration',
-  'medication',
-  'medication_name',
-  'dosage',
-  'reason',
-  'action',
+  'medication_taken',
+  'medication_dosage',
 ]
 
 /** Returns human-readable label for a field name, falling back to the field_name itself */
@@ -59,11 +55,7 @@ export function sortByFieldOrder(fieldNames: string[]): string[] {
 }
 
 /** Fields that are used as group title (displayName) and should be excluded from detail lists */
-export const TITLE_FIELDS = new Set([
-  'symptom_name',
-  'medication',
-  'medication_name',
-])
+export const TITLE_FIELDS = new Set(['symptom_name'])
 
 /**
  * Sorts Object.entries by FIELD_ORDER, filtering out title fields.

@@ -10,6 +10,7 @@ function field(
     value: '',
     confidence: 80,
     symptomIndex: 0,
+    medicationIndex: null,
     ...overrides,
   }
 }

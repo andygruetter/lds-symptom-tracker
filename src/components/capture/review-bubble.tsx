@@ -102,6 +102,7 @@ function getSeverityInfo(value: string): {
 /** Fields rendered in the structured layout (not as generic tags) */
 const STRUCTURED_FIELDS = new Set([
   'symptom_name',
+  'precursor',
   'body_region',
   'side',
   'symptom_type',
@@ -129,6 +130,7 @@ function getField(
 function groupBySymptomIndex(fields: ExtractedData[]): ExtractedData[][] {
   const groups = new Map<number, ExtractedData[]>()
   for (const field of fields) {
+    if (field.medication_index !== null) continue
     const idx = field.symptom_index ?? 0
     if (!groups.has(idx)) groups.set(idx, [])
     groups.get(idx)!.push(field)
@@ -138,6 +140,50 @@ function groupBySymptomIndex(fields: ExtractedData[]): ExtractedData[][] {
     .map(([, fields]) => fields)
 }
 
+function MedicationGroup({ fields }: { fields: ExtractedData[] }) {
+  const byIndex = new Map<number, ExtractedData[]>()
+  for (const f of fields) {
+    if (f.medication_index === null) continue
+    const idx = f.medication_index
+    if (!byIndex.has(idx)) byIndex.set(idx, [])
+    byIndex.get(idx)!.push(f)
+  }
+  const sorted = [...byIndex.entries()].sort(([a], [b]) => a - b)
+  if (sorted.length === 0) return null
+
+  return (
+    <div className="mt-2 border-t border-border/50 pt-2">
+      <p className="mb-1 text-xs font-semibold text-muted-foreground">
+        Medikamente
+      </p>
+      <div className="flex flex-col gap-1">
+        {sorted.map(([idx, medFields]) => {
+          const nameField = medFields.find(
+            (f) => f.field_name === 'medication_taken',
+          )
+          const dosageField = medFields.find(
+            (f) => f.field_name === 'medication_dosage',
+          )
+          const name = nameField?.value ?? '—'
+          const dosage = dosageField?.value
+          return (
+            <div
+              key={idx}
+              className="flex items-center gap-1.5 text-sm text-foreground"
+            >
+              <span>💊</span>
+              <span>
+                {name}
+                {dosage ? ` · ${dosage}` : ''}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function SingleSymptomReview({
   fields,
   editingField,
@@ -145,7 +191,6 @@ function SingleSymptomReview({
   handleEdit,
   sliderDuration,
   onSliderCommit,
-  suppressSlider,
 }: {
   fields: ExtractedData[]
   editingField: string | null
@@ -153,13 +198,13 @@ function SingleSymptomReview({
   handleEdit: (fieldName: string, newValue: string) => void
   sliderDuration: number | null
   onSliderCommit: (minutes: number) => void
-  suppressSlider: boolean
 }) {
   const visibleFields = fields.filter(
     (f) => f.value !== '<UNKNOWN>' && f.value !== 'UNKNOWN',
   )
 
   const symptomName = getFieldValue(fields, 'symptom_name')
+  const precursor = getFieldValue(fields, 'precursor')
   const bodyRegion = getFieldValue(fields, 'body_region')
   const side = getFieldValue(fields, 'side')
   const symptomType = getFieldValue(fields, 'symptom_type')
@@ -180,7 +225,7 @@ function SingleSymptomReview({
   const formattedDuration = duration ? formatDurationMinutes(duration) : null
 
   const extraFields = visibleFields.filter(
-    (f) => !STRUCTURED_FIELDS.has(f.field_name),
+    (f) => !STRUCTURED_FIELDS.has(f.field_name) && f.medication_index === null,
   )
 
   function renderEditableField(
@@ -232,6 +277,10 @@ function SingleSymptomReview({
             {symptomName}
           </p>,
         )}
+
+      {precursor && (
+        <p className="text-xs text-muted-foreground">Vorzeichen: {precursor}</p>
+      )}
 
       {(locationParts.length > 0 || severityInfo) && (
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
@@ -293,13 +342,13 @@ function SingleSymptomReview({
             {formattedDuration}
           </p>
         )
-      ) : !suppressSlider ? (
-        /* Kein Duration-Feld, kein Medication/Frequency: Slider ohne Vorauswahl */
+      ) : (
+        /* Kein Duration-Feld: Slider ohne Vorauswahl */
         <DurationSlider
           value={sliderDuration !== null ? sliderDuration : undefined}
           onChange={onSliderCommit}
         />
-      ) : null}
+      )}
 
       {extraFields.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -373,20 +422,13 @@ export function ReviewBubble({
   )
   const hasVisibleFields = visibleFields.length > 0
 
-  const isMedication = extractedFields.some(
-    (f) => f.field_name === 'medication_name',
-  )
-  const hasFrequency = extractedFields.some((f) => f.field_name === 'frequency')
   const hasDuration =
-    isMedication ||
-    hasFrequency ||
     extractedFields.some(
       (f) =>
         f.field_name === 'duration' &&
         f.value !== '<UNKNOWN>' &&
         f.value !== 'UNKNOWN',
-    ) ||
-    sliderDuration !== null
+    ) || sliderDuration !== null
 
   const symptomGroups = groupBySymptomIndex(visibleFields)
   const confidenceInfo = getConfidenceLabel(avgConfidence)
@@ -406,10 +448,10 @@ export function ReviewBubble({
                   handleEdit={handleEdit}
                   sliderDuration={sliderDuration}
                   onSliderCommit={handleSliderCommit}
-                  suppressSlider={isMedication || hasFrequency}
                 />
               </div>
             ))}
+            <MedicationGroup fields={visibleFields} />
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

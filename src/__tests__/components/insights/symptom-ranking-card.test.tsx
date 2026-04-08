@@ -1,10 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import type {
-  MedicationRankingEntry,
-  SymptomRankingEntry,
-} from '@/types/analytics'
+import type { SymptomRankingEntry } from '@/types/analytics'
 
 const symptomEntry: SymptomRankingEntry = {
   name: 'Rückenschmerzen',
@@ -18,7 +15,7 @@ const symptomEntry: SymptomRankingEntry = {
   avgIntensity: 6.5,
 }
 
-const medicationEntry: MedicationRankingEntry = {
+const medicationEntry: SymptomRankingEntry = {
   name: 'Dafalgan 1g',
   totalCount: 6,
   monthlyCounts: [
@@ -27,6 +24,7 @@ const medicationEntry: MedicationRankingEntry = {
     { year: 2026, month: 3, count: 2 },
   ],
   trend: 'stable',
+  avgIntensity: null,
 }
 
 describe('SymptomRankingCard', () => {
@@ -47,13 +45,13 @@ describe('SymptomRankingCard', () => {
     expect(screen.getByText('↑')).toBeInTheDocument()
   })
 
-  it('zeigt Medikament-Karte mit Stahlblau-Border', async () => {
+  it('zeigt Ranking-Karte mit Eintrags-Name und Count', async () => {
     const { SymptomRankingCard } =
       await import('@/components/insights/symptom-ranking-card')
     const { container } = render(
       <SymptomRankingCard
         entry={medicationEntry}
-        variant="medication"
+        variant="symptom"
         isExpanded={false}
         onToggle={vi.fn()}
       />,
@@ -61,11 +59,11 @@ describe('SymptomRankingCard', () => {
 
     expect(screen.getByText('Dafalgan 1g')).toBeInTheDocument()
     expect(screen.getByText('6x')).toBeInTheDocument()
-    // Der innere div hat den Stahlblau-Border als inline style (Browser konvertiert Hex → rgb)
+    // Der innere div hat den Terracotta-Border als inline style (Browser konvertiert Hex → rgb)
     const card = container.querySelector('.rounded-lg')
     expect(card).toBeTruthy()
     const borderStyle = (card as HTMLElement).style.borderLeft
-    expect(borderStyle).toMatch(/rgb\(74,\s*127,\s*165\)/) // #4A7FA5
+    expect(borderStyle).toMatch(/rgb\(192,\s*106,\s*60\)/) // #C06A3C
   })
 
   it('zeigt Trend-Pfeil ↑ in Terracotta für increasing', async () => {

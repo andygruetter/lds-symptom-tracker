@@ -62,14 +62,8 @@ describe('ChatBubble', () => {
     )
   })
 
-  it('zeigt Medikamenten-Stil mit Pill-Icon', () => {
-    render(
-      <ChatBubble
-        variant="sent"
-        content="Ibuprofen eingenommen"
-        isMedication
-      />,
-    )
+  it('rendert eine gesendete Nachricht', () => {
+    render(<ChatBubble variant="sent" content="Ibuprofen eingenommen" />)
 
     expect(screen.getByText('Ibuprofen eingenommen')).toBeInTheDocument()
   })
@@ -85,6 +79,7 @@ describe('ChatBubble', () => {
         confirmed: false,
         created_at: '2026-03-02T10:00:00Z',
         symptom_index: 0,
+        medication_index: null,
       },
       {
         id: 'f2',
@@ -95,6 +90,7 @@ describe('ChatBubble', () => {
         confirmed: false,
         created_at: '2026-03-02T10:00:00Z',
         symptom_index: 0,
+        medication_index: null,
       },
     ]
 

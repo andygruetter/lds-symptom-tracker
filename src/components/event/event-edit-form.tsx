@@ -61,6 +61,7 @@ function durationToMinutes(value: string, unit: DurationUnit): string {
 function groupBySymptomIndex(fields: ExtractedData[]): ExtractedData[][] {
   const groups = new Map<number, ExtractedData[]>()
   for (const field of fields) {
+    if (field.medication_index !== null) continue
     const idx = field.symptom_index ?? 0
     if (!groups.has(idx)) groups.set(idx, [])
     groups.get(idx)!.push(field)
@@ -68,6 +69,19 @@ function groupBySymptomIndex(fields: ExtractedData[]): ExtractedData[][] {
   return [...groups.entries()]
     .sort(([a], [b]) => a - b)
     .map(([, fields]) => fields)
+}
+
+function groupByMedicationIndex(
+  fields: ExtractedData[],
+): Map<number, ExtractedData[]> {
+  const groups = new Map<number, ExtractedData[]>()
+  for (const field of fields) {
+    if (field.medication_index === null) continue
+    const idx = field.medication_index
+    if (!groups.has(idx)) groups.set(idx, [])
+    groups.get(idx)!.push(field)
+  }
+  return groups
 }
 
 interface EventEditFormProps {
@@ -93,9 +107,17 @@ export function EventEditForm({
 
   const symptomGroups = groupBySymptomIndex(extractedFields)
   const isMultiSymptom = symptomGroups.length > 1
+  const medicationGroups = groupByMedicationIndex(extractedFields)
+  const sortedMedKeys = [...medicationGroups.keys()].sort((a, b) => a - b)
 
   // Build keyed field maps: "fieldName" for single, "fieldName:index" for multi
-  function fieldKey(name: string, symptomIndex: number): string {
+  // Medication fields use "med:medIdx:fieldName" prefix
+  function fieldKey(
+    name: string,
+    symptomIndex: number,
+    medicationIndex: number | null = null,
+  ): string {
+    if (medicationIndex !== null) return `med:${medicationIndex}:${name}`
     return isMultiSymptom ? `${name}:${symptomIndex}` : name
   }
 
@@ -108,18 +130,31 @@ export function EventEditForm({
         map[fieldKey(f.field_name, idx)] = f
       }
     }
+    for (const [medIdx, medFields] of medicationGroups) {
+      for (const f of medFields) {
+        map[fieldKey(f.field_name, 0, medIdx)] = f
+      }
+    }
     return map
   }
 
   const fieldMap = buildFieldMap()
 
-  // Build all keys: for multi-symptom, each group gets all field names
-  const allKeys = isMultiSymptom
+  // Build all keys: symptom fields + medication fields
+  const symptomKeys = isMultiSymptom
     ? symptomGroups.flatMap((group) => {
         const idx = group[0]?.symptom_index ?? 0
         return allFieldNames.map((name) => fieldKey(name, idx))
       })
     : allFieldNames
+
+  const medicationKeys = sortedMedKeys.flatMap((medIdx) =>
+    ['medication_taken', 'medication_dosage'].map((name) =>
+      fieldKey(name, 0, medIdx),
+    ),
+  )
+
+  const allKeys = [...symptomKeys, ...medicationKeys]
 
   const initialValues = useRef<Record<string, string>>(
     Object.fromEntries(allKeys.map((key) => [key, fieldMap[key]?.value ?? ''])),
@@ -162,6 +197,7 @@ export function EventEditForm({
     fieldName: string,
     newValue: string,
     symptomIndex: number = 0,
+    medicationIndex: number | null = null,
   ) => {
     // F8-Fix: Dirty-Check — nur bei tatsächlicher Änderung speichern
     if (newValue === initialValues.current[key]) return
@@ -187,6 +223,7 @@ export function EventEditForm({
       fieldName,
       newValue,
       symptomIndex,
+      medicationIndex,
     })
 
     if (result.error) {
@@ -212,9 +249,10 @@ export function EventEditForm({
     key: string,
     fieldName: string,
     symptomIndex: number = 0,
+    medicationIndex: number | null = null,
   ) => {
     const value = fields[key].value
-    saveField(key, fieldName, value, symptomIndex)
+    saveField(key, fieldName, value, symptomIndex, medicationIndex)
   }
 
   const handleDurationBlur = (symptomIndex: number = 0) => {
@@ -276,8 +314,12 @@ export function EventEditForm({
     saveField(key, 'symptom_time', fields[key].value, symptomIndex)
   }
 
-  const renderField = (fieldName: string, symptomIndex: number = 0) => {
-    const key = fieldKey(fieldName, symptomIndex)
+  const renderField = (
+    fieldName: string,
+    symptomIndex: number = 0,
+    medicationIndex: number | null = null,
+  ) => {
+    const key = fieldKey(fieldName, symptomIndex, medicationIndex)
     const fieldState = fields[key]
     if (!fieldState) return null
     const extractedField = fieldMap[key]
@@ -377,7 +419,7 @@ export function EventEditForm({
                     ...prev,
                     [key]: { ...prev[key], value: next },
                   }))
-                  saveField(key, fieldName, next, symptomIndex)
+                  saveField(key, fieldName, next, symptomIndex, medicationIndex)
                 }}
                 className={cn(
                   'h-14 flex-1 text-sm font-medium transition-colors',
@@ -416,8 +458,12 @@ export function EventEditForm({
                   [key]: { ...prev[key], value: e.target.value },
                 }))
               }
-              onPointerUp={() => handleBlur(key, fieldName, symptomIndex)}
-              onTouchEnd={() => handleBlur(key, fieldName, symptomIndex)}
+              onPointerUp={() =>
+                handleBlur(key, fieldName, symptomIndex, medicationIndex)
+              }
+              onTouchEnd={() =>
+                handleBlur(key, fieldName, symptomIndex, medicationIndex)
+              }
               className="h-2 w-full cursor-pointer accent-primary"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -436,7 +482,9 @@ export function EventEditForm({
                 [key]: { ...prev[key], value: e.target.value },
               }))
             }
-            onBlur={() => handleBlur(key, fieldName, symptomIndex)}
+            onBlur={() =>
+              handleBlur(key, fieldName, symptomIndex, medicationIndex)
+            }
             placeholder="Nicht erfasst"
             className="h-14 rounded-xl border border-border bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
@@ -529,6 +577,30 @@ export function EventEditForm({
             </h2>
             <div className="flex flex-col gap-4">
               {allFieldNames.map((name) => renderField(name))}
+            </div>
+          </div>
+        )}
+
+        {/* Medikamenten-Gruppen */}
+        {sortedMedKeys.length > 0 && (
+          <div className="mb-5">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">
+              Medikamente
+            </h2>
+            <div className="flex flex-col gap-5">
+              {sortedMedKeys.map((medIdx, i) => (
+                <div key={medIdx}>
+                  {sortedMedKeys.length > 1 && (
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">
+                      Medikament {i + 1}
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-4">
+                    {renderField('medication_taken', 0, medIdx)}
+                    {renderField('medication_dosage', 0, medIdx)}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

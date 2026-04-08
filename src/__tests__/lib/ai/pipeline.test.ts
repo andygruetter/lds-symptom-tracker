@@ -170,7 +170,6 @@ describe('runExtractionPipeline', () => {
     )
     expect(mockUpdate).toHaveBeenCalledWith({
       status: 'extracted',
-      event_type: 'symptom',
     })
   })
 
@@ -224,7 +223,6 @@ describe('runExtractionPipeline', () => {
     expect(mockExtractSymptomData).toHaveBeenCalled()
     expect(mockUpdate).toHaveBeenCalledWith({
       status: 'extracted',
-      event_type: 'symptom',
     })
   })
 
@@ -679,7 +677,6 @@ describe('runExtractionPipeline', () => {
     expect(mockSendPushNotification).toHaveBeenCalled()
     expect(mockUpdate).toHaveBeenCalledWith({
       status: 'extracted',
-      event_type: 'symptom',
     })
   })
 })

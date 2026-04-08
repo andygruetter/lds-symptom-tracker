@@ -371,8 +371,6 @@ export async function getSharedSymptomEvents(
       : []
     const symptomName =
       extractedData.find((f) => f.field_name === 'symptom_name')?.value ?? null
-    const medication =
-      extractedData.find((f) => f.field_name === 'medication')?.value ?? null
 
     return {
       id: row.id,
@@ -382,7 +380,7 @@ export async function getSharedSymptomEvents(
       rawInput: row.raw_input,
       audioUrl: row.audio_url,
       status: row.status,
-      symptomName: row.event_type === 'medication' ? medication : symptomName,
+      symptomName,
     }
   })
 }
@@ -513,13 +511,7 @@ export async function getSharedSymptomRanking(
     if (error) {
       console.error('[Sharing] Ranking-Abfrage fehlgeschlagen:', error.message)
     }
-    return {
-      symptoms: [],
-      medications: [],
-      timeRange: 'all',
-      totalSymptomEvents: 0,
-      totalMedicationEvents: 0,
-    }
+    return { symptoms: [], timeRange: 'all', totalSymptomEvents: 0 }
   }
 
   const rows = data as unknown as TimelineRawRow[]
@@ -577,7 +569,9 @@ export async function getSharedEventDetail(
   ] = await Promise.all([
     supabase
       .from('extracted_data')
-      .select('field_name, value, confidence, confirmed, symptom_index')
+      .select(
+        'field_name, value, confidence, confirmed, symptom_index, medication_index',
+      )
       .eq('symptom_event_id', eventId),
     supabase
       .from('event_photos')
@@ -624,13 +618,12 @@ export async function getSharedEventDetail(
     confidence: r.confidence,
     confirmed: r.confirmed ?? false,
     symptomIndex: r.symptom_index ?? 0,
+    medicationIndex: r.medication_index ?? null,
   }))
-
-  const eventType = event.event_type === 'medication' ? 'medication' : 'symptom'
 
   return {
     id: event.id,
-    eventType,
+    eventType: 'symptom' as const,
     occurredAt: event.occurred_at,
     createdAt: event.created_at,
     endedAt: event.ended_at,

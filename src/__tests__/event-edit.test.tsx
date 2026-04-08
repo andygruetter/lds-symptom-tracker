@@ -47,6 +47,7 @@ const mockExtractedFields = [
     confirmed: true,
     created_at: '2026-03-10T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
   {
     id: 'f2',
@@ -57,6 +58,7 @@ const mockExtractedFields = [
     confirmed: false,
     created_at: '2026-03-10T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
   {
     id: 'f3',
@@ -67,6 +69,7 @@ const mockExtractedFields = [
     confirmed: false,
     created_at: '2026-03-10T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
 ]
 
@@ -164,6 +167,7 @@ describe('EventEditForm', () => {
         fieldName: 'symptom_name',
         newValue: 'Migräne',
         symptomIndex: 0,
+        medicationIndex: null,
       })
     })
   })

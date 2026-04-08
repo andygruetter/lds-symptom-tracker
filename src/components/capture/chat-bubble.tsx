@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { Camera, ChevronRight, Mic, Pill, X } from 'lucide-react'
+import { Camera, ChevronRight, Mic, X } from 'lucide-react'
 
 import { useLongPress } from '@/hooks/use-long-press'
 import { getFieldLabel } from '@/lib/field-config'
@@ -15,7 +15,6 @@ interface ChatBubbleProps {
   content?: string
   timestamp?: string
   isProcessing?: boolean
-  isMedication?: boolean
   isVoice?: boolean
   isPhoto?: boolean
   photos?: EventPhoto[]
@@ -53,6 +52,7 @@ function getFieldValue(
 function groupBySymptomIndex(fields: ExtractedData[]): ExtractedData[][] {
   const groups = new Map<number, ExtractedData[]>()
   for (const field of fields) {
+    if (field.medication_index !== null) continue
     const idx = field.symptom_index ?? 0
     if (!groups.has(idx)) groups.set(idx, [])
     groups.get(idx)!.push(field)
@@ -109,6 +109,7 @@ function getSeverityInfo(value: string): {
 /** Fields rendered in the structured layout of SingleSymptomSummary */
 const STRUCTURED_SYMPTOM_FIELDS = new Set([
   'symptom_name',
+  'precursor',
   'body_region',
   'side',
   'symptom_type',
@@ -121,6 +122,7 @@ function SingleSymptomSummary({ fields }: { fields: ExtractedData[] }) {
   const get = (name: string) => getFieldValue(fields, name)
 
   const symptomName = get('symptom_name')
+  const precursor = get('precursor')
   const bodyRegion = get('body_region')
   const side = get('side')
   const symptomType = get('symptom_type')
@@ -138,12 +140,17 @@ function SingleSymptomSummary({ fields }: { fields: ExtractedData[] }) {
   const formattedDuration = duration ? formatDurationMinutes(duration) : null
 
   const extraFields = fields.filter(
-    (f) => !STRUCTURED_SYMPTOM_FIELDS.has(f.field_name),
+    (f) =>
+      !STRUCTURED_SYMPTOM_FIELDS.has(f.field_name) &&
+      f.medication_index === null,
   )
 
   return (
     <div>
       {symptomName && <p className="text-sm font-semibold">{symptomName}</p>}
+      {precursor && (
+        <p className="text-xs text-muted-foreground">Vorzeichen: {precursor}</p>
+      )}
       <div className="mt-0.5 space-y-0.5">
         {(line1Parts.length > 0 || severityInfo) && (
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -177,51 +184,40 @@ function SingleSymptomSummary({ fields }: { fields: ExtractedData[] }) {
   )
 }
 
-/** Fields shown explicitly in ConfirmedFieldsSummary medication layout */
-const STRUCTURED_MEDICATION_FIELDS = new Set([
-  'medication_name',
-  'action',
-  'dosage',
-  'reason',
-])
-
-function ConfirmedFieldsSummary({
-  fields,
-  isMedication,
-}: {
-  fields: ExtractedData[]
-  isMedication: boolean
-}) {
-  if (isMedication) {
-    const get = (name: string) => getFieldValue(fields, name)
-    const medName = get('medication_name')
-    const action = get('action')
-    const dosage = get('dosage')
-    const reason = get('reason')
-    const extraMedFields = fields.filter(
-      (f) => !STRUCTURED_MEDICATION_FIELDS.has(f.field_name),
-    )
-
-    return (
-      <div className="mt-1.5">
-        {medName && <p className="text-sm font-semibold">{medName}</p>}
-        <div className="mt-1 space-y-0.5">
-          {(action || dosage) && (
-            <p className="text-xs text-muted-foreground">
-              {[action, dosage].filter(Boolean).join(' · ')}
-            </p>
-          )}
-          {reason && <p className="text-xs text-muted-foreground">{reason}</p>}
-          {extraMedFields.map((f) => (
-            <p key={f.id} className="text-xs text-muted-foreground">
-              {getFieldLabel(f.field_name)}: {f.value}
-            </p>
-          ))}
-        </div>
-      </div>
-    )
+function MedicationGroupSummary({ fields }: { fields: ExtractedData[] }) {
+  const byIndex = new Map<number, ExtractedData[]>()
+  for (const f of fields) {
+    if (f.medication_index === null) continue
+    const idx = f.medication_index
+    if (!byIndex.has(idx)) byIndex.set(idx, [])
+    byIndex.get(idx)!.push(f)
   }
+  const sorted = [...byIndex.entries()].sort(([a], [b]) => a - b)
+  if (sorted.length === 0) return null
 
+  return (
+    <div className="mt-1 flex flex-col gap-0.5">
+      {sorted.map(([idx, medFields]) => {
+        const nameField = medFields.find(
+          (f) => f.field_name === 'medication_taken',
+        )
+        const dosageField = medFields.find(
+          (f) => f.field_name === 'medication_dosage',
+        )
+        const name = nameField?.value ?? '—'
+        const dosage = dosageField?.value
+        return (
+          <p key={idx} className="text-xs text-muted-foreground">
+            💊 {name}
+            {dosage ? ` · ${dosage}` : ''}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function ConfirmedFieldsSummary({ fields }: { fields: ExtractedData[] }) {
   const symptomGroups = groupBySymptomIndex(fields)
 
   return (
@@ -232,6 +228,7 @@ function ConfirmedFieldsSummary({
           <SingleSymptomSummary fields={group} />
         </div>
       ))}
+      <MedicationGroupSummary fields={fields} />
     </div>
   )
 }
@@ -361,7 +358,6 @@ export function ChatBubble({
   content,
   timestamp,
   isProcessing = false,
-  isMedication = false,
   isVoice = false,
   isPhoto = false,
   photos,
@@ -458,11 +454,7 @@ export function ChatBubble({
         className={cn(
           'relative max-w-[80%] px-4 py-2.5',
           variant === 'sent' &&
-            !isMedication &&
             'rounded-2xl rounded-br-sm bg-primary text-primary-foreground',
-          variant === 'sent' &&
-            isMedication &&
-            'rounded-2xl rounded-br-sm bg-teal-600 text-white',
           variant === 'received' &&
             'rounded-2xl rounded-bl-sm bg-card text-card-foreground shadow-sm',
           variant === 'system' && 'rounded-xl bg-muted text-foreground',
@@ -556,9 +548,6 @@ export function ChatBubble({
         ) : (
           <>
             <div className="flex items-start gap-1.5">
-              {isMedication && (
-                <Pill className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-              )}
               {isVoice && !content && (
                 <div className="flex items-center gap-1.5">
                   <Mic className="size-3.5 shrink-0" aria-hidden="true" />
@@ -589,10 +578,7 @@ export function ChatBubble({
               <PhotoGrid photos={photos} getSignedUrl={getSignedUrl} />
             )}
             {extractedFields && extractedFields.length > 0 && (
-              <ConfirmedFieldsSummary
-                fields={extractedFields}
-                isMedication={isMedication}
-              />
+              <ConfirmedFieldsSummary fields={extractedFields} />
             )}
             {timestamp && (
               <div className="mt-1 flex items-center gap-1.5">
@@ -600,9 +586,7 @@ export function ChatBubble({
                   className={cn(
                     'text-xs',
                     variant === 'sent'
-                      ? isMedication
-                        ? 'text-white/70'
-                        : 'text-primary-foreground/70'
+                      ? 'text-primary-foreground/70'
                       : 'text-muted-foreground',
                   )}
                 >
@@ -619,9 +603,7 @@ export function ChatBubble({
                     className={cn(
                       'flex items-center justify-center rounded-full p-0.5',
                       variant === 'sent'
-                        ? isMedication
-                          ? 'text-white/70'
-                          : 'text-primary-foreground/70'
+                        ? 'text-primary-foreground/70'
                         : 'text-muted-foreground',
                     )}
                   >

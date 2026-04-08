@@ -164,6 +164,7 @@ export async function runExtractionPipeline(
         value: field.value,
         confidence: field.confidence,
         symptom_index: field.symptomIndex,
+        medication_index: field.medicationIndex ?? null,
       }))
 
       if (extractedRows.length > 0) {
@@ -218,13 +219,10 @@ export async function runExtractionPipeline(
           .eq('id', symptomEventId)
       }
 
-      // 10. Update symptom_event status + event_type
+      // 10. Update symptom_event status (event_type bleibt unverändert — 'symptom' oder 'voice')
       const { error: updateError } = await supabase
         .from('symptom_events')
-        .update({
-          status: 'extracted',
-          event_type: result.eventType,
-        })
+        .update({ status: 'extracted' })
         .eq('id', symptomEventId)
 
       if (updateError) {

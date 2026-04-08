@@ -151,7 +151,6 @@ export function EventDetailView({
     }
   }
 
-  const isMedication = detail.eventType === 'medication'
   const { combined: dateTime } = formatDateTime(detail.occurredAt)
 
   return (
@@ -277,17 +276,15 @@ export function EventDetailView({
             <p className="text-center text-sm text-destructive">{retryError}</p>
           )}
 
-          {/* Bearbeiten-Link — nur für Symptom-Events */}
-          {!isMedication && (
-            <div className="flex justify-center">
-              <Link
-                href={`/event/${detail.id}/edit`}
-                className="flex h-11 items-center rounded-xl border border-border px-6 text-sm font-medium text-foreground transition-colors active:bg-muted"
-              >
-                Bearbeiten
-              </Link>
-            </div>
-          )}
+          {/* Bearbeiten-Link */}
+          <div className="flex justify-center">
+            <Link
+              href={`/event/${detail.id}/edit`}
+              className="flex h-11 items-center rounded-xl border border-border px-6 text-sm font-medium text-foreground transition-colors active:bg-muted"
+            >
+              Bearbeiten
+            </Link>
+          </div>
 
           <div className="h-4" aria-hidden="true" />
         </div>

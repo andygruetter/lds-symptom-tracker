@@ -3,12 +3,33 @@ import type { ExtractedField } from '@/types/analytics'
 /** Fields that belong to the whole event, not per-symptom group */
 export const EVENT_LEVEL_FIELDS = new Set(['symptom_time', 'duration'])
 
+/** Fields that belong to a medication group, not a symptom group */
+export const MEDICATION_FIELDS = new Set([
+  'medication_taken',
+  'medication_dosage',
+])
+
 export function groupBySymptomIndex(
   fields: ExtractedField[],
 ): Map<number, ExtractedField[]> {
   const groups = new Map<number, ExtractedField[]>()
   for (const field of fields) {
+    if (field.medicationIndex !== null) continue // Medikamenten-Felder separat
     const idx = field.symptomIndex ?? 0
+    if (!groups.has(idx)) groups.set(idx, [])
+    groups.get(idx)!.push(field)
+  }
+  return groups
+}
+
+export function groupByMedicationIndex(
+  fields: ExtractedField[],
+): Map<number, ExtractedField[]> {
+  const groups = new Map<number, ExtractedField[]>()
+  for (const field of fields) {
+    if (field.medicationIndex === null || field.medicationIndex === undefined)
+      continue
+    const idx = field.medicationIndex
     if (!groups.has(idx)) groups.set(idx, [])
     groups.get(idx)!.push(field)
   }

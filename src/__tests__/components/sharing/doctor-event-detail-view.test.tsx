@@ -40,6 +40,7 @@ const baseSymptomEvent: EventDetail = {
       confidence: 92,
       confirmed: true,
       symptomIndex: 0,
+      medicationIndex: null,
     },
     {
       fieldName: 'body_region',
@@ -47,6 +48,7 @@ const baseSymptomEvent: EventDetail = {
       confidence: 85,
       confirmed: false,
       symptomIndex: 0,
+      medicationIndex: null,
     },
   ],
   photos: [],
@@ -56,7 +58,7 @@ const baseSymptomEvent: EventDetail = {
 
 const baseMedicationEvent: EventDetail = {
   id: 'event-2',
-  eventType: 'medication',
+  eventType: 'symptom',
   occurredAt: '2026-02-11T08:30:00Z',
   createdAt: '2026-02-11T08:30:00Z',
   endedAt: null,
@@ -69,6 +71,7 @@ const baseMedicationEvent: EventDetail = {
       confidence: 95,
       confirmed: true,
       symptomIndex: 0,
+      medicationIndex: null,
     },
   ],
   photos: [],
@@ -96,10 +99,9 @@ describe('DoctorEventDetailView', () => {
     expect(screen.getByText('85%')).toBeInTheDocument()
   })
 
-  it('rendert Medikament-Event mit korrektem Badge', () => {
+  it('rendert Medikament-Felder im Symptom-Event korrekt', () => {
     render(<DoctorEventDetailView detail={baseMedicationEvent} />)
 
-    expect(screen.getAllByText('Medikament').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Ibuprofen 400mg')).toBeInTheDocument()
     expect(screen.getByText('95%')).toBeInTheDocument()
   })
@@ -182,6 +184,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 92,
           confirmed: true,
           symptomIndex: 0,
+          medicationIndex: null,
         },
         {
           fieldName: 'body_region',
@@ -189,6 +192,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 85,
           confirmed: false,
           symptomIndex: 0,
+          medicationIndex: null,
         },
         {
           fieldName: 'intensity',
@@ -196,6 +200,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 80,
           confirmed: false,
           symptomIndex: 0,
+          medicationIndex: null,
         },
         {
           fieldName: 'symptom_name',
@@ -203,6 +208,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 88,
           confirmed: true,
           symptomIndex: 1,
+          medicationIndex: null,
         },
         {
           fieldName: 'body_region',
@@ -210,6 +216,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 72,
           confirmed: false,
           symptomIndex: 1,
+          medicationIndex: null,
         },
         {
           fieldName: 'symptom_time',
@@ -217,6 +224,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 90,
           confirmed: false,
           symptomIndex: 0,
+          medicationIndex: null,
         },
       ],
       photos: [],
@@ -259,6 +267,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 95,
           confirmed: true,
           symptomIndex: 0,
+          medicationIndex: null,
         },
         {
           fieldName: 'symptom_name',
@@ -266,6 +275,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 85,
           confirmed: false,
           symptomIndex: 1,
+          medicationIndex: null,
         },
         {
           fieldName: 'duration',
@@ -273,6 +283,7 @@ describe('DoctorEventDetailView', () => {
           confidence: 80,
           confirmed: false,
           symptomIndex: 0,
+          medicationIndex: null,
         },
       ],
       photos: [],

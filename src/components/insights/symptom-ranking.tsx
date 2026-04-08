@@ -9,7 +9,6 @@ import {
 } from '@/lib/actions/insights-actions'
 import type {
   FeedEvent,
-  MedicationRankingEntry,
   SymptomRanking,
   SymptomRankingEntry,
   TimeRange,
@@ -156,33 +155,6 @@ export function SymptomRanking({ initialRanking }: Props) {
               </div>
             )}
           </section>
-
-          {/* Medikamente */}
-          {ranking.medications.length > 0 && (
-            <section>
-              <h2 className="mb-2 text-sm font-semibold text-muted-foreground">
-                Medikamente
-              </h2>
-              <div className="flex flex-col gap-2">
-                {ranking.medications.map((entry) => (
-                  <div key={entry.name}>
-                    <SymptomRankingCard
-                      entry={entry}
-                      variant="medication"
-                      isExpanded={expandedName === entry.name}
-                      onToggle={() => handleCardToggle(entry.name)}
-                    />
-                    {expandedName === entry.name && (
-                      <ExpandedEvents
-                        events={expandedEvents}
-                        isLoading={isLoadingEvents}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
         </>
       )}
     </div>

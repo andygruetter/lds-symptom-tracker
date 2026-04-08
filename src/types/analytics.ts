@@ -1,7 +1,6 @@
 export type DayEventSummary = {
   date: string /** YYYY-MM-DD lokaler Datumsschlüssel */
   symptomCount: number
-  medicationCount: number
   totalCount: number
   maxIntensity: number | null
 }
@@ -14,7 +13,7 @@ export type MonthTimeline = {
 }
 
 export type FeedSymptomGroup = {
-  /** Display title: symptom_name for symptom events, medication for medication events */
+  /** Display title: symptom_name des Symptoms */
   displayName: string | null
   /** All extracted fields as key-value pairs */
   fields: Record<string, string>
@@ -22,19 +21,18 @@ export type FeedSymptomGroup = {
 
 export type FeedEvent = {
   id: string
-  eventType: 'symptom' | 'medication'
+  eventType: 'symptom'
   occurredAt: string
   createdAt: string
   endedAt: string | null
   rawInput: string | null
   photoCount: number
   hasAudio: boolean
-  /** Symptom/medication groups — always populated for all event types */
+  /** Symptom-Gruppen — immer vorhanden */
   symptoms: FeedSymptomGroup[]
 }
 
 export type FeedFilter = {
-  eventType?: 'symptom' | 'medication' | 'all'
   timeRange?: '30d' | '3m' | '6m' | 'all'
 }
 
@@ -54,19 +52,10 @@ export type SymptomRankingEntry = {
   avgIntensity: number | null
 }
 
-export type MedicationRankingEntry = {
-  name: string
-  totalCount: number
-  monthlyCounts: MonthlyCount[]
-  trend: 'increasing' | 'stable' | 'decreasing'
-}
-
 export type SymptomRanking = {
   symptoms: SymptomRankingEntry[]
-  medications: MedicationRankingEntry[]
   timeRange: TimeRange
   totalSymptomEvents: number
-  totalMedicationEvents: number
 }
 
 export type PaginatedFeed = {
@@ -81,6 +70,7 @@ export type ExtractedField = {
   confidence: number | null
   confirmed: boolean
   symptomIndex: number
+  medicationIndex: number | null
 }
 
 export type EventPhoto = {
@@ -91,7 +81,7 @@ export type EventPhoto = {
 
 export type EventDetail = {
   id: string
-  eventType: 'symptom' | 'medication'
+  eventType: 'symptom'
   occurredAt: string
   createdAt: string
   endedAt: string | null

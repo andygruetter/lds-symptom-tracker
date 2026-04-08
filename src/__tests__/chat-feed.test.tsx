@@ -84,6 +84,7 @@ describe('ChatFeed', () => {
           confirmed: false,
           created_at: '2026-03-02T10:00:00Z',
           symptom_index: 0,
+          medication_index: null,
         },
       ],
     }
@@ -115,6 +116,7 @@ describe('ChatFeed', () => {
           confirmed: true,
           created_at: '2026-03-02T10:00:00Z',
           symptom_index: 0,
+          medication_index: null,
         },
       ],
     }
@@ -146,6 +148,7 @@ describe('ChatFeed', () => {
           confirmed: false,
           created_at: '2026-03-02T10:00:00Z',
           symptom_index: 0,
+          medication_index: null,
         },
         {
           id: 'f2',
@@ -156,6 +159,7 @@ describe('ChatFeed', () => {
           confirmed: false,
           created_at: '2026-03-02T10:00:00Z',
           symptom_index: 0,
+          medication_index: null,
         },
       ],
     }

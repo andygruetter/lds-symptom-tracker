@@ -102,10 +102,7 @@ export default async function DashboardPage() {
                 >
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-semibold text-foreground">
-                      {event.symptoms[0]?.displayName ??
-                        (event.eventType === 'medication'
-                          ? 'Unbekannt'
-                          : 'Symptom')}
+                      {event.symptoms[0]?.displayName ?? 'Symptom'}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {formatEventDate(event.occurredAt)}
@@ -113,16 +110,9 @@ export default async function DashboardPage() {
                   </div>
                   <span
                     className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-                    style={{
-                      backgroundColor:
-                        event.eventType === 'medication'
-                          ? '#4A7FA5'
-                          : '#C06A3C',
-                    }}
+                    style={{ backgroundColor: '#C06A3C' }}
                   >
-                    {event.eventType === 'medication'
-                      ? 'Medikament'
-                      : 'Symptom'}
+                    Symptom
                   </span>
                 </Link>
               ))}

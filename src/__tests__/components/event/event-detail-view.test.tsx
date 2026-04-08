@@ -56,6 +56,7 @@ const baseDetail: EventDetail = {
       confidence: 90,
       confirmed: true,
       symptomIndex: 0,
+      medicationIndex: null,
     },
     {
       fieldName: 'body_region',
@@ -63,6 +64,7 @@ const baseDetail: EventDetail = {
       confidence: 75,
       confirmed: false,
       symptomIndex: 0,
+      medicationIndex: null,
     },
     {
       fieldName: 'intensity',
@@ -70,6 +72,7 @@ const baseDetail: EventDetail = {
       confidence: 60,
       confirmed: false,
       symptomIndex: 0,
+      medicationIndex: null,
     },
   ],
   photos: [],
@@ -285,30 +288,32 @@ describe('EventDetailView', () => {
     vi.unstubAllGlobals()
   })
 
-  it('zeigt Medikament-Event korrekt (kein Bearbeiten-Link)', () => {
+  it('zeigt Medikament-Felder in Symptom-Event korrekt', () => {
     const medDetail: EventDetail = {
       ...baseDetail,
-      eventType: 'medication',
+      eventType: 'symptom',
       extractedFields: [
         {
-          fieldName: 'medication',
+          fieldName: 'medication_taken',
           value: 'Dafalgan',
           confidence: 95,
           confirmed: true,
           symptomIndex: 0,
+          medicationIndex: 0,
         },
         {
-          fieldName: 'dosage',
+          fieldName: 'medication_dosage',
           value: '1g',
           confidence: 85,
           confirmed: false,
           symptomIndex: 0,
+          medicationIndex: 0,
         },
       ],
     }
     render(<EventDetailView detail={medDetail} />)
-    // "Medikament" appears in badge AND in field labels, so use getAllByText
-    expect(screen.getAllByText('Medikament').length).toBeGreaterThan(0)
-    expect(screen.queryByText('Bearbeiten')).toBeNull()
+    // 'Medikamente' erscheint als Gruppen-Header für medication_index-Felder
+    expect(screen.getByText('Medikamente')).toBeInTheDocument()
+    expect(screen.getByText(/Dafalgan/)).toBeInTheDocument()
   })
 })

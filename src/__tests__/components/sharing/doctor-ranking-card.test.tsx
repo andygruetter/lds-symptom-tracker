@@ -1,10 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import type {
-  MedicationRankingEntry,
-  SymptomRankingEntry,
-} from '@/types/analytics'
+import type { SymptomRankingEntry } from '@/types/analytics'
 
 const symptomEntry: SymptomRankingEntry = {
   name: 'Rückenschmerzen',
@@ -17,7 +14,7 @@ const symptomEntry: SymptomRankingEntry = {
   avgIntensity: 6.5,
 }
 
-const medicationEntry: MedicationRankingEntry = {
+const medicationEntry: SymptomRankingEntry = {
   name: 'Dafalgan 1g',
   totalCount: 6,
   monthlyCounts: [
@@ -25,6 +22,7 @@ const medicationEntry: MedicationRankingEntry = {
     { year: 2026, month: 2, count: 3 },
   ],
   trend: 'stable',
+  avgIntensity: null,
 }
 
 describe('DoctorRankingCard', () => {
@@ -47,15 +45,15 @@ describe('DoctorRankingCard', () => {
     const { DoctorRankingCard } =
       await import('@/components/sharing/doctor-ranking-card')
     const { container } = render(
-      <DoctorRankingCard entry={medicationEntry} variant="medication" />,
+      <DoctorRankingCard entry={medicationEntry} variant="symptom" />,
     )
 
     expect(screen.getByText('Dafalgan 1g')).toBeInTheDocument()
     expect(screen.getByText('6x')).toBeInTheDocument()
 
-    // Stahlblau Border-Left (Browser konvertiert #4A7FA5 → rgb(74, 127, 165))
+    // Terracotta Border-Left (Browser konvertiert #C06A3C → rgb(192, 106, 60))
     const card = container.firstChild as HTMLElement
-    expect(card.style.borderLeft).toContain('rgb(74, 127, 165)')
+    expect(card.style.borderLeft).toContain('rgb(192, 106, 60)')
   })
 
   it('zeigt Trend-Pfeil ↑ bei steigendem Trend (Terracotta)', async () => {
@@ -71,7 +69,7 @@ describe('DoctorRankingCard', () => {
   it('zeigt Trend-Pfeil → bei stabilem Trend (Grau)', async () => {
     const { DoctorRankingCard } =
       await import('@/components/sharing/doctor-ranking-card')
-    render(<DoctorRankingCard entry={medicationEntry} variant="medication" />)
+    render(<DoctorRankingCard entry={medicationEntry} variant="symptom" />)
 
     const arrow = screen.getByText('→')
     expect(arrow).toBeInTheDocument()

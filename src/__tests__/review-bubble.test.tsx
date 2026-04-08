@@ -14,6 +14,7 @@ const mockFields: ExtractedData[] = [
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
   {
     id: 'field-2',
@@ -24,6 +25,7 @@ const mockFields: ExtractedData[] = [
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
   {
     id: 'field-3',
@@ -34,6 +36,7 @@ const mockFields: ExtractedData[] = [
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
   {
     id: 'field-4',
@@ -44,6 +47,7 @@ const mockFields: ExtractedData[] = [
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
 ]
 
@@ -57,6 +61,7 @@ const mockFieldsWithoutDuration: ExtractedData[] = [
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
 ]
 
@@ -70,6 +75,7 @@ const mockFieldsWithFrequency: ExtractedData[] = [
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
   {
     id: 'field-freq',
@@ -80,19 +86,32 @@ const mockFieldsWithFrequency: ExtractedData[] = [
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
+    medication_index: null,
   },
 ]
 
 const mockMedicationFields: ExtractedData[] = [
   {
+    id: 'field-sym',
+    symptom_event_id: 'event-1',
+    field_name: 'symptom_name',
+    value: 'Kopfschmerzen',
+    confidence: 90,
+    confirmed: false,
+    created_at: '2026-03-02T10:00:00Z',
+    symptom_index: 0,
+    medication_index: null,
+  },
+  {
     id: 'field-med',
     symptom_event_id: 'event-1',
-    field_name: 'medication_name',
+    field_name: 'medication_taken',
     value: 'Ibuprofen',
     confidence: 90,
     confirmed: false,
     created_at: '2026-03-02T10:00:00Z',
     symptom_index: 0,
+    medication_index: 0,
   },
 ]
 
@@ -130,6 +149,7 @@ describe('ReviewBubble', () => {
         confirmed: false,
         created_at: '2026-03-02T10:00:00Z',
         symptom_index: 0,
+        medication_index: null,
       },
     ]
     render(<ReviewBubble {...defaultProps} extractedFields={fieldsWithTime} />)
@@ -204,6 +224,7 @@ describe('ReviewBubble', () => {
         confirmed: false,
         created_at: '2026-03-02T10:00:00Z',
         symptom_index: 0,
+        medication_index: null,
       },
     ]
     render(<ReviewBubble {...defaultProps} extractedFields={fieldsWithExtra} />)
@@ -246,48 +267,34 @@ describe('ReviewBubble', () => {
       ).not.toBeDisabled()
     })
 
-    it('zeigt keinen DurationSlider für Medikamenten-Events', () => {
+    it('zeigt Medikament in Medikamenten-Gruppe', () => {
       render(
         <ReviewBubble
           {...defaultProps}
           extractedFields={mockMedicationFields}
         />,
       )
-      expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+      expect(screen.getByText(/ibuprofen/i)).toBeInTheDocument()
     })
 
-    it('Bestätigen-Button enabled für Medikamente (kein Duration nötig)', () => {
+    it('zeigt DurationSlider auch bei Symptom mit Medikament', () => {
       render(
         <ReviewBubble
           {...defaultProps}
           extractedFields={mockMedicationFields}
         />,
       )
-      expect(
-        screen.getByRole('button', { name: /^bestätigen$/i }),
-      ).not.toBeDisabled()
+      expect(screen.getByRole('slider')).toBeInTheDocument()
     })
 
-    it('Bestätigen-Button enabled bei frequency-Feld (chronisches Symptom)', () => {
+    it('zeigt DurationSlider bei Events mit frequency-Feld', () => {
       render(
         <ReviewBubble
           {...defaultProps}
           extractedFields={mockFieldsWithFrequency}
         />,
       )
-      expect(
-        screen.getByRole('button', { name: /^bestätigen$/i }),
-      ).not.toBeDisabled()
-    })
-
-    it('zeigt keinen DurationSlider bei Events mit frequency-Feld', () => {
-      render(
-        <ReviewBubble
-          {...defaultProps}
-          extractedFields={mockFieldsWithFrequency}
-        />,
-      )
-      expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+      expect(screen.getByRole('slider')).toBeInTheDocument()
     })
   })
 })

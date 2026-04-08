@@ -9,7 +9,7 @@ const makeEvent = (
   } = {},
 ): FeedEvent => {
   const { displayName = 'Kopfschmerzen', ...rest } = overrides
-  const isMed = rest.eventType === 'medication'
+  const isMed = false
   const fields: Record<string, string> = isMed
     ? { medication: displayName ?? '' }
     : { symptom_name: displayName ?? '' }
@@ -148,7 +148,7 @@ describe('DoctorTimeline', () => {
       makeEvent({ id: 'e1', displayName: 'Kopfschmerzen' }),
       makeEvent({
         id: 'e2',
-        eventType: 'medication',
+        eventType: 'symptom',
         displayName: 'Ibuprofen',
       }),
     ]
@@ -164,8 +164,7 @@ describe('DoctorTimeline', () => {
     // Both events should be rendered
     expect(screen.getByText(/Kopfschmerzen/)).toBeInTheDocument()
     expect(screen.getByText(/Ibuprofen/)).toBeInTheDocument()
-    // Should have badges
-    expect(screen.getByText('Symptom')).toBeInTheDocument()
-    expect(screen.getByText('Medikament')).toBeInTheDocument()
+    // Both events show Symptom badge (all events are symptom type now)
+    expect(screen.getAllByText('Symptom').length).toBeGreaterThanOrEqual(2)
   })
 })
