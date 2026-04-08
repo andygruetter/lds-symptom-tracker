@@ -33,6 +33,7 @@ export default function CapturePage() {
     isLoading,
     addOptimisticEvent,
     removeOptimisticEvent,
+    refreshEvents,
     refreshExtractedData,
     refreshPhotos,
   } = useSymptomEvents()
@@ -63,6 +64,7 @@ export default function CapturePage() {
 
   const handleConfirmEvent = async (eventId: string) => {
     await confirmSymptomEvent({ eventId })
+    await refreshEvents()
   }
 
   const handleCorrectField = async (
@@ -84,6 +86,7 @@ export default function CapturePage() {
       console.error('[Clarification] Fehler:', result.error.error)
       throw new Error(result.error.error)
     }
+    await refreshExtractedData([eventId])
   }
 
   const handleNavigateToEvent = (eventId: string) => {

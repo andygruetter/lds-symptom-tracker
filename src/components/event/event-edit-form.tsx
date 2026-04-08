@@ -562,7 +562,10 @@ export function EventEditForm({
                     {allFieldNames
                       .filter(
                         (name) =>
-                          name !== 'symptom_time' && name !== 'duration',
+                          name !== 'symptom_time' &&
+                          name !== 'duration' &&
+                          name !== 'medication_taken' &&
+                          name !== 'medication_dosage',
                       )
                       .map((name) => renderField(name, idx))}
                   </div>
@@ -576,7 +579,12 @@ export function EventEditForm({
               Symptom-Details
             </h2>
             <div className="flex flex-col gap-4">
-              {allFieldNames.map((name) => renderField(name))}
+              {allFieldNames
+                .filter(
+                  (name) =>
+                    name !== 'medication_taken' && name !== 'medication_dosage',
+                )
+                .map((name) => renderField(name))}
             </div>
           </div>
         )}
