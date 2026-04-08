@@ -17,7 +17,6 @@ import {
 } from '@/lib/actions/symptom-actions'
 import { createBrowserClient } from '@/lib/db/client'
 import { getSignedPhotoUrl } from '@/lib/db/media'
-import { convertToWav } from '@/lib/utils/audio-convert'
 
 export default function CapturePage() {
   const router = useRouter()
@@ -47,27 +46,11 @@ export default function CapturePage() {
   }
 
   const handleSendAudio = async (blob: Blob, mimeType: string) => {
-    // Convert to WAV for reliable Whisper transcription
-    let audioBlob: Blob
-    let audioMime: string
-    try {
-      audioBlob = await convertToWav(blob)
-      audioMime = 'audio/wav'
-    } catch {
-      audioBlob = blob
-      audioMime = mimeType
-    }
-
     const optimisticId = addOptimisticEvent(null, 'voice')
     const formData = new FormData()
-    const ext =
-      audioMime === 'audio/wav'
-        ? 'wav'
-        : mimeType.includes('mp4')
-          ? 'm4a'
-          : 'webm'
-    formData.append('audio', audioBlob, `recording.${ext}`)
-    formData.append('mimeType', audioMime)
+    const ext = mimeType.includes('mp4') ? 'm4a' : 'webm'
+    formData.append('audio', blob, `recording.${ext}`)
+    formData.append('mimeType', mimeType)
     try {
       const result = await createVoiceSymptomEvent(formData)
       if (result.error) {
