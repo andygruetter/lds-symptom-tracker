@@ -1,8 +1,37 @@
 # Story 2.5: Symptom beenden und Dauer berechnen
 
-Status: done
+Status: superseded (überholt durch AI-extracted duration + DurationSlider)
 
-## Story
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Diese Story wurde durch einen späteren Refactor abgelöst.** Die ursprüngliche
+Lösung (manueller „Symptom beenden"-Button + `endSymptomEvent()` Server Action +
+Aktiv-Badge) wurde als zu cumbersome empfunden (siehe Memory-Eintrag) und durch
+zwei kombinierte Mechanismen ersetzt:
+
+1. **AI-extrahierte `duration`** (in Minuten) wird direkt aus dem rawInput
+   extrahiert (siehe Migration `20260315000004_extraction_improvements.sql`,
+   tech-spec `tech-spec-symptom-time-duration-extraction.md`).
+2. **Manueller `DurationSlider` im Review-Screen** als Fallback, wenn die
+   AI keine Dauer extrahieren konnte. Implementierung: `src/components/capture/review-bubble.tsx`
+   (Zeilen 8, 324, 351) — Slider mit Min/Std/Tage-Einheiten-Toggle.
+
+**Folgen für diese Story:**
+- `endSymptomEvent()` Server Action existiert weiterhin (Backwards-Compat),
+  wird aber nicht mehr als Haupt-Eingabepfad genutzt.
+- `ended_at` wird nicht mehr aktiv vom Patienten gesetzt; Dauer kommt aus dem
+  `duration`-Feld in `extracted_data`.
+- Aktiv-Badge / Beenden-Button in ChatBubble sind weiter vorhanden, aber nicht
+  mehr primärer UX-Pfad.
+
+**Referenzen:**
+- Commit `0fc414e feat: AI-extracted duration with manual slider fallback (#56)`
+- `_bmad-output/implementation-artifacts/tech-spec-symptom-time-duration-extraction.md`
+- `src/components/event/event-edit-form.tsx` (Edit-Form mit Min/Std/Tage-Toggle)
+
+---
+
+## Story (Originale Spec — überholt)
 
 As a Patient,
 I want ein aktives Symptom als beendet markieren können,

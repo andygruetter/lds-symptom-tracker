@@ -1,6 +1,26 @@
 # Story 4.3: Symptom-Häufigkeits-Ranking mit Trendlinien
 
-Status: done
+Status: done (modifiziert durch späteren Refactor)
+
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**AC #5 entfernt:** „Medikamenten-Events sind separat vom Symptom-Ranking
+darstellbar" ist nicht mehr zutreffend, weil Medikamente durch den
+precursor-medication-Refactor (`tech-spec-precursor-medication-fields.md`) als
+Attribute eines Symptom-Events modelliert werden, nicht als eigene Events.
+
+**Aktuelles Schema** (`src/types/analytics.ts:55-59`):
+
+```ts
+type SymptomRanking = {
+  symptoms: SymptomRankingEntry[]   // nur Symptome, kein medications-Feld
+  timeRange: TimeRange
+  totalSymptomEvents: number
+}
+```
+
+**Komponente:** `SymptomRankingCard` hat nur `variant: 'symptom'` (kein
+`medication`-Variant). Accent-Color ist hardcoded `#C06A3C` (Terracotta).
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

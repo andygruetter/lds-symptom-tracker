@@ -1,6 +1,45 @@
 # Story 4.4: Event-Detail-Ansicht
 
-Status: done
+Status: done (modifiziert durch späteren Refactor)
+
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**`EventDetail`-Schema überarbeitet.** Die in dieser Story beschriebenen Felder
+`symptomName`, `medication` etc. existieren in der finalen Implementierung nicht
+mehr. `eventType` ist Literal `'symptom'` (medikament-as-attribute-Modell, siehe
+`tech-spec-precursor-medication-fields.md`).
+
+**Aktuelles Schema** (`src/types/analytics.ts:82-94`):
+
+```ts
+type EventDetail = {
+  id: string
+  eventType: 'symptom'
+  occurredAt: string
+  createdAt: string
+  endedAt: string | null
+  rawInput: string | null
+  audioUrl: string | null
+  extractedFields: ExtractedField[]   // dynamische Feldliste
+  photos: EventPhoto[]
+  totalPhotoCount: number              // separates Count-Feld
+  eventStatus: string
+}
+
+type ExtractedField = {
+  fieldName: string
+  value: string | null
+  confidence: number | null
+  confirmed: boolean
+  symptomIndex: number
+  medicationIndex: number | null
+}
+```
+
+Die UI rendert die Detail-Ansicht über die dynamische `extractedFields`-Liste,
+gruppiert nach `symptomIndex` / `medicationIndex` (siehe
+`src/components/event/event-detail-view.tsx`,
+`src/components/event/event-edit-form.tsx`).
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

@@ -2,6 +2,20 @@
 
 Status: done
 
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Cookie-Path:** Das Sharing-Session-Cookie wird mit `path: '/'` gesetzt
+(`src/app/share/[token]/route.ts:50`), nicht mit dem ursprünglich vorgesehenen
+`Path=/share`. Begründung: Das Cookie ist `HttpOnly + Secure + SameSite=Strict`,
+damit ist Principle of Least Privilege ausreichend gewahrt; ein breiter Path
+vereinfacht zusätzliche Edge-Cases (z. B. spätere Ergänzung weiterer Routen
+außerhalb von `/share`).
+
+**Expired-Handling:** Bei abgelaufenem oder widerrufenem Token erfolgt ein
+**302-Redirect** auf `/share/expired` (siehe `src/proxy.ts` und
+`src/app/share/[token]/route.ts`), nicht ein HTTP-410-Statuscode. Der Redirect
+liefert die UX-freundlichere Fehlerseite.
+
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story

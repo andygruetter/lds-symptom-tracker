@@ -2,6 +2,19 @@
 
 Status: done
 
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Suspense-Pattern:** Die ursprüngliche Spec sah `<Suspense fallback={<TimelineSkeleton />}>`
+für die Timeline vor. Code lädt die Events stattdessen synchron via
+`await Promise.all([getSharedFeedEvents(...), getSharedSymptomRanking(...)])` in
+`src/app/share/dashboard/page.tsx:36`. Bewusste Designentscheidung (Daten klein,
+Auth bereits validiert, kein Streaming-Vorteil). Suspense bleibt nur für die
+KI-Summary-Karte (`AISummaryCard` in derselben Page) bestehen, da deren Generierung
+deutlich länger dauert.
+
+**Hinweis:** Code-Kommentar (Zeile 71) dokumentiert dies explizit:
+„Timeline (Story 6.2) — Daten bereits via await geladen, kein Suspense nötig".
+
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story

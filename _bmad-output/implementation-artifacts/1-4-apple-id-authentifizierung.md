@@ -2,6 +2,16 @@
 
 Status: done
 
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Datei-Convention:** Mit dem Next.js 16 Upgrade wurde die Edge-Middleware-Datei
+von `src/middleware.ts` auf **`src/proxy.ts`** umbenannt (neue Next.js-Convention,
+gleiche Funktion, gleicher `matcher`-Mechanismus). Alle nachfolgenden Erwähnungen
+von `src/middleware.ts` in dieser Story sind in der finalen Implementierung als
+`src/proxy.ts` zu lesen. Die `export async function middleware(...)` heißt jetzt
+`export async function proxy(...)`. Der Helper `src/lib/supabase/middleware.ts`
+behält seinen Namen und wird unverändert importiert.
+
 ## Story
 
 As a Patient,

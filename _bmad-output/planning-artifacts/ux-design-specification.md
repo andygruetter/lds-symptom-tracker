@@ -3,10 +3,12 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 inputDocuments: ['_bmad-output/planning-artifacts/prd.md', '_bmad-output/planning-artifacts/product-brief-lds-symptome-tracker-2026-02-28.md']
 ---
 
-# UX Design Specification lds-symptome-tracker
+# UX Design Specification — Symptomchat
 
 **Author:** Andy
 **Date:** 2026-03-01
+
+> **Hinweis (2026-05-06):** Das Produkt heisst heute **Symptomchat**. Frühere Bezeichnungen wie „LDS Symptom Tracker" / „lds-symptome-tracker" stammen aus der initialen Planungsphase.
 
 ---
 
@@ -16,7 +18,7 @@ inputDocuments: ['_bmad-output/planning-artifacts/prd.md', '_bmad-output/plannin
 
 ### Project Vision
 
-Der LDS Symptom Tracker ist eine ereignisbasierte Web-App mit zwei radikal unterschiedlichen Nutzungsmodi: Ein ultra-schneller Erfassungsmodus (Sprache/Text/Foto, <10 Sekunden) und ein informationsreicher Auswertungsmodus (Dashboard, Timeline, Drill-Down). Die UX-Herausforderung liegt in der Vereinigung dieser gegensätzlichen Anforderungen — Minimalismus bei der Erfassung, Informationstiefe bei der Auswertung — in einer kohärenten Produkterfahrung.
+Symptomchat (vormals „LDS Symptom Tracker") ist eine ereignisbasierte Web-App mit zwei radikal unterschiedlichen Nutzungsmodi: Ein ultra-schneller Erfassungsmodus (Sprache/Text/Foto, <10 Sekunden) und ein informationsreicher Auswertungsmodus (Dashboard, Timeline, Drill-Down). Die UX-Herausforderung liegt in der Vereinigung dieser gegensätzlichen Anforderungen — Minimalismus bei der Erfassung, Informationstiefe bei der Auswertung — in einer kohärenten Produkterfahrung.
 
 Das Anti-Tagebuch-Prinzip definiert die UX-Philosophie: Event-basiert statt pflichtbasiert. Keine Eingabe = guter Tag. Die App meldet sich nicht proaktiv — der Patient kommt, wenn etwas ist.
 
@@ -58,7 +60,7 @@ Das Anti-Tagebuch-Prinzip definiert die UX-Philosophie: Event-basiert statt pfli
 
 ### Defining Experience
 
-Die definierende Interaktion des LDS Symptom Trackers ist die **8-Sekunden-Spracherfassung**: App öffnen → Mikrofon-Button tippen → frei sprechen → fertig. Alles andere — KI-Extraktion, Strukturierung, Push-Benachrichtigung — passiert im Hintergrund. Der Patient investiert 8 Sekunden, das System liefert strukturierte medizinische Daten.
+Die definierende Interaktion von Symptomchat ist die **8-Sekunden-Spracherfassung**: App öffnen → Mikrofon-Button tippen → frei sprechen → fertig. Alles andere — KI-Extraktion, Strukturierung, Push-Benachrichtigung — passiert im Hintergrund. Der Patient investiert 8 Sekunden, das System liefert strukturierte medizinische Daten.
 
 Diese Interaktion muss so natürlich sein wie eine Sprachnachricht senden. Kein Formular, kein Menü, kein Nachdenken. Der Mikrofon-Button ist das erste und wichtigste UI-Element — er definiert das Produkt visuell und funktional.
 
@@ -245,7 +247,7 @@ Sprechstunde   → "Das ist ein echtes Puzzlestück" (Bestätigung)
 
 Vom User als primäre UX-Inspiration benannt: "Wenn sich das Erfassen so natürlich anfühlt wie ich mit ChatGPT kommuniziere, wäre das super."
 
-| Aspekt | Was ChatGPT richtig macht | Übertragung auf LDS Symptom Tracker |
+| Aspekt | Was ChatGPT richtig macht | Übertragung auf Symptomchat |
 |--------|--------------------------|-------------------------------------|
 | **Eingabe-Pattern** | Ein Textfeld + Mikrofon. Keine Menüs, keine Kategorien. Freie Sprache als primäre Interaktion. | Erfassungs-Screen: Ein grosser Mikrofon-Button, ein Textfeld. Sonst nichts. |
 | **Natürliche Sprache** | Man tippt/spricht wie man denkt — kein Umdenken in App-Logik. Das System versteht Kontext. | Celia spricht Schweizerdeutsch, wie sie denkt. KI macht die Strukturierung. |
@@ -257,9 +259,11 @@ Vom User als primäre UX-Inspiration benannt: "Wenn sich das Erfassen so natürl
 
 Im PRD als Erklärungsmetapher etabliert: "Die ist wie WhatsApp — du sprichst einfach rein wenn was ist."
 
+> ⚠️ **Offene UX-Frage (Stand 2026-05-06):** Die spezifizierte **Hold-to-Record-Geste** ist in der aktuellen Implementierung **nicht final umgesetzt**. `src/components/capture/input-bar.tsx` arbeitet aktuell mit dem `useAudioRecorder()`-Hook im **Tap-to-Record-Modus** (Tap startet, Tap stoppt). Browser-Verifikation und finale UX-Entscheidung (Hold vs. Tap) stehen aus.
+
 | Aspekt | Was WhatsApp richtig macht | Übertragung |
 |--------|---------------------------|-------------|
-| **Sprachnachricht** | 1 Button gedrückt halten → sprechen → loslassen. Fertig. | Gleiche Geste für Symptom-Erfassung — vertrautes Interaktionsmuster |
+| **Sprachnachricht** | 1 Button gedrückt halten → sprechen → loslassen. Fertig. | Gleiche Geste für Symptom-Erfassung — vertrautes Interaktionsmuster (⚠️ aktuell als Tap-to-Record implementiert, siehe Hinweis oben) |
 | **Chronologischer Feed** | Nachrichten fliessen von oben nach unten, zeitlich sortiert | Symptom-Feed als Chat-artiger Stream — vertrautes Mental Model |
 | **Push-Benachrichtigung** | Kurze Vorschau, 1 Tap öffnet die Nachricht | KI-Ergebnis als Push: "Erfasst: Rückenschmerzen links. Überprüfen?" |
 | **Beiläufigkeit** | Nachricht schicken ist kein Event, sondern Alltag | Symptom erfassen soll sich genauso beiläufig anfühlen |
@@ -272,7 +276,7 @@ Im PRD als Erklärungsmetapher etabliert: "Die ist wie WhatsApp — du sprichst 
 
 **Interaction Patterns:**
 - **Conversational Capture:** Symptom-Erfassung als Chat-artige Interaktion. Celia "schreibt" der App, die App "antwortet" mit der Extraktion. Bei Nachfragen entsteht ein Mini-Dialog.
-- **Hold-to-Record:** WhatsApp-Sprachnachrichten-Geste (Button halten → sprechen → loslassen) als vertrautes Pattern für Sprach-Erfassung.
+- **Hold-to-Record:** WhatsApp-Sprachnachrichten-Geste (Button halten → sprechen → loslassen) als vertrautes Pattern für Sprach-Erfassung. ⚠️ *Stand 2026-05-06: noch nicht final implementiert — `input-bar.tsx` nutzt aktuell `useAudioRecorder()` im Tap-to-Record-Modus.*
 - **Inline-Bestätigung:** KI-Extraktion erscheint als "Antwort" im Chat-Flow. Bestätigen = 1 Tap. Korrektur = auf das zu ändernde Feld tippen.
 
 **Visual Patterns:**
@@ -391,7 +395,7 @@ Eigene Komponenten für domänenspezifische UI-Elemente:
 
 **"Sprich dein Symptom — die KI versteht es."**
 
-Die definierende Interaktion des LDS Symptom Trackers in einem Satz. Wie Shazam für Symptome: Rohe Eingabe (Schweizerdeutsch-Sprache) → strukturiertes medizinisches Wissen (Bezeichnung, Region, Seite, Art, Intensität). Der magische Moment ist nicht das Aufnehmen — sondern das Verstehen.
+Die definierende Interaktion von Symptomchat in einem Satz. Wie Shazam für Symptome: Rohe Eingabe (Schweizerdeutsch-Sprache) → strukturiertes medizinisches Wissen (Bezeichnung, Region, Seite, Art, Intensität). Der magische Moment ist nicht das Aufnehmen — sondern das Verstehen.
 
 Andy beschreibt es Celia: "Die ist wie WhatsApp — du sprichst einfach rein wenn was ist." Diese Erklärung in einem Satz ist der UX-Massstab. Wenn die App mehr Erklärung braucht, ist sie zu kompliziert.
 

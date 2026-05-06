@@ -1,6 +1,14 @@
-# Story 7.1: Marketing-Landingpage mit Demo-Video
+# Story 7.1: Marketing-Landingpage mit Demo-Animation
 
 Status: done
+
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Demo-Bereich:** Statt eines Video-Platzhalters (AC #2) wurde eine vollständige
+**interaktive `DemoAnimation`-Komponente** (`src/components/marketing/demo-animation.tsx`)
+implementiert, die direkt in der Hero-Sektion eingebettet ist (`src/app/marketing/page.tsx`).
+Ein externes Video-Embed (YouTube/Vimeo) ist dadurch nicht mehr nötig. AC #2 gilt als
+durch die Animation erfüllt.
 
 ## Story
 
