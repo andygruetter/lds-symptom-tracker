@@ -2,6 +2,15 @@
 
 Status: done
 
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**RLS-Policy-Anpassung:** Die ursprünglich vorgesehene SELECT-Policy
+`auth.uid() = account_id AND deleted_at IS NULL` blockierte `UPDATE … SELECT`-Aufrufe,
+die für Soft-Delete benötigt werden. Migration
+`20260314224610_fix_rls_select_policy_for_soft_delete.sql` **entfernt den
+`deleted_at IS NULL`-Filter aus der RLS-Policy**. Das Filtern auf nicht-gelöschte
+Events erfolgt jetzt in der Application-Logic (Server Actions / Queries).
+
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story

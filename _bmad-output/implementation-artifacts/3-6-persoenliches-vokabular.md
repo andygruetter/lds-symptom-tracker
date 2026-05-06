@@ -2,6 +2,13 @@
 
 Status: done
 
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Migration-Nummer korrigiert:** Die Spec referenziert
+`00011_patient_vocabulary.sql`. Die finale Datei heißt
+**`00013_patient_vocabulary.sql`** (Verschiebung wegen Migration-Konflikten mit
+vorangegangenen Stories).
+
 ## Story
 
 As a Patient,

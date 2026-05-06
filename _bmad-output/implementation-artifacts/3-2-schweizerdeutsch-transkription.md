@@ -2,6 +2,25 @@
 
 Status: done
 
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Modellwahl korrigiert:** Code nutzt **`gpt-4o-transcribe`** (nicht
+`gpt-4o-mini-transcribe`, wie in der ursprünglichen Spec). Siehe
+`src/lib/ai/providers/whisper.ts:10`:
+
+```ts
+const WHISPER_MODEL = 'gpt-4o-transcribe'
+```
+
+**Parameter `response_format: 'json'`:** Wird im Code-Aufruf NICHT explizit
+übergeben — der OpenAI-Default ist bereits JSON, daher überflüssig. Code übergibt
+nur `model`, `language: 'de'`, `temperature: 0`, `prompt`.
+
+**Migration-Nummer korrigiert:** Die Spec referenziert teilweise
+`00009_transcription_status.sql` und `00010_transcription_status.sql`. Die finale
+Datei heißt **`00012_transcription_status.sql`** (Verschiebung wegen Migration-
+Konflikten mit Stories 3.3 + 3.4).
+
 ## Story
 
 As a System,

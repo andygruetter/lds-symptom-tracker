@@ -1,6 +1,40 @@
 # Story 4.1: Chronologischer Symptom-Feed
 
-Status: done
+Status: done (modifiziert durch späteren Refactor)
+
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Datenmodell-Änderung:** Diese Story wurde ursprünglich gegen ein Datenmodell mit
+`FeedEvent.eventType: 'symptom' | 'medication'` (Union) geschrieben. Nach dem
+Refactor in `tech-spec-precursor-medication-fields.md` ist `eventType` ein
+**Literal `'symptom'`** — Medikamente sind keine eigenen Feed-Events mehr,
+sondern als Felder in `FeedSymptomGroup` eingebettet.
+
+**Aktuelles Schema** (`src/types/analytics.ts:22-33`):
+
+```ts
+type FeedEvent = {
+  id: string
+  eventType: 'symptom'              // ← Literal, keine Union
+  occurredAt: string
+  createdAt: string
+  endedAt: string | null
+  rawInput: string | null
+  photoCount: number
+  hasAudio: boolean
+  symptoms: FeedSymptomGroup[]      // ← Symptom-Gruppen mit dynamischen fields
+}
+
+type FeedSymptomGroup = {
+  displayName: string | null         // symptom_name
+  fields: Record<string, string>     // alle anderen extrahierten Felder
+}
+```
+
+**Folgen für die ACs:** Alle Anforderungen zur visuellen Unterscheidung von
+Symptom- vs. Medikamenten-Events sind nicht mehr zutreffend. Medikamente erscheinen
+über die `medication_taken`/`medication_dosage`-Felder innerhalb der Symptom-Gruppe
+(siehe Tech-Spec `tech-spec-dynamic-extracted-fields.md`).
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

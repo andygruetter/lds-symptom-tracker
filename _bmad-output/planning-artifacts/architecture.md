@@ -5,12 +5,14 @@ status: 'complete'
 completedAt: '2026-03-01'
 inputDocuments: ['_bmad-output/planning-artifacts/prd.md', '_bmad-output/planning-artifacts/product-brief-lds-symptome-tracker-2026-02-28.md', '_bmad-output/planning-artifacts/ux-design-specification.md', '_bmad-output/planning-artifacts/prd-validation-report.md']
 workflowType: 'architecture'
-project_name: 'lds-symptome-tracker'
+project_name: 'symptomchat'
 user_name: 'Andy'
 date: '2026-03-01'
 ---
 
-# Architecture Decision Document
+# Architecture Decision Document — Symptomchat
+
+> **Hinweis (2026-05-06):** Das Projekt wird heute als **Symptomchat** geführt. Repo- und Modulpfade behalten teilweise den alten Slug `lds-symptom-tracker` aus historischen Gründen.
 
 _This document builds collaboratively through step-by-step discovery. Sections are appended as we work through each architectural decision together._
 
@@ -210,7 +212,7 @@ KI-Pipeline schreibt Ergebnis in DB → Supabase Realtime pusht Update via WebSo
 
 | Aspekt | Detail |
 |--------|--------|
-| **Service** | OpenAI Whisper API (neuestes Modell) |
+| **Service** | OpenAI Whisper API (Modell `gpt-4o-transcribe`, Stand 2026-05) |
 | **Stärke** | Bestes multilinguales Modell für Dialekte. Übersetzt Schweizerdeutsch natürlich ins Hochdeutsche — kein separater Übersetzungsschritt. |
 | **Kosten** | $0.006/Minute, Pay-per-Use |
 | **Latenz** | ~2-5 Sekunden für 15s Audio |
@@ -220,9 +222,9 @@ KI-Pipeline schreibt Ergebnis in DB → Supabase Realtime pusht Update via WebSo
 
 | Aspekt | Detail |
 |--------|--------|
-| **Service** | Anthropic Claude Sonnet (aktuelles Modell) |
+| **Service** | Anthropic Claude Sonnet — aktuelle Implementierung: Modell-ID `claude-sonnet-4-20250514` (Stand 2026-05) |
 | **Stärke** | Tool Use für garantiert valides JSON-Schema. Exzellent im Befolgen von System-Prompt-Instruktionen (persönliches Vokabular-Lernen). |
-| **Output** | Symptombezeichnung, Körperregion, Seite, Art, Intensität, Konfidenz-Score, Event-Typ (Symptom/Medikament) |
+| **Output** | Symptombezeichnung, Körperregion, Seite, Art, Intensität, Konfidenz-Score sowie optionale Attribute Precursor / Medication / Duration. **Hinweis (2026-05-06):** `event_type` wird im Code als `'symptom' \| 'voice'` geführt; Medikamenten-Daten sind Attribute des Symptom-Events, kein eigener Event-Typ (Story #59). |
 | **Kosten** | ~$0.003/Event, Pay-per-Use |
 | **Latenz** | ~1-3 Sekunden |
 | **Persönliches Lernen** | Korrektur-History als Few-Shot-Beispiele im System Prompt |
@@ -822,7 +824,7 @@ npx supabase gen types typescript --project-id $PROJECT_ID > src/types/database.
 | **KI-Verarbeitung** (FR11-FR15) | `api/ai/process/`, `lib/ai/providers/`, `lib/db/symptoms.ts` | Provider-Abstraktion, Retry-Queue |
 | **Patienten-Ansicht** (FR16-FR20) | `(app)/insights/`, `components/insights/` | Timeline, SymptomRanking |
 | **Arzt-Export** (FR21-FR33) | `share/`, `components/sharing/`, `api/share/pdf/` | DoctorDashboard, PdfExport |
-| **Account & Auth** (FR34-FR36) | `auth/`, `lib/db/client.ts`, `middleware.ts` | Supabase Auth, Apple ID |
+| **Account & Auth** (FR34-FR36) | `auth/`, `lib/db/client.ts`, `src/proxy.ts` (Next.js 16 Middleware-Convention; früher `src/middleware.ts`) | Supabase Auth, Apple ID |
 | **Daten-Souveränität** (FR37-FR42) | `lib/db/audit.ts`, `lib/actions/account-actions.ts`, `(app)/settings/` | AuditLog, AccountDeletion |
 | **Marketing** (FR43-FR45) | `app/page.tsx` (Root), `public/` | SSR Marketing-Seite |
 
@@ -998,7 +1000,7 @@ lds-symptom-tracker/
 │   │   ├── ai.ts                           → TranscriptResult, ExtractionResult, PipelineResult
 │   │   └── common.ts                       → ActionResult<T>, AppError, LoadingStates
 │   │
-│   ├── middleware.ts                        → Routing-basierte Auth (siehe Details unten)
+│   ├── proxy.ts                            → Routing-basierte Auth — Next.js 16 Convention (früher `middleware.ts`). Siehe Details unten.
 │   │
 │   └── __tests__/
 │       ├── factories/                       → Test-Data-Factories
@@ -1054,7 +1056,8 @@ Drei verschiedene Clients für drei Kontexte:
 ### Middleware-Strategie
 
 ```typescript
-// src/middleware.ts — Zwei verschiedene Auth-Mechanismen
+// src/proxy.ts — Zwei verschiedene Auth-Mechanismen
+// (Next.js 16 benannt das Middleware-File in `proxy.ts` um; früher `src/middleware.ts`)
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/db/client'
 

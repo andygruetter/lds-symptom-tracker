@@ -13,14 +13,16 @@ classification:
   projectContext: greenfield
 ---
 
-# Product Requirements Document - lds-symptome-tracker
+# Product Requirements Document - Symptomchat
+
+> **Hinweis (2026-05-06):** Das Produkt wird heute unter dem Namen **Symptomchat** geführt. Frühere Bezeichnungen wie „LDS Symptom Tracker" / „LDS Tracker" / „lds-symptome-tracker" stammen aus der initialen Planungsphase und werden im Code/Repo zunehmend durch „Symptomchat" ersetzt. Repo- und Modulpfade behalten teilweise den alten Slug aus historischen Gründen.
 
 **Author:** Andy
 **Date:** 2026-03-01
 
 ## Executive Summary
 
-Der **LDS Symptom Tracker** ist eine ereignisbasierte Web-App zur Symptomerfassung für Patienten mit seltenen Erkrankungen. Patienten beschreiben Symptome per Sprache oder Text in unter 10 Sekunden — KI extrahiert automatisch strukturierte medizinische Daten (Bezeichnung, Körperregion, Seite, Art, Intensität). Über Monate entsteht eine differenzierte, quantifizierbare Symptomgeschichte, die bei der Spezialisten-Konsultation als objektive Entscheidungsgrundlage dient — für frühzeitiges Handeln bei auffälligen Mustern und für den Verzicht auf unnötige Untersuchungen bei unauffälligem Verlauf. Beides erhöht die Lebensqualität und gibt dem Patienten ein Gefühl von Sicherheit.
+Der **Symptomchat** (vormals „LDS Symptom Tracker") ist eine ereignisbasierte Web-App zur Symptomerfassung für Patienten mit seltenen Erkrankungen. Patienten beschreiben Symptome per Sprache oder Text in unter 10 Sekunden — KI extrahiert automatisch strukturierte medizinische Daten (Bezeichnung, Körperregion, Seite, Art, Intensität). Über Monate entsteht eine differenzierte, quantifizierbare Symptomgeschichte, die bei der Spezialisten-Konsultation als objektive Entscheidungsgrundlage dient — für frühzeitiges Handeln bei auffälligen Mustern und für den Verzicht auf unnötige Untersuchungen bei unauffälligem Verlauf. Beides erhöht die Lebensqualität und gibt dem Patienten ein Gefühl von Sicherheit.
 
 Das Produkt wird als Pilot mit einer 17-jährigen LDS-Patientin entwickelt und validiert, bevor es auf weitere Patienten mit seltenen Erkrankungen ausgeweitet wird. Geschäftsmodell: Freemium — kostenlose Symptomerfassung, kostenpflichtiges Abo für Arzt-Sharing.
 
@@ -343,7 +345,8 @@ Beweisen, dass event-basierte Spracherfassung mit KI-Extraktion für eine LDS-Pa
 |---------|-----------|
 | Symptom-Erfassung (Sprache, Text, Foto) | ✅ Vollständig |
 | Foto-Dokumentation (mehrere pro Event) | ✅ Vollständig |
-| Medikamenten-Events (als Datenpunkte) | ✅ Vollständig |
+| Medikamenten-Events (als Symptom-Attribute, nicht als separater event_type) | ✅ Implementiert (#59) |
+| Precursor / Vorboten (als Symptom-Attribute) | ✅ Implementiert (#59) |
 | Onboarding (Apple ID, Zero-Formular) | ✅ Vollständig |
 | Konsultations-Vorbereitung (Sharing, PDF) | ✅ Vollständig |
 | Arzt-Konsultation (Dashboard, Drill-Down) | ✅ Vollständig |
@@ -419,11 +422,16 @@ Beweisen, dass event-basierte Spracherfassung mit KI-Extraktion für eine LDS-Pa
 - **FR1:** Patient kann ein Symptom per Spracheingabe erfassen
 - **FR2:** Patient kann ein Symptom per Texteingabe erfassen
 - **FR3:** Patient kann ein oder mehrere Fotos zu einem Symptom-Event anhängen
-- **FR4:** Patient kann ein Medikamenten-Event per Sprache oder Text erfassen (Einnahme, vergessene Einnahme, Dosis, Grund)
+- **FR4:** Patient kann Medikamenten-Informationen (Name, Dosis, Einnahme/vergessen, Grund) zusammen mit einem Symptom per Sprache oder Text erfassen
+  - *Implementierungsstand 2026-05-06:* Medikamenten-Daten werden als **Attribute eines Symptom-Events** gespeichert (Felder `medications`, ggf. `medication_taken`), nicht als eigener `event_type`. Siehe Migration `20260408000001_precursor_medication_fields.sql` und Story #59.
+- **FR4b:** Patient kann Vorboten / Precursor (Symptome, die einem Hauptsymptom vorausgehen) erfassen
+  - *Implementierungsstand 2026-05-06:* Als Symptom-Attribut `precursor` umgesetzt (Story #59). Ursprünglich nicht in MVP-FR-Liste — wurde im Verlauf der Implementierung als MVP-Erweiterung ergänzt.
 - **FR5:** Patient kann ein aktives Symptom als beendet markieren (Dauer wird berechnet)
+  - *Implementierungsstand 2026-05-06:* Manuelle „Symptom beenden"-Aktion durch **AI-extrahierte `duration` + DurationSlider-Fallback im Review** ersetzt (Story #56). Manuelles Beenden via Button entfiel, da als zu umständlich evaluiert (siehe `feedback_end_symptom.md`).
 - **FR6:** System transkribiert Schweizerdeutsch-Spracheingabe ins Hochdeutsche
-- **FR7:** System extrahiert automatisch strukturierte Daten aus der Eingabe (Symptombezeichnung, Körperregion, Seite, Art, Intensität)
-- **FR8:** System unterscheidet zwischen Symptom-Events und Medikamenten-Events
+- **FR7:** System extrahiert automatisch strukturierte Daten aus der Eingabe (Symptombezeichnung, Körperregion, Seite, Art, Intensität, sowie optional Precursor / Medikamente / Duration)
+- **FR8:** System extrahiert Medikamenten-Informationen als Attribute eines Symptom-Events (kein separater `event_type`).
+  - *Hinweis:* Frühere Spec-Versionen sahen `event_type ∈ {'symptom','medication'}` vor. Die tatsächliche Implementierung verwendet `event_type ∈ {'symptom','voice'}` mit Medikamenten als Attribut — siehe Architektur-Drift in `architecture.md`.
 - **FR9:** System zeigt nach Erfassung sofort eine Verarbeitungs-Bestätigung an
 - **FR10:** System sendet Push-Benachrichtigung wenn die KI-Extraktion abgeschlossen ist
 

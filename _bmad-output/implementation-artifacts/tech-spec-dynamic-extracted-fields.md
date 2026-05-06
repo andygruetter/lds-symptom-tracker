@@ -2,7 +2,8 @@
 title: 'Dynamische Anzeige extrahierter Felder'
 slug: 'dynamic-extracted-fields'
 created: '2026-03-21'
-status: 'ready-for-dev'
+status: 'implemented'
+implementedDate: '2026-05-06'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['Next.js App Router', 'TypeScript', 'Supabase', '@react-pdf/renderer', 'Vitest', 'React Testing Library']
 files_to_modify:
@@ -38,6 +39,8 @@ test_patterns:
 # Tech-Spec: Dynamische Anzeige extrahierter Felder
 
 **Created:** 2026-03-21
+
+> **Status:** Implementiert (Stand 2026-05-06) — alle Tasks abgeschlossen. FeedEvent-Vereinfachung, EventDetail-Schema, FeedSymptomGroup und Dynamic-Field-Rendering sind im Code umgesetzt. Weiterführende Arbeit in [`tech-spec-precursor-medication-fields.md`](./tech-spec-precursor-medication-fields.md).
 
 ## Overview
 

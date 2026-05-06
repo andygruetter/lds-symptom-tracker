@@ -5,11 +5,13 @@ completedAt: '2026-03-02'
 inputDocuments: ['_bmad-output/planning-artifacts/prd.md', '_bmad-output/planning-artifacts/architecture.md', '_bmad-output/planning-artifacts/ux-design-specification.md']
 ---
 
-# lds-symptome-tracker - Epic Breakdown
+# Symptomchat - Epic Breakdown
+
+> **Hinweis (2026-05-06):** Produktname heute **Symptomchat** (vormals „lds-symptome-tracker" / „LDS Symptom Tracker"). Mehrere Stories wurden im Verlauf der Implementierung angepasst — insbesondere wurden Medikamenten-Events vom separaten `event_type` zum **Symptom-Attribut** (Story #59), und Story 2.5 wurde von „Symptom beenden via Button" zu **AI-extrahierter Duration + DurationSlider-Fallback im Review** (Story #56) umgestellt.
 
 ## Overview
 
-This document provides the complete epic and story breakdown for lds-symptome-tracker, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
+This document provides the complete epic and story breakdown for Symptomchat, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
 
 ## Requirements Inventory
 
@@ -19,11 +21,11 @@ This document provides the complete epic and story breakdown for lds-symptome-tr
 - FR1: Patient kann ein Symptom per Spracheingabe erfassen
 - FR2: Patient kann ein Symptom per Texteingabe erfassen
 - FR3: Patient kann ein oder mehrere Fotos zu einem Symptom-Event anhängen
-- FR4: Patient kann ein Medikamenten-Event per Sprache oder Text erfassen (Einnahme, vergessene Einnahme, Dosis, Grund)
+- FR4: Patient kann Medikamenten-Informationen (Einnahme, vergessene Einnahme, Dosis, Grund) als Attribute eines Symptom-Events erfassen — Implementierung 2026-05-06 als Symptom-Attribut, nicht als separater Event-Typ (Story #59)
 - FR5: Patient kann ein aktives Symptom als beendet markieren (Dauer wird berechnet)
 - FR6: System transkribiert Schweizerdeutsch-Spracheingabe ins Hochdeutsche
 - FR7: System extrahiert automatisch strukturierte Daten aus der Eingabe (Symptombezeichnung, Körperregion, Seite, Art, Intensität)
-- FR8: System unterscheidet zwischen Symptom-Events und Medikamenten-Events
+- FR8: System extrahiert Medikamenten-Informationen als Attribute eines Symptom-Events. *Hinweis 2026-05-06:* Implementierung verwendet `event_type ∈ {'symptom','voice'}`, **nicht** `'medication'` als separaten Typ (Story #59).
 - FR9: System zeigt nach Erfassung sofort eine Verarbeitungs-Bestätigung an
 - FR10: System sendet Push-Benachrichtigung wenn die KI-Extraktion abgeschlossen ist
 
@@ -153,11 +155,11 @@ This document provides the complete epic and story breakdown for lds-symptome-tr
 | FR1 | Symptom per Spracheingabe erfassen | 3 |
 | FR2 | Symptom per Texteingabe erfassen | 2 |
 | FR3 | Fotos zu Symptom-Event anhängen | 3 |
-| FR4 | Medikamenten-Event per Sprache/Text erfassen | 2 |
+| FR4 | Medikamenten-Daten als Symptom-Attribute (Story #59) | 2 |
 | FR5 | Aktives Symptom als beendet markieren | 2 |
 | FR6 | Schweizerdeutsch-Transkription | 3 |
 | FR7 | Strukturierte Daten extrahieren | 2 |
-| FR8 | Symptom- vs. Medikamenten-Event unterscheiden | 2 |
+| FR8 | Medikamenten-Daten als Attribute am Symptom-Event extrahieren (kein eigener event_type, Story #59) | 2 |
 | FR9 | Verarbeitungs-Bestätigung anzeigen | 2 |
 | FR10 | Push-Benachrichtigung nach KI-Extraktion | 3 |
 | FR11 | Nachfrage bei Konfidenz <70% | 2 |
@@ -342,7 +344,7 @@ So that die Erfassung sich natürlich und schnell anfühlt wie eine Messenger-Ap
 **Then** wird die Nachricht als ChatBubble im ChatFeed angezeigt
 **And** die InputBar ist immer am unteren Bildschirmrand sichtbar
 **And** der ChatFeed scrollt automatisch zur neuesten Nachricht
-**And** die `symptom_events`-Tabelle wird erstellt mit `id`, `account_id`, `event_type`, `raw_input`, `status`, `created_at`, `ended_at`
+**And** die `symptom_events`-Tabelle wird erstellt mit `id`, `account_id`, `event_type`, `raw_input`, `status`, `created_at`, `ended_at` (Hinweis 2026-05-06: `event_type ∈ {'symptom','voice'}`; `ended_at` wird seit Story #56 nicht mehr aktiv durch „Symptom beenden" gesetzt, sondern aus der extrahierten `duration` abgeleitet)
 **And** die Textnachricht wird als `symptom_event` mit `status: 'pending'` in der DB gespeichert
 **And** eine Verarbeitungs-Bestätigung (System-Bubble) wird sofort angezeigt (FR9)
 **And** Touch-Targets sind mindestens 44x44px (Apple HIG)
@@ -350,8 +352,10 @@ So that die Erfassung sich natürlich und schnell anfühlt wie eine Messenger-Ap
 
 ### Story 2.2: KI-Extraktion und Klassifikation mit Provider-Abstraktion
 As a System,
-I want strukturierte Daten aus Freitext-Eingaben extrahieren und automatisch zwischen Symptom- und Medikamenten-Events unterscheiden,
+I want strukturierte Daten aus Freitext-Eingaben extrahieren — inklusive optionaler Medikamenten-Attribute auf einem Symptom-Event,
 So that die unstrukturierte Eingabe in medizinisch verwertbare, korrekt klassifizierte Daten umgewandelt wird (FR7, FR8).
+
+> **Aktualisiert (2026-05-06, Story #59):** Das ursprünglich vorgesehene Modell mit `event_type ∈ {'symptom','medication'}` wurde verworfen. Tatsächliche Implementierung: `event_type ∈ {'symptom','voice'}` (`voice` markiert Audio-Eingang). Medikamenten-Informationen werden als **Attribute** (Felder `medications`, `medication_taken`, etc.) eines Symptom-Events gespeichert — siehe Migration `20260408000001_precursor_medication_fields.sql`.
 
 **Acceptance Criteria:**
 
@@ -359,15 +363,16 @@ So that die unstrukturierte Eingabe in medizinisch verwertbare, korrekt klassifi
 **When** die KI-Extraktion ausgelöst wird
 **Then** wird die Provider-Abstraktion in `src/lib/ai/` genutzt (Claude Sonnet als Standard-Provider)
 **And** die `extracted_data`-Tabelle wird erstellt mit `symptom_event_id`, `field_name`, `value`, `confidence`, `confirmed`
-**And** das `event_type`-Feld wird im selben KI-Call korrekt auf `'symptom'` oder `'medication'` gesetzt (FR8)
-**And** bei Symptom-Events: extrahierte Felder umfassen Symptombezeichnung, Körperregion, Seite (links/rechts/beidseits), Art, Intensität (1-10)
-**And** bei Medikamenten-Events: extrahierte Felder umfassen Medikamentenname, Einnahme/vergessen, Dosis, Grund (FR4)
+**And** das `event_type`-Feld wird auf `'symptom'` (Text) bzw. `'voice'` (Audio-Eingabe) gesetzt — Medikamenten-Daten werden **nicht** als eigener event_type kodiert, sondern als Attribute des Symptom-Events extrahiert (FR8, Story #59)
+**And** Symptom-Felder umfassen Symptombezeichnung, Körperregion, Seite (links/rechts/beidseits), Art, Intensität (1-10)
+**And** falls Medikamenten-Erwähnung erkannt wird: zusätzliche Felder `medications`, `medication_taken`, `dosis`, `reason` werden als Attribute erfasst (FR4, Story #59)
+**And** falls Vorboten erwähnt werden: zusätzliches Feld `precursor` wird erfasst (Story #59)
 **And** jedes extrahierte Feld hat einen Konfidenz-Score (0-100%)
 **And** der `symptom_event`-Status wird auf `'extracted'` gesetzt
 **And** die Extraktion ist innerhalb von < 10 Sekunden abgeschlossen (gemessen vom Server Action Start bis `status: 'extracted'` in der DB, NFR2)
 **And** bei API-Ausfall wird der Event-Status auf `'extraction_failed'` gesetzt und kann nachgeholt werden (NFR19)
 **And** Server Action folgt dem Zod→Auth→DB Pattern mit `ActionResult<T>`
-**And** die ChatBubble zeigt visuell unterschiedliche Styles für Symptom- vs. Medikamenten-Events
+**And** die ChatBubble zeigt visuell unterschiedliche Indikatoren je nach extrahierten Attributen (Medikament-Badge bei Medikamenten-Attribut)
 
 ### Story 2.3: Review-Ansicht mit Konfidenz-Indikatoren
 As a Patient,
@@ -401,19 +406,24 @@ So that die Erfassung schneller und genauer wird (FR11).
 **And** die Antwort aktualisiert das extrahierte Feld und setzt `confirmed: true`
 **And** mehrere unsichere Felder werden sequentiell nachgefragt (nicht alle gleichzeitig)
 
-### Story 2.5: Symptom beenden und Dauer berechnen
+### Story 2.5: AI-extrahierte Duration mit DurationSlider-Fallback im Review
 As a Patient,
-I want ein aktives Symptom als beendet markieren können,
-So that die Dauer meiner Symptome automatisch berechnet und dokumentiert wird (FR5).
+I want die Dauer meines Symptoms automatisch aus meiner Eingabe extrahiert bekommen — und im Review-Schritt manuell korrigieren können, falls die KI sie nicht oder falsch erfasst hat,
+So that ich die Dauer dokumentiere ohne ein Symptom später aktiv „beenden" zu müssen (FR5).
+
+> **Aktualisiert (2026-05-06, Story #56):** Die ursprüngliche Variante „Symptom beenden via Button" wurde verworfen — Patienten-Feedback (siehe `feedback_end_symptom.md`) hat ergeben, dass das aktive Beenden zu umständlich ist. Stattdessen extrahiert die KI direkt aus der Eingabe eine `duration` (z.B. „seit 2 Stunden", „den ganzen Tag"). Im Review steht ein **DurationSlider** als Fallback bereit, falls keine Dauer extrahiert oder die Extraktion korrigiert werden soll.
 
 **Acceptance Criteria:**
 
-**Given** ein bestätigter Symptom-Event existiert ohne `ended_at`
-**When** der Patient das Symptom als beendet markiert (über ChatFeed oder spezifische Aktion)
-**Then** wird `ended_at` auf dem Event gesetzt
-**And** die Dauer wird berechnet (`ended_at - created_at`) und angezeigt
-**And** eine Bestätigungs-Bubble zeigt "Symptom beendet — Dauer: X Stunden/Minuten"
-**And** beendete Symptome sind im ChatFeed als abgeschlossen erkennbar (visueller Indikator)
+**Given** ein Symptom-Event in der Extraktion
+**When** die KI eine zeitliche Angabe in der Eingabe erkennt (z.B. „seit gestern", „den ganzen Vormittag", „2 Stunden")
+**Then** wird ein `duration`-Feld (in Minuten) als Attribut des Symptom-Events extrahiert und mit Konfidenz-Score versehen
+**And** im Review-Bubble wird die Dauer angezeigt und kann antippbar korrigiert werden
+**Given** die KI hat keine Dauer erkannt oder die Konfidenz ist niedrig
+**When** der Patient den Review-Schritt erreicht
+**Then** wird ein **DurationSlider**-Fallback angezeigt, mit dem die Dauer manuell gesetzt werden kann (Range: Minuten bis mehrere Tage)
+**And** beim Bestätigen wird `duration` auf dem Event persistiert
+**And** ein expliziter „Symptom beenden"-Button entfällt — die Dauer ist Teil der initialen Erfassung
 
 ---
 
@@ -429,6 +439,8 @@ So that die Dauer meiner Symptome automatisch berechnet und dokumentiert wird (F
 As a Patient,
 I want ein Symptom per Spracheingabe mit einer Hold-to-Record Geste erfassen,
 So that ich Symptome schnell und freihändig dokumentieren kann (FR1).
+
+> ⚠️ **Drift-Hinweis (Stand 2026-05-06):** `src/components/capture/input-bar.tsx` arbeitet aktuell mit `useAudioRecorder()` im **Tap-to-Record-Modus** (Tap startet, Tap stoppt). Hold-Geste ist **nicht final implementiert** — Browser-Verifikation und finale UX-Entscheidung stehen aus.
 
 **Acceptance Criteria:**
 
@@ -545,8 +557,8 @@ So that ich einen schnellen Überblick über meine Gesundheitshistorie bekomme (
 **Given** ein authentifizierter Patient wechselt zum "Auswertung"-Tab
 **When** der Feed geladen wird
 **Then** werden alle bestätigten Events chronologisch sortiert angezeigt (neueste zuerst)
-**And** jeder Eintrag zeigt: Datum/Uhrzeit, Symptombezeichnung, Event-Typ (Symptom/Medikament), Intensität
-**And** Symptom- und Medikamenten-Events sind visuell unterscheidbar
+**And** jeder Eintrag zeigt: Datum/Uhrzeit, Symptombezeichnung, ggf. Medikamenten-Indikator als Attribut, Intensität
+**And** Symptom-Events mit Medikamenten-Attribut sind visuell von rein symptomatischen Events unterscheidbar (Hinweis 2026-05-06: keine separaten Medikamenten-Events, sondern Attribut am Symptom-Event — Story #59)
 **And** ein Skeleton-Screen wird während des Ladens angezeigt
 **And** bei leerem Zustand wird eine freundliche Nachricht angezeigt ("Kein Eintrag — ein guter Tag!", Anti-Tagebuch UX)
 **And** der Feed lädt mit 6 Monaten Daten in < 2 Sekunden (NFR3)
@@ -583,7 +595,7 @@ So that ich verstehe welche Symptome zunehmen oder abnehmen (FR18).
 **And** jedes Symptom zeigt die Gesamtanzahl und eine Trendlinie (monatliche Aggregation, 3 Datenpunkte)
 **And** Trendlinien zeigen ob ein Symptom zunimmt (↑), abnimmt (↓) oder stabil bleibt (→) basierend auf linearer Regression über die 3 Monatswerte
 **And** der Zeitraum ist filterbar (letzte 30 Tage, 3 Monate, 6 Monate, alle)
-**And** Medikamenten-Events sind separat vom Symptom-Ranking darstellbar
+**And** Symptom-Events mit Medikamenten-Attribut sind separat darstellbar (gefiltert nach Attribut-Vorhandensein, nicht nach event_type — Story #59)
 **And** ein Skeleton-Screen wird während des Ladens angezeigt
 
 ### Story 4.4: Event-Detail-Ansicht
@@ -741,7 +753,7 @@ So that ich schnell einen Überblick über den Zustand meines Patienten bekomme 
 ### Story 6.2: Arzt-Timeline mit allen Events
 
 As a Arzt,
-I want die Timeline mit allen Symptom- und Medikamenten-Events des Patienten einsehen,
+I want die Timeline mit allen Symptom-Events (inkl. Medikamenten-Attribut) des Patienten einsehen,
 So that ich den zeitlichen Verlauf der Beschwerden nachvollziehen kann (FR28).
 
 **Acceptance Criteria:**
@@ -749,7 +761,7 @@ So that ich den zeitlichen Verlauf der Beschwerden nachvollziehen kann (FR28).
 **Given** ein Arzt auf dem Dashboard
 **When** die Timeline-Ansicht angezeigt wird
 **Then** werden alle Events im gewählten Zeitraum chronologisch dargestellt
-**And** Symptom-Events und Medikamenten-Events sind visuell unterscheidbar
+**And** Symptom-Events mit/ohne Medikamenten-Attribut sind visuell unterscheidbar (Story #59 — Medikament als Attribut, nicht als separater event_type)
 **And** jeder Event zeigt: Datum, Symptombezeichnung, Intensität, Dauer (wenn beendet)
 **And** die Timeline nutzt dieselbe Datenquelle wie die Patienten-Timeline (gleiche Queries, anderes Theme)
 **And** ein Skeleton-Screen wird während des Ladens angezeigt

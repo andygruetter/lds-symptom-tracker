@@ -2,6 +2,13 @@
 
 Status: done
 
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Cookie-Path:** Konsistent mit Story 5.3 wird das Sharing-Session-Cookie mit
+`path: '/'` (nicht `Path=/share`) gesetzt. Der Schutz greift über
+`HttpOnly + Secure + SameSite=Strict` plus serverseitige Validierung in
+`src/proxy.ts` (Pfad `/share/dashboard` → DB-Lookup `validateSharingLinkById`).
+
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story

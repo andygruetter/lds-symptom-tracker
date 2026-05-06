@@ -1,6 +1,28 @@
 # Story 2.2: KI-Extraktion und Klassifikation mit Provider-Abstraktion
 
-Status: done
+Status: done (modifiziert durch späteren Refactor)
+
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**Klassifikations-Modell wurde umgestellt.** AC #3 (`event_type` auf `'symptom'`
+oder `'medication'` setzen) ist in der finalen Implementierung **überholt**:
+
+- `event_type` bleibt unverändert auf `'symptom'` oder `'voice'` (siehe
+  CHECK-Constraint in Migration `20260408000001_precursor_medication_fields.sql`).
+- Medikamente sind keine eigenen Events mehr, sondern **Attribute innerhalb eines
+  Symptom-Events** (Felder `medication_taken`, `medication_dosage` in
+  `extracted_data`, identifiziert über `medication_index`).
+- Pipeline-Code dokumentiert dies explizit (`src/lib/ai/pipeline.ts:222`:
+  „event_type bleibt unverändert").
+- Hintergrund + Detail siehe `tech-spec-precursor-medication-fields.md`.
+
+**Claude-Modell:** Code nutzt aktuell `claude-sonnet-4-20250514`
+(`src/lib/ai/providers/claude.ts:11`).
+
+**AC #11** (visuell unterschiedliche Styles für Symptom- vs. Medikamenten-Events):
+nicht mehr zutreffend, da Medikamente innerhalb der Symptom-Bubble als Sub-Gruppe
+angezeigt werden (`MedicationGroup`-Subkomponente in
+`src/components/capture/review-bubble.tsx`).
 
 ## Story
 

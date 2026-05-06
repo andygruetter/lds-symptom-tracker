@@ -2,6 +2,13 @@
 
 Status: done
 
+## 📋 Implementation Update (Stand 2026-05-06)
+
+**App-Name in der Implementierung:** Die finale Produktbezeichnung ist **„Symptomchat"**
+(siehe `package.json`, `src/app/layout.tsx`, `src/app/manifest.ts`). Alle nachfolgenden
+Erwähnungen von „LDS Symptom Tracker" / „LDS Tracker" sind überholte Arbeitstitel und
+wurden im Code durch „Symptomchat" ersetzt.
+
 ## Story
 
 As a Patient,
